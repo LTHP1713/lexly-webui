@@ -1,0 +1,177 @@
+import type { ReactNode, SVGProps } from 'react';
+
+/**
+ * Small inline line-icon set (24×24, stroke = currentColor), so the app needs no icon library.
+ * Icons are decorative by default (`aria-hidden`); give the surrounding control an accessible name.
+ */
+interface IconProps extends Omit<SVGProps<SVGSVGElement>, 'children'> {
+  size?: number | string;
+}
+
+function Icon({ size = 24, children, ...rest }: IconProps & { children: ReactNode }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.6}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+      {...rest}
+    >
+      {children}
+    </svg>
+  );
+}
+
+export function SearchIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <circle cx="11" cy="11" r="6.5" />
+      <path d="m16 16 4.5 4.5" />
+    </Icon>
+  );
+}
+
+export function HomeIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M3.5 10.5 12 4l8.5 6.5" />
+      <path d="M5.5 9v11h13V9" />
+      <path d="M10 20v-5h4v5" />
+    </Icon>
+  );
+}
+
+/** Scales of justice. */
+export function ScalesIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M12 4v16M8 20h8M5 7h14" />
+      <circle cx="12" cy="4" r="0.6" fill="currentColor" />
+      <path d="M5 7 2.5 13M5 7l2.5 6M2.5 13h5a2.5 2.5 0 0 1-5 0Z" />
+      <path d="m19 7-2.5 6M19 7l2.5 6M16.5 13h5a2.5 2.5 0 0 1-5 0Z" />
+    </Icon>
+  );
+}
+
+/** Open statute book. */
+export function BookIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M12 6.5C10.5 5.2 8 4.5 3.5 4.5v13c4.5 0 7 .7 8.5 2 1.5-1.3 4-2 8.5-2v-13c-4.5 0-7 .7-8.5 2Z" />
+      <path d="M12 6.5v13" />
+      <path d="M6 8.5c1.5.1 2.8.4 3.8.9M6 11.5c1.5.1 2.8.4 3.8.9M18 8.5c-1.5.1-2.8.4-3.8.9" />
+    </Icon>
+  );
+}
+
+/** Classical courthouse façade. */
+export function CourthouseIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M3 9.5 12 4.5l9 5H3Z" />
+      <path d="M6 12v5.5M10 12v5.5M14 12v5.5M18 12v5.5" />
+      <path d="M4.5 17.5h15M3 20.5h18" />
+    </Icon>
+  );
+}
+
+/** Question paper / checklist. */
+export function ChecklistIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <rect x="5" y="4.5" width="14" height="16" rx="2" />
+      <path d="M9 3h6v3H9z" />
+      <path d="m8 10.5 1.5 1.5L12 9.5M14 11h2.5" />
+      <path d="m8 15.5 1.5 1.5 2.5-2.5M14 16h2.5" />
+    </Icon>
+  );
+}
+
+/** Legal document / judgment. */
+export function DocumentIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M6.5 3.5h8L18 7v13.5H6.5Z" />
+      <path d="M14.5 3.5V7H18" />
+      <path d="M9 11h6M9 14h6M9 17h3.5" />
+    </Icon>
+  );
+}
+
+export function BellIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M6 16.5V11a6 6 0 1 1 12 0v5.5l1.5 1.5h-15Z" />
+      <path d="M10 20.5a2 2 0 0 0 4 0" />
+    </Icon>
+  );
+}
+
+export function UserIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <circle cx="12" cy="8.5" r="3.5" />
+      <path d="M5 20c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5" />
+    </Icon>
+  );
+}
+
+export function ArrowRightIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M5 12h14M13 6l6 6-6 6" />
+    </Icon>
+  );
+}
+
+export function ChevronRightIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="m9.5 6 6 6-6 6" />
+    </Icon>
+  );
+}
+
+export function LogOutIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M14 4.5h4.5v15H14" />
+      <path d="m10 8-4 4 4 4M6 12h9" />
+    </Icon>
+  );
+}
+
+export function ClockIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 7.5V12l3 2" />
+    </Icon>
+  );
+}
+
+/** Lexly brand mark: a section sign (§) on a navy tile. */
+export function LexlyMark({ size = 28 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+      <rect width="32" height="32" rx="8" fill="var(--lx-navy, #13294b)" />
+      <text
+        x="16"
+        y="22.5"
+        textAnchor="middle"
+        fontFamily="Georgia, 'Times New Roman', serif"
+        fontSize="20"
+        fontWeight="700"
+        fill="var(--lx-gold, #b8924a)"
+      >
+        §
+      </text>
+    </svg>
+  );
+}

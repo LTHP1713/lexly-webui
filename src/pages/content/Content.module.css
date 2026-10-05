@@ -1,0 +1,372 @@
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.title {
+  margin: 0 0 0.25rem;
+  font-size: 1.6rem;
+  line-height: 1.25;
+}
+
+.subtitle {
+  margin: 0 0 1.5rem;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.empty {
+  color: #666;
+  font-size: 0.95rem;
+}
+
+.breadcrumb {
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+}
+
+.breadcrumb a {
+  color: #555;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.breadcrumb a:hover {
+  color: #111;
+  text-decoration: underline;
+}
+
+/* Acts / sections / search result lists */
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid #e2e2e2;
+  border-radius: 0.5rem;
+  color: #111;
+  text-decoration: none;
+}
+
+.item:hover {
+  border-color: #bbb;
+  background: #fafafa;
+}
+
+.itemTitle {
+  flex: 1;
+  font-weight: 600;
+}
+
+.meta {
+  color: #666;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.sectionNumber {
+  min-width: 3rem;
+  color: #666;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.itemLocked {
+  background: #fafafa;
+  color: #777;
+}
+
+.itemLocked .itemTitle {
+  font-weight: 500;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.05rem 0.45rem;
+  border: 1px solid #ccc;
+  border-radius: 999px;
+  color: #555;
+  background: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.5;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.lockIcon {
+  flex-shrink: 0;
+}
+
+/* Section detail */
+
+.bodyText {
+  margin-top: 1.25rem;
+  white-space: pre-line;
+  line-height: 1.7;
+}
+
+.entries {
+  margin-top: 2rem;
+}
+
+.entriesHeading {
+  margin: 0 0 0.6rem;
+  font-size: 1.1rem;
+}
+
+.entryList {
+  margin: 0;
+  padding-left: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.entry {
+  white-space: pre-line;
+  line-height: 1.6;
+}
+
+.lockedCard {
+  border: 1px solid #e2e2e2;
+  border-radius: 0.75rem;
+  padding: 1.75rem;
+  background: #fafafa;
+}
+
+.lockedLead {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 1rem 0 0.5rem;
+  font-weight: 600;
+}
+
+.lockedMessage {
+  margin: 0;
+  color: #555;
+}
+
+/* Search */
+
+.searchForm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 1rem 0 1.5rem;
+}
+
+.searchLabel {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.searchInput {
+  font: inherit;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 0.4rem;
+}
+
+.resultSummary {
+  margin: 0 0 0.75rem;
+  color: #555;
+  font-size: 0.9rem;
+}
+
+.stale {
+  opacity: 0.6;
+}
+
+.searchHit {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.3rem;
+}
+
+.hitHeading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.snippet {
+  color: #555;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.highlight {
+  background: #fff3b0;
+  color: inherit;
+  font-weight: 600;
+  border-radius: 0.15rem;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+
+.pageInfo {
+  color: #555;
+  font-size: 0.875rem;
+}
+
+.pageButton {
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid #111;
+  border-radius: 0.4rem;
+  background: #fff;
+  color: #111;
+  cursor: pointer;
+}
+
+.pageButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Case laws */
+
+.importance {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.05rem 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 999px;
+  color: #555;
+  background: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.5;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.importanceLandmark {
+  border-color: #b8924a;
+  background: #f3ead6;
+  color: #6b4f1a;
+}
+
+.importanceImportant {
+  border-color: #13294b;
+  color: #13294b;
+}
+
+.badgeRow {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem;
+  margin: 1rem 0 1.5rem;
+}
+
+.filters .searchForm {
+  flex: 1 1 16rem;
+  margin: 0;
+}
+
+.filterField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.select {
+  font: inherit;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 0.4rem;
+  background: #fff;
+  color: #111;
+}
+
+.filterNote {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: -0.5rem 0 1rem;
+  color: #555;
+  font-size: 0.875rem;
+}
+
+.filterNote button {
+  font: inherit;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  border: 1px solid #ccc;
+  border-radius: 0.4rem;
+  background: #fff;
+  cursor: pointer;
+}
+
+.caseMeta {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.35rem 1rem;
+  margin: 1rem 0 0;
+  font-size: 0.9rem;
+}
+
+.caseMeta dt {
+  color: #666;
+  font-weight: 600;
+}
+
+.caseMeta dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.summaryBlock {
+  margin-top: 1.75rem;
+}
+
+.summaryBlock p {
+  margin: 0;
+  white-space: pre-line;
+  line-height: 1.7;
+}
+
+.externalLink {
+  display: inline-block;
+  margin-top: 1.5rem;
+  font-weight: 600;
+}

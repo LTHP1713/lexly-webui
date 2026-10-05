@@ -90,6 +90,27 @@
   cursor: not-allowed;
 }
 
+.secondaryButton {
+  display: block;
+  font-weight: 600;
+  padding: 0.6rem;
+  border: 1px solid #111;
+  border-radius: 0.4rem;
+  background: #fff;
+  color: #111;
+  text-align: center;
+  text-decoration: none;
+}
+
+.secondaryButton:hover {
+  background: #f5f5f5;
+}
+
+.secondaryButton:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 1px;
+}
+
 .footer {
   margin: 1.25rem 0 0;
   text-align: center;

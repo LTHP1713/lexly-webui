@@ -8,16 +8,23 @@ interface ApiErrorBody {
   message?: string;
 }
 
-/** A failed backend call, normalized from the `{ error, message }` body on non-2xx responses. */
+/**
+ * A failed backend call, normalized from the `{ error, message }` body on non-2xx responses.
+ * `body` keeps the raw parsed JSON for the few endpoints that put extra fields next to
+ * `error`/`message` (e.g. the flattened teaser on a 403 `PRO_REQUIRED` section) — never render it
+ * directly.
+ */
 export class ApiError extends Error {
   readonly code: string;
   readonly status: number;
+  readonly body: unknown;
 
-  constructor(code: string, message: string, status: number) {
+  constructor(code: string, message: string, status: number, body?: unknown) {
     super(message);
     this.name = 'ApiError';
     this.code = code;
     this.status = status;
+    this.body = body;
   }
 }
 
@@ -100,7 +107,7 @@ async function request<T>(path: string, init: RequestOptions = {}, isRetry = fal
     } catch {
       // Response body wasn't JSON; fall back to defaults below.
     }
-    throw new ApiError(body.error ?? 'UNKNOWN_ERROR', body.message ?? response.statusText, response.status);
+    throw new ApiError(body.error ?? 'UNKNOWN_ERROR', body.message ?? response.statusText, response.status, body);
   }
 
   if (response.status === 204) {
@@ -118,4 +125,6 @@ export const apiClient = {
   get: <T>(path: string, init?: RequestOptions) => request<T>(path, { ...init, method: 'GET' }),
   post: <T>(path: string, body?: unknown, init?: RequestOptions) =>
     request<T>(path, { ...init, method: 'POST', body: body !== undefined ? JSON.stringify(body) : undefined }),
+  put: <T>(path: string, body?: unknown, init?: RequestOptions) =>
+    request<T>(path, { ...init, method: 'PUT', body: body !== undefined ? JSON.stringify(body) : undefined }),
 };

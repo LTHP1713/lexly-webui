@@ -1,6 +1,22 @@
 :root {
   color-scheme: light dark;
   font: 16px/1.5 system-ui, 'Segoe UI', Roboto, sans-serif;
+
+  /* Lexly palette — consumed by the authenticated shell (AppLayout) and the Home page. */
+  --lx-ivory: #f8f5ee;
+  --lx-ivory-deep: #efe9dc;
+  --lx-card: #ffffff;
+  --lx-navy: #13294b;
+  --lx-navy-soft: #1f3a66;
+  --lx-ink: #24272e;
+  --lx-muted: #5d6270;
+  --lx-border: #e4ddcd;
+  --lx-gold: #b8924a;
+  --lx-gold-soft: #f3ead6;
+  --lx-wrong: #b5543c;
+  --lx-serif: 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif;
+  --lx-radius: 14px;
+  --lx-shadow: 0 1px 2px rgb(19 41 75 / 0.05), 0 4px 16px rgb(19 41 75 / 0.05);
 }
 
 * {
@@ -9,4 +25,9 @@
 
 body {
   margin: 0;
+}
+
+:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
 }

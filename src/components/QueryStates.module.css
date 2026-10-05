@@ -1,0 +1,66 @@
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.skeleton {
+  height: 3rem;
+  border-radius: 0.5rem;
+  background: linear-gradient(90deg, #eee 25%, #f6f6f6 50%, #eee 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.error {
+  border: 1px solid #f3c2c2;
+  background: #fdecea;
+  color: #9c1c1c;
+  border-radius: 0.4rem;
+  padding: 0.75rem 0.9rem;
+}
+
+.errorMessage {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.retry {
+  margin-top: 0.6rem;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid #9c1c1c;
+  border-radius: 0.4rem;
+  background: #fff;
+  color: #9c1c1c;
+  cursor: pointer;
+}

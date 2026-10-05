@@ -1,0 +1,237 @@
+/* Mobile-first: bottom tab bar below 768px, top nav from 768px up. */
+
+.shell {
+  /* The Lexly palette is light-only; scoped here so the auth screens keep their own behaviour. */
+  color-scheme: light;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--lx-ivory);
+  color: var(--lx-ink);
+}
+
+.skipLink {
+  position: absolute;
+  left: 0.75rem;
+  top: -3rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--lx-navy);
+  color: #fff;
+  border-radius: 0.4rem;
+  z-index: 50;
+}
+
+.skipLink:focus {
+  top: 0.75rem;
+}
+
+/* ---------- Header ---------- */
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  padding-top: env(safe-area-inset-top, 0px);
+  background: rgb(248 245 238 / 0.92);
+  backdrop-filter: saturate(1.2) blur(8px);
+  border-bottom: 1px solid var(--lx-border);
+}
+
+.headerInner {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  max-width: 72rem;
+  height: 3.5rem;
+  margin: 0 auto;
+  padding: 0 max(1rem, env(safe-area-inset-right, 0px)) 0 max(1rem, env(safe-area-inset-left, 0px));
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 44px;
+  color: var(--lx-navy);
+  text-decoration: none;
+}
+
+.brandName {
+  font-family: var(--lx-serif);
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.topNav {
+  display: none;
+  flex: 1;
+}
+
+.topNavList {
+  display: flex;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.topNavLink {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 0.85rem;
+  color: var(--lx-muted);
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 0.5rem;
+}
+
+.topNavLink:hover {
+  color: var(--lx-navy);
+  background: var(--lx-ivory-deep);
+}
+
+.topNavLink[aria-current='page'] {
+  color: var(--lx-navy);
+}
+
+.topNavLink[aria-current='page']::after {
+  content: '';
+  position: absolute;
+  left: 0.85rem;
+  right: 0.85rem;
+  bottom: 4px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--lx-gold);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: auto;
+}
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  color: var(--lx-navy);
+  text-decoration: none;
+}
+
+.avatar > svg {
+  box-sizing: content-box;
+  padding: 6px;
+  border-radius: 50%;
+  background: var(--lx-gold-soft);
+  border: 1px solid #e6d6b2;
+}
+
+.avatar[aria-current='page'] > svg {
+  border-color: var(--lx-gold);
+}
+
+/* ---------- Main ---------- */
+
+.main {
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: 1.25rem 1rem calc(4.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+.mainWide {
+  max-width: 72rem;
+  padding-top: 1rem;
+}
+
+.main:focus {
+  outline: none;
+}
+
+/* ---------- Bottom tab bar (mobile) ---------- */
+
+.bottomNav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: #fff;
+  border-top: 1px solid var(--lx-border);
+  box-shadow: 0 -2px 12px rgb(19 41 75 / 0.06);
+}
+
+.bottomNavList {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bottomNavLink {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  min-height: 3.5rem;
+  color: var(--lx-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.bottomNavLink[aria-current='page'] {
+  color: var(--lx-navy);
+}
+
+.bottomNavLink[aria-current='page'] > svg {
+  color: var(--lx-navy);
+  stroke-width: 2;
+}
+
+.bottomNavLink[aria-current='page']::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 1.75rem;
+  height: 3px;
+  transform: translateX(-50%);
+  border-radius: 0 0 3px 3px;
+  background: var(--lx-gold);
+}
+
+@media (min-width: 768px) {
+  .headerInner {
+    height: 4rem;
+    gap: 2rem;
+    padding: 0 1.5rem;
+  }
+
+  .topNav {
+    display: block;
+  }
+
+  .main {
+    padding: 2rem 1.5rem 3rem;
+  }
+
+  .mainWide {
+    padding-top: 1.5rem;
+  }
+
+  .bottomNav {
+    display: none;
+  }
+}

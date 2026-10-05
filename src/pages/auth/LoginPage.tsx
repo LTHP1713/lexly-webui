@@ -106,9 +106,10 @@ export function LoginPage() {
             {isSubmitting ? 'Logging in…' : 'Log in'}
           </button>
 
-          <p className={styles.footer}>
-            Don&apos;t have an account? <Link to="/register">Sign up</Link>
-          </p>
+          <p className={styles.footer}>Don&apos;t have an account?</p>
+          <Link to="/register" className={styles.secondaryButton}>
+            Sign up
+          </Link>
         </form>
       </div>
     </div>
