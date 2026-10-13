@@ -1,7 +1,8 @@
 # Lexly — Frontend Implementation Plan (lexly-webui)
 
-**Status:** Draft for review, revised 2026-10-13
+**Status:** Draft for review, revised 2026-10-13 (synced with backend Phase 0 and Phase 1)
 **Frontend repo:** https://github.com/LTHP1713/lexly-webui (reviewed at commit `fab9df4` "bare act & case laws")
+**Backend state:** Phase 0 merged to `lexly-backend` `main` (`0545ab9`, PR #2). Phase 1 committed on `feature/phase1` (`ddac579`), not yet merged. The contract copy in this repo matches that commit.
 **Based on:** `Lexly-TDD.md` v2 (frozen 2026-10-12) and `Lexly-Implementation-Plan.md`. Request/response shapes: `Lexly-API-Contract.md`. Section references like §7.3 point to the TDD; "Phase 3" points to the backend plan.
 **Companion docs:** `Lexly-UI-Spec.md` (layout, states and copy per screen, written per phase) and `Lexly-Frontend-Status-Report.md` (what is built).
 **Supersedes:** `Lexly-Frontend-Development-Master-Doc.md` §3. Its prompts target the old subscription / MCQ-practice design. Its §4 (security) and §5 (progress SOP) still apply and are summarised in §9 and §10 below.
@@ -48,7 +49,7 @@ Most of the drift from the old design was fixed in `fab9df4`. What remains:
 
 | # | Gap | Action |
 |---|---|---|
-| G1 | Roles: the UI knows `STUDENT` / `LAWYER` / `ADMIN`. The role comes from decoding the JWT at login (`roleFromAccessToken`) and from `/users/me` on reload. `RequireAdmin` checks `role === 'ADMIN'` | Five roles, role-scoped areas and `RequireRole`. Take the role (and later `collegeId` and `mustChangePassword`) from `/users/me` after **every** login, not from the JWT (F0.2, F1) |
+| G1 | Roles: the UI knows `STUDENT` / `LAWYER` / `ADMIN`. The role comes from decoding the JWT at login (`roleFromAccessToken`) and from `/users/me` on reload. `RequireAdmin` checks `role === 'ADMIN'`. **Since backend P1 those role names no longer exist** (V16 remaps them), so an `ADMIN` check fails for every user | Five roles, role-scoped areas and `RequireRole`. Take the role, `college` and `mustChangePassword` from `/users/me` after **every** login, not from the JWT (F0.2, F1) |
 | G2 | The admin area is reached only through a link on Profile; there is no admin nav | Per-role navigation (F0.3) |
 | G3 | MCQ practice is still referenced: the Home `PracticeProgress` card, the `practiceStats` flag and DTOs, the `/practice` placeholder, and the "Build the Practice flow…" item in Next Up | Remove it. `/practice` becomes Solo practice in F7 (F0.1) |
 | G4 | The progress file's Next Up still listed "Upgrade to Pro" and the MCQ practice flow. `HOME_DASHBOARD_API_CONTRACT.md` described MCQ endpoints | Done 2026-10-13: Next Up rewritten from this plan; `HOME_DASHBOARD_API_CONTRACT.md` deleted (superseded by `Lexly-API-Contract.md`) |
@@ -56,7 +57,8 @@ Most of the drift from the old design was fixed in `fab9df4`. What remains:
 | G6 | `ApiError` no longer keeps the error body (removed with the teasers) | Fine for now. Re-add only if a new endpoint returns extra fields on errors |
 | G7 | Content admin covers case laws only. Acts, sections, illustrations, exceptions, case-law ↔ section linking and bulk JSON import have no UI | F1 |
 | G8 | No automated tests; verification is ad-hoc Playwright runs | Vitest + Testing Library + MSW + a committed Playwright suite (F0.6) |
-| G9 | Email-only login; no forced password change | Two login modes and `/change-password` (F1) |
+| G9 | Email-only login; no forced password change. Since backend P1, a seeded or reset account gets `403 PASSWORD_CHANGE_REQUIRED` on every call except `/users/me`, so it can't use the app at all | Two login modes and `/change-password` (F1) |
+| G13 | Bulk import code expects the old all-or-nothing response (`201 { counts, created }` / `422 BULK_IMPORT_REJECTED`). Since backend P0 it is always `200 BulkImportResult` | F1.9 builds against the per-row shape; nothing in the UI calls the bulk endpoints today |
 | G10 | Known edge case: navigating away while `/auth/refresh` is in flight can sign the user out (the server rotated the token, but the aborted response never delivered the new cookie) | Don't attach the bootstrap refresh to an abortable navigation. If it still happens, retry the refresh once after a 401 caused by a just-rotated token (F0.7) |
 | G11 | Bare-Act Progress, Continue Learning, learning-activity tracking and unified `/search` aren't in TDD v2 | Keep the flags off and hide the cards (D3) |
 | G12 | Dark mode: the palette is light-only | Decide in F8 (D4) |
@@ -178,7 +180,7 @@ New domain inputs:
 | `QUOTA_EXCEEDED` (429) | Usage banner with the reset date; disable generate buttons |
 | `ATTEMPT_LIMIT_REACHED` | Hide upload; "3 of 3 attempts used" |
 | `IMPORT_FILE_INVALID` | Whole-file error on the import screen |
-| `RATE_LIMITED` (429) | Toast "Too many requests, try again shortly" (the form banner on sign-in and change password); no automatic retry |
+| `RATE_LIMITED` (429) | Toast "Too many requests, try again shortly" (the form banner on sign-in and change password); no automatic retry. The backend raises it only from P8 (contract §0.8), but handle it from F1 |
 | `NETWORK_ERROR` | Retryable error state |
 
 The exact copy for each code is in `Lexly-UI-Spec.md` §0.6. Confirm each new code's HTTP status against the live backend once per phase (as was done for `EMAIL_ALREADY_EXISTS`) and record it in the progress file.
@@ -222,8 +224,8 @@ Frontend phases mirror the backend phases. **F*n* starts once backend Phase *n*'
 
 | Phase | Name | Backend dep | Size | State |
 |---|---|---|---|---|
-| F0 | Clean-up & foundations | current backend + Phase 0 | S | most groundwork done in `fab9df4` |
-| F1 | Identity, roles, SUPERADMIN & content admin | Phase 1 | L | case-law admin done |
+| F0 | Clean-up & foundations | current backend + Phase 0 | S | most groundwork done in `fab9df4`; backend P0 merged |
+| F1 | Identity, roles, SUPERADMIN & content admin | Phase 1 | L | case-law admin done; backend P1 committed (`feature/phase1`), contract §1, §2, §5–§7 LIVE |
 | F2 | College administration | Phase 2 | M | — |
 | F3 | Assessments & answering | Phase 3 | L | — |
 | F4 | Manual grading & student results | Phase 4 | M | — |
@@ -243,14 +245,14 @@ F6 can run alongside F5, as on the backend.
 | # | Task | Details |
 |---|---|---|
 | F0.1 | Remove MCQ practice | Delete `PracticeProgress`, the `practiceStats` flag, its DTOs/mappers in `users.ts` and its mocks in `homeMocks.ts`. `/practice` becomes "Solo practice — coming soon". Hide the Bare-Act Progress and Continue Learning cards while their flags are off (D3). Already done 2026-10-13: Next Up rewritten from this plan, and the code comments and `.env.example` that cited the deleted `HOME_DASHBOARD_API_CONTRACT.md` now point at `Lexly-API-Contract.md` §15 |
-| F0.2 | Role from `/users/me` | After login/register, call `GET /users/me` (as the bootstrap already does) and drop `roleFromAccessToken`. One source of truth, which will also carry `collegeId` and `mustChangePassword` from Phase 1. Type `role` as a union of all five TDD roles plus the legacy ones during the migration |
-| F0.3 | Role skeleton | `roles.ts`, `RequireRole` (replaces `RequireAdmin`), role-driven nav in `AppLayout`, role-aware `RedirectIfAuthenticated`, `React.lazy` per area, a real `NotFound` page (today `*` redirects to `/login`). The Library item goes to `/acts`, and the Library list pages get a Bare Acts · Case Laws · Search sub-nav for roles that have a single Library item; the SUPERADMIN Content item goes to `/admin/acts` with an Acts · Case laws · Import sub-nav. `/admin` redirects to `/admin/acts` until F1.4. Until Phase 1 ships, `ADMIN` maps to the SUPERADMIN area and `STUDENT`/`LAWYER` to S_STUDENT |
+| F0.2 | Role from `/users/me` | After login/register, call `GET /users/me` (as the bootstrap already does) and drop `roleFromAccessToken`. One source of truth, carrying `role`, `mustChangePassword`, `loginId` and `college: { id, code, name } \| null` (contract §2.1, LIVE). Type `role` as the union of the five roles (contract §0.7). The login/register response now also carries `role` and `mustChangePassword`; use them only to decide whether to go to `/change-password` before `/users/me` returns, never as the stored role |
+| F0.3 | Role skeleton | `roles.ts`, `RequireRole` (replaces `RequireAdmin`), role-driven nav in `AppLayout`, role-aware `RedirectIfAuthenticated`, `React.lazy` per area, a real `NotFound` page (today `*` redirects to `/login`). The Library item goes to `/acts`, and the Library list pages get a Bare Acts · Case Laws · Search sub-nav for roles that have a single Library item; the SUPERADMIN Content item goes to `/admin/acts` with an Acts · Case laws · Import sub-nav. `/admin` redirects to `/admin/acts` until F1.4. **No legacy role mapping:** backend P1 already remapped `ADMIN` → `SUPERADMIN` and `STUDENT`/`LAWYER` → `S_STUDENT` (V16), so the UI only knows the five roles. An unrecognised role is treated as signed-in with Library access only |
 | F0.4 | Shared components | Move `ConfirmDialog`, `Toast`, `Field`, `RepeatableList` and `useUnsavedChangesGuard` from `pages/admin/` to `src/components/`. Split the shared parts of `Admin.module.css` out with them. No behaviour change |
 | F0.5 | Client extensions | Skip the JSON `Content-Type` for `FormData`; add `patch`, `upload` (XHR with progress) and `download` (blob + filename), and pass `AbortSignal` through. Add the `errors.ts` catalogue |
 | F0.6 | Tests & CI | Vitest, Testing Library, MSW, Playwright, axe. Seed the suite with the mappers, `compareSectionNumbers`, `contentForm` parsing and the cookie-session flows from the 2026-10-09 entry. Add a GitHub Actions workflow |
 | F0.7 | Session edge cases | Re-run the 2026-10-09 cookie checks against the **live** backend (still listed in Next Up). Fix G10 |
 
-**Done when:** no MCQ code remains; an `ADMIN` user sees an admin nav without going through Profile; `npm test` runs in CI; the cookie-session checks pass against the live backend.
+**Done when:** no MCQ code remains; a `SUPERADMIN` sees an admin nav without going through Profile; `npm test` runs in CI; the cookie-session checks pass against the live backend.
 
 ---
 
@@ -260,19 +262,21 @@ F6 can run alongside F5, as on the backend.
 
 | # | Task | Details |
 |---|---|---|
-| F1.1 | Two-mode login | `/login` gets two tabs on the existing `AuthLayout`: **Email** (SUPERADMIN, C_ADMIN, S_STUDENT) and **College** (college code, upper-cased as typed, + roll no / employee ID + password). One generic error on failure (§4.1). Remember the last-used tab name in `localStorage`, never credentials |
-| F1.2 | Forced password change | `/change-password` (current, new, confirm; ≥ 8 chars, matching the backend). The same route serves a voluntary change from Profile, with Cancel. While `mustChangePassword` is set, every route redirects here and the nav shows only Log out. On success, take the new access token (the cookie is rotated by the server), refetch `/users/me`, and go to the role's home |
-| F1.3 | Registration | Unchanged; the result is always `S_STUDENT` (§4.3) |
-| F1.4 | Role areas live | Map the five real roles; drop the legacy mapping from F0.3. `/admin` becomes a hub (Colleges, Content, Audit). Placeholder homes for areas whose features come later |
+| F1.1 | Two-mode login | `/login` gets two tabs on the existing `AuthLayout`: **Email** (SUPERADMIN, C_ADMIN, S_STUDENT) and **College** (college code, upper-cased as typed, + roll no / employee ID + password). Send exactly one shape (`{ email, password }` or `{ collegeCode, loginId, password }`); both or neither is a `400`. One generic error on `401` (§4.1); `403 COLLEGE_INACTIVE` gets its own banner. Remember the last-used tab name in `localStorage`, never credentials |
+| F1.2 | Forced password change | `/change-password` (current, new, confirm; ≥ 8 chars, ≠ current, ≠ `loginId`, matching the backend's three `VALIDATION_ERROR` messages). The same route serves a voluntary change from Profile, with Cancel. While `mustChangePassword` is set, every route redirects here and the nav shows only Log out. A `403 PASSWORD_CHANGE_REQUIRED` from any call also redirects here. On success, **replace the in-memory access token with the one returned** (the gate is read from the token, so the old token stays gated), refetch `/users/me`, and go to the role's home |
+| F1.3 | Registration | Unchanged; the result is always `S_STUDENT` (§4.3). The response now carries `role` and `mustChangePassword` |
+| F1.4 | Role areas live | Role homes for all five roles. `/admin` becomes a hub (Colleges, Content, Audit). Placeholder homes for areas whose features come later |
 | F1.5 | Profile | Name, email, role, college name/code, change password, log out. The "Admin: manage case laws" link is removed, since the admin area now has its own nav |
 | F1.6 | Colleges | `/admin/colleges`: list (search, active filter), create/edit (code, name), and deactivate/reactivate with a `ConfirmDialog` saying every user in the college loses access. College detail **Admins** tab: create C_ADMIN, list, reset password, remove |
-| F1.7 | Acts & sections admin | `/admin/acts`: list/create/edit/delete (`SHORT_CODE_ALREADY_EXISTS` inline). `/admin/acts/:actId`: ordered section list, create/delete (`SECTION_NUMBER_ALREADY_EXISTS` inline). `/admin/sections/:id`: an editor for every reader field (body text, in simple words, provision meaning, illustrations with the `hypothetical` flag, exceptions with nested illustrations, key legal terms) built with `RepeatableList` and saved with one full-replace `PUT /admin/sections/{id}`. The per-item illustration/exception endpoints and `…/reorder` are not used, because that `PUT` replaces the nested lists anyway. Edit act needs `GET /admin/acts/{id}` (ADDED, P1) for `description`; until it exists only create and delete are offered. A "View as reader" link. Same cache-bypass-after-save pattern as the case-law admin |
+| F1.7 | Acts & sections admin | `/admin/acts`: list/create/edit/delete (`SHORT_CODE_ALREADY_EXISTS` inline). `/admin/acts/:actId`: ordered section list, create/delete (`SECTION_NUMBER_ALREADY_EXISTS` inline). `/admin/sections/:id`: an editor for every reader field (body text, in simple words, provision meaning, illustrations with the `hypothetical` flag, exceptions with nested illustrations, key legal terms) built with `RepeatableList` and saved with one full-replace `PUT /admin/sections/{id}`. The per-item illustration/exception endpoints and `…/reorder` are not used, because that `PUT` replaces the nested lists anyway. The editor loads `GET /admin/sections/{id}` and Edit act loads `GET /admin/acts/{id}` (both ADDED, LIVE since P1). A "View as reader" link. Same cache-bypass-after-save pattern as the case-law admin |
 | F1.8 | Case-law ↔ section linking | Open item from the case-law admin entry. In the case-law form, a section picker (act → section list or search) calls `POST/DELETE /admin/caselaws/{id}/sections/{sectionId}`, replacing today's read-only list |
-| F1.9 | Bulk JSON import | `/admin/import`: choose acts / sections / case laws, upload or paste JSON, parse on the client, submit. Then show the §7.1 result: summary counts and an `ImportResultTable` (index, key, status, errors), filterable by status, with "download rejected rows" (a JSON file in the same envelope holding only the rejected and failed rows, ready to fix and re-import). `ImportResultTable` is reused in F2 |
-| F1.10 | Audit log | `/admin/audit` (college filter) and later `/college/audit`: filters for action, date range and college. Columns: time, actor + role, action, entity, and details (JSON rendered as text in an expandable row). A note that entries are kept for 30 days |
+| F1.9 | Bulk JSON import | `/admin/import`: choose acts / sections / case laws, upload or paste JSON, parse on the client, submit. The response is always `200 BulkImportResult` (contract §5.5, LIVE since P0); `400` only for an invalid envelope. Then show the §7.1 result: summary counts and an `ImportResultTable` (index, key, status, errors), filterable by status, with "download rejected rows" (a JSON file in the same envelope holding only the rejected and failed rows, ready to fix and re-import). `ImportResultTable` is reused in F2 |
+| F1.10 | Audit log | `/admin/audit` (college filter) and `/college/audit` (C_ADMIN; `GET /audit` is already open to them): filters for action, date range and college. Columns: time, actor + role, action, entity, and details (JSON rendered as text in an expandable row). A note that entries are kept for 30 days. Only send `action` / `entityType` values from the contract's lists (an unknown one is a `400`). P1 records only `LOGIN_FAILED`, `PASSWORD_CHANGED`, `PASSWORD_RESET`, `COLLEGE_CREATED`, `COLLEGE_UPDATED`, `USER_CREATED`, `USER_REMOVED` and `CONTENT_IMPORT`; the action filter lists all actions anyway |
 | F1.11 | Tests | Both login modes; the forced-change redirect can't be bypassed by typing URLs; role guards; inactive-college message; import results with mixed outcomes; section editor round-trip (load → save unchanged → identical body, as done for case laws) |
 
-**Backend asks:** B1, B2 (§6).
+**Backend asks:** B1, B2 (§6), both delivered in P1.
+
+**Dev seed:** the V16 migration seeds the SUPERADMIN from `LEXLY_SUPERADMIN_EMAIL` / `LEXLY_SUPERADMIN_PASSWORD_HASH`. The backend's `.env.example` uses `superadmin@lexly.local` with password `lexly-superadmin-dev` (dev only), and the account starts with `mustChangePassword = true`.
 
 **Done when:** SUPERADMIN logs in with the seeded credentials, is forced to change the password, creates a college and a C_ADMIN, and the C_ADMIN logs in and is forced to change theirs. SUPERADMIN edits a section and imports a sections batch with 3 bad rows, and the reader shows the changes.
 
@@ -421,17 +425,17 @@ F6 can run alongside F5, as on the backend.
 
 ## 6. Backend asks
 
-Status as of `Lexly-API-Contract.md` v1 (2026-10-13). "In contract" means proposed there; it still needs sign-off at the start of its phase.
+Status as of the contract after backend Phase 1 (2026-10-13). "In contract" means proposed there; it still needs sign-off at the start of its phase. "LIVE" means implemented.
 
 | # | Ask | Needed by | Status |
 |---|---|---|---|
-| B1 | `GET /users/me` adds the college and `mustChangePassword` (it already has `role`) | F1 | In contract §2.1 as a nested `college: { id, code, name }`, plus `mustChangePassword` and `loginId`. Build against that shape |
-| B2 | `POST /auth/change-password` returns a new access token and sets the rotated refresh cookie | F1 | In contract §1.5 |
+| B1 | `GET /users/me` adds the college and `mustChangePassword` (it already has `role`) | F1 | **LIVE (P1).** Nested `college: { id, code, name }` (or `null`), plus `mustChangePassword` and `loginId` (contract §2.1) |
+| B2 | `POST /auth/change-password` returns a new access token and sets the rotated refresh cookie | F1 | **LIVE (P1).** Returns `{ accessToken, refreshToken, mustChangePassword }` and revokes every other refresh token (contract §1.5) |
 | B3 | CORS `exposedHeaders: Content-Disposition, Location`; production origin | F3 / F8 | `Content-Disposition` in contract §0.6 (P3). `Location` isn't mentioned; ask only if a screen needs it. Production origin open (D6) |
 | B4 | Upload limits exposed so the client checks match the server | F3 | In contract §9.3 (`uploadLimits`). Values still open (O4) |
 | B5 | Agreed response shapes for the student assessment detail, professor grid, answer review (with history) and solo usage (with period end) | F3–F7 | In contract §9.3, §9.5, §10.1, §13.2 |
 | B6 | Every list endpoint returns `PagedResponse` with server-side filters | F2 / F3 | In contract §0.4 and §9.5 |
-| B7 | Confirm the HTTP status of each new error code in §3.6 | each phase | Registry in contract §0.8; still check live per phase |
+| B7 | Confirm the HTTP status of each new error code in §3.6 | each phase | Registry in contract §0.8; still check live per phase. P1 codes LIVE: `PASSWORD_CHANGE_REQUIRED` 403, `COLLEGE_INACTIVE` 403, `COLLEGE_CODE_ALREADY_EXISTS` 409. `BULK_IMPORT_REJECTED` removed (P0). `RATE_LIMITED` moved to P8 |
 | B8 | Sort `GET /acts/{id}/sections` by natural section order on the server | any | Contract §3.2 makes the server the source of truth; verify live |
 
 ---
@@ -454,12 +458,14 @@ Status as of `Lexly-API-Contract.md` v1 (2026-10-13). "In contract" means propos
 
 ## 8. Immediate next steps
 
-1. F0.1–F0.4 in one branch (`feature/f0-cleanup`). These are small changes with no backend dependency.
-2. F0.6 test harness, seeded with the existing mappers and form parsers.
-3. F0.7: re-run the cookie checks against the live backend.
-4. Write and review each phase's UI spec in `Lexly-UI-Spec.md` before the phase starts (F0 and F1 are written).
-5. Agree on B1/B2 with the backend before Phase 1 starts, then start F1.1–F1.2 against MSW mocks.
-6. The acts and sections admin (F1.7) and case-law linking (F1.8) can start now against the existing `/admin/*` endpoints, which are still guarded by `ADMIN` until Phase 1.8 renames the role.
+Backend Phase 0 and Phase 1 are done, so F0 and F1 can be built against the real API (a local `lexly-backend` on `feature/phase1`), not mocks.
+
+1. **F0 first, urgently.** Against a P1 backend the current UI is broken for two groups: admins (the `ADMIN` checks never match `SUPERADMIN`) and any account with `mustChangePassword` (every call except `/users/me` returns `403 PASSWORD_CHANGE_REQUIRED`, including the seeded SUPERADMIN). F0.2 + F0.3 fix the first; F1.2 fixes the second, so pull F1.2 forward into the same branch.
+2. F0.1, F0.4, F0.5 on the same branch (`feature/f0-cleanup`).
+3. F0.6 test harness, seeded with the existing mappers and form parsers.
+4. F0.7: re-run the cookie checks against the live backend.
+5. F1 on `feature/f1-identity`: F1.1, F1.4, F1.5, F1.6, F1.10 (identity and SUPERADMIN), then F1.7, F1.8, F1.9 (content), then F1.11.
+6. Ship F1 only after `feature/phase1` is merged to backend `main` (§10 gate).
 
 ---
 

@@ -2,6 +2,37 @@
 
 ## Completed
 
+### 2026-10-13 — Docs: synced with backend Phase 0 and Phase 1
+
+**Status:** Done (docs only). No app behaviour changed.
+
+**Source:** `lexly-backend` Phase 0 (`0545ab9`, merged to `main` as PR #2) and Phase 1 (`ddac579`
+on `feature/phase1`, not merged yet). I read the commits, the DTOs and controllers, and the
+backend's contract copy.
+
+- **Contract:** `docs/Lexly-API-Contract.md` re-copied from the backend's
+  `Lexly-API-Contract_backend.md` at `ddac579`. P0 and P1 sections are now LIVE: per-row bulk
+  import, `page`/`size` validation, both login modes, `role` + `mustChangePassword` in auth
+  responses, change password and its gate, the extended `/users/me`, colleges and C_ADMINs,
+  the audit log, and `GET /admin/acts/{id}` and `GET /admin/sections/{id}`. `RATE_LIMITED` moved
+  to P8. `BULK_IMPORT_REJECTED` and `FOLLOWUP_LIMIT_REACHED` were removed.
+- **Plan:** backend state in the header; G1/G9 note that the current UI breaks on a P1 backend;
+  new G13 (old bulk shape, unused); F0.2/F0.3 drop the legacy role mapping; F1.1, F1.2, F1.7,
+  F1.9 and F1.10 use the live behaviour; B1, B2 and B7 marked LIVE; §8 next steps rewritten (F1.2
+  pulled into the F0 branch); the dev SUPERADMIN seed is noted under F1.
+- **UI spec:** no legacy mapping; change-password server messages mapped to copy; bulk-import
+  `400` cases and the unknown-act case; audit summaries rewritten to the `details` the backend
+  actually records (for example `USER_CREATED` has email and role, no name); U3 and U4 closed.
+- **Status report:** F0 and F1 marked Ready; the P1 breakage called out.
+- **Checked against the code, not only the contract:** `AuthResponse`, `LoginRequest`,
+  `ChangePasswordRequest`/`Response`, `CurrentUserResponse`, `CollegeResponse`,
+  `UpdateCollegeRequest` (`name` and `active` both required), `CreateCollegeRequest`,
+  `CreateCollegeAdminRequest`, `UserSummary`, `AuditEventResponse` and `BulkImportResult` match
+  the contract. Routes: `/superadmin/colleges/**` and `/superadmin/admins/**` (SUPERADMIN),
+  `/audit` (SUPERADMIN, C_ADMIN), `/admin/**` (SUPERADMIN).
+- **Not verified live:** a local backend was answering on :8080, but I didn't check which branch
+  it runs, and I made no calls against it.
+
 ### 2026-10-13 — Docs: frontend plan, UI spec, status report and API contract in sync
 
 **Status:** Done (docs only). Lint passes. No app behaviour changed.
@@ -604,22 +635,25 @@ _Nothing blocked._ The auth status-code check from the Register & Login entry wa
 From `docs/Lexly-Frontend-Implementation-Plan.md` §8, using its task IDs. Screen details are in
 `docs/Lexly-UI-Spec.md`.
 
-1. **F0 on `feature/f0-cleanup`** (no backend dependency):
+Backend Phase 0 and Phase 1 are done, so all of F0 and F1 can be built against a local backend
+on `feature/phase1`. The current UI breaks on that backend (roles renamed; gated accounts get
+`403 PASSWORD_CHANGE_REQUIRED`), so the role and password-change work comes first.
+
+1. **F0 on `feature/f0-cleanup`**, with F1.2 pulled in:
+   - F0.2 Role from `/users/me` after every login (drop `roleFromAccessToken`); five roles only.
+   - F0.3 `roles.ts`, `RequireRole`, role-driven nav with Library and Content sub-navs, NotFound
+     page, lazy areas.
+   - F1.2 `/change-password`, forced and voluntary; switch to the returned access token.
    - F0.1 Remove MCQ practice: `PracticeProgress`, the `practiceStats` flag, its DTOs and mocks;
      `/practice` becomes the "Solo practice — coming soon" placeholder; hide the Bare-Act Progress
      and Continue Learning cards (D3).
    - F0.4 Move the shared components from `pages/admin/` to `src/components/`.
-   - F0.2 Role from `/users/me` after every login (drop `roleFromAccessToken`).
-   - F0.3 `roles.ts`, `RequireRole`, role-driven nav with Library and Content sub-navs, NotFound
-     page, lazy areas.
    - F0.5 Client: `FormData`, `patch`, `upload`, `download`, `AbortSignal`, `errors.ts`.
    - F0.6 Vitest, Testing Library, MSW, Playwright, axe, CI workflow.
    - F0.7 Re-run the 2026-10-09 cookie checks against the live backend; fix the in-flight-refresh
      sign-out (G10).
-2. **F1.7 Acts & sections admin** and **F1.8 case-law ↔ section linking**: their endpoints are
-   live, so they can start now. Edit act waits for `GET /admin/acts/{id}`.
-3. **Before backend Phase 1:** agree B1/B2, then build F1.1 (two-mode login) and F1.2 (change
-   password) against MSW mocks of the contract.
-4. **F1.9 Bulk import:** build against the Phase 0 per-row result shape (mocks until it ships).
-5. Write the F2 UI spec before Phase 2 starts.
-6. Later (D4): choose an app-wide dark-mode approach.
+2. **F1 on `feature/f1-identity`:** F1.1 two-mode login, F1.4 role homes, F1.5 Profile, F1.6
+   colleges + C_ADMINs, F1.10 audit log, then F1.7 acts & sections admin, F1.8 case-law linking,
+   F1.9 bulk import (per-row shape), F1.11 tests. Ship after `feature/phase1` merges.
+3. Write the F2 UI spec before Phase 2 starts.
+4. Later (D4): choose an app-wide dark-mode approach.

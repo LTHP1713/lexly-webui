@@ -62,7 +62,7 @@ List endpoints that can grow return `PagedResponse<T>`:
 { "content": [], "page": 0, "size": 20, "totalElements": 0, "totalPages": 0 }
 ```
 
-- Query `page` (0-based, default 0) and `size` (default 20, max 100). **Proposed for all endpoints (P0):** out-of-range values → `400 VALIDATION_ERROR`. Today `/sections/search` and `/caselaws` don't validate them.
+- Query `page` (0-based, default 0) and `size` (default 20, max 100). Out-of-range or non-numeric values → `400 VALIDATION_ERROR` (`page: must be greater than or equal to 0`, `size: invalid value`). New paged endpoints must do the same.
 - Sorting: `sort=<field>,<asc|desc>`, with a whitelist per endpoint. An unknown field → 400.
 - Small, bounded lists (acts, sections of an act, subjects, a college's admins) are returned as plain arrays.
 
@@ -77,7 +77,7 @@ List endpoints that can grow return `PagedResponse<T>`:
 
 ### 0.7 Roles
 
-| Today (LIVE) | After Phase 1 (V15 remap) |
+| Before Phase 1 | Since Phase 1 (V16 remap, LIVE) |
 |---|---|
 | `ADMIN` | `SUPERADMIN` |
 | `STUDENT`, `LAWYER` | `S_STUDENT` |
@@ -96,12 +96,12 @@ Each endpoint below lists the roles that may call it. Other roles get `403 FORBI
 | `EMAIL_ALREADY_EXISTS` | 409 | LIVE | Register / create user with a used email |
 | `SHORT_CODE_ALREADY_EXISTS` | 409 | LIVE | Act short code taken |
 | `SECTION_NUMBER_ALREADY_EXISTS` | 409 | LIVE | Section number taken within the act |
-| `BULK_IMPORT_REJECTED` | 422 | LIVE → P0 (removed) | All-or-nothing bulk import found problems |
+| `BULK_IMPORT_REJECTED` | 422 | REMOVED (P0) | Old all-or-nothing bulk import; replaced by per-row outcomes (§5.5) |
 | `INTERNAL_ERROR` | 500 | LIVE | Unhandled |
-| `RATE_LIMITED` | 429 | PROPOSED (P1) | Redis limiter rejected the call (login, uploads, AI) |
-| `PASSWORD_CHANGE_REQUIRED` | 403 | PROPOSED (P1) | `mustChangePassword` is set and the endpoint isn't allowed (§2.4) |
-| `COLLEGE_INACTIVE` | 403 | PROPOSED (P1) | Login/refresh for a user whose college is deactivated, after a correct password |
-| `COLLEGE_CODE_ALREADY_EXISTS` | 409 | ADDED (P1) | College code taken |
+| `RATE_LIMITED` | 429 | PROPOSED (P8) | Redis limiter rejected the call (login, uploads, AI) |
+| `PASSWORD_CHANGE_REQUIRED` | 403 | LIVE (P1) | `mustChangePassword` is set and the endpoint isn't allowed (§1.6) |
+| `COLLEGE_INACTIVE` | 403 | LIVE (P1) | Login/refresh for a user whose college is deactivated, after a correct password |
+| `COLLEGE_CODE_ALREADY_EXISTS` | 409 | ADDED, LIVE (P1) | College code taken |
 | `LOGIN_ID_ALREADY_EXISTS` | 409 | ADDED (P2) | Roll no / employee ID already used in the college |
 | `SUBJECT_CODE_ALREADY_EXISTS` | 409 | ADDED (P2) | Subject code already used in the college |
 | `IMPORT_FILE_INVALID` | 400 | PROPOSED (P2) | Unreadable file, wrong headers, > 2,000 rows, wrong format |
@@ -116,7 +116,7 @@ Each endpoint below lists the roles that may call it. Other roles get `403 FORBI
 | `PLAN_REQUIRED` | 402 | PROPOSED (P7) | Solo feature without an `ACTIVE` plan |
 | `QUOTA_EXCEEDED` | 429 | PROPOSED (P7) | 60 generations already used this month |
 | `ATTEMPT_LIMIT_REACHED` | 409 | PROPOSED (P7) | 4th evaluated attempt on a solo question |
-| `FOLLOWUP_LIMIT_REACHED` | — | REMOVED (P0) | Old AI design; delete from `ErrorCodes` |
+| `FOLLOWUP_LIMIT_REACHED` | — | REMOVED (P0) | Old AI design; deleted from `ErrorCodes` |
 
 > Note on 401 vs. validation: the web client treats **every** 401 as "refresh the session and retry". Endpoints that check a password for an already-signed-in user (change password) must therefore return `400 VALIDATION_ERROR`, not 401, for a wrong current password.
 
@@ -134,8 +134,8 @@ All return `429 RATE_LIMITED` with a `Retry-After` header (seconds).
 
 ## 1. Auth
 
-### 1.1 `POST /auth/register` — LIVE → P1
-Public. Always creates `STUDENT` today and `S_STUDENT` from Phase 1. Any `role` field in the body is ignored.
+### 1.1 `POST /auth/register` — LIVE (P1)
+Public. Always creates `S_STUDENT`. Any `role` field in the body is ignored.
 
 Request:
 ```json
@@ -155,21 +155,21 @@ Request:
   "userId": "7b1e4c0a-2f4d-4f7e-9a51-0c3a1f6d2b11",
   "email": "priya@example.com",
   "fullName": "Priya Sharma",
+  "role": "S_STUDENT",
+  "mustChangePassword": false,
   "accessToken": "eyJ…",
   "refreshToken": "q9Zr…"
 }
 ```
 
-**P1 change:** the response adds `role` and `mustChangePassword` (see §1.2), so the client can route without decoding the JWT.
+`role` and `mustChangePassword` (added in P1) let the client route without decoding the JWT.
 
 Errors: `400 VALIDATION_ERROR`, `409 EMAIL_ALREADY_EXISTS`.
 
-### 1.2 `POST /auth/login` — LIVE → P1
+### 1.2 `POST /auth/login` — LIVE (P1)
 Public.
 
-**LIVE** request: `{ "email", "password" }`. Response: same as register, `200`.
-
-**P1** request — exactly one of two shapes:
+Request — exactly one of two shapes (before P1 only the email shape existed):
 ```json
 { "email": "admin@nlsiu.ac.in", "password": "…" }
 ```
@@ -204,7 +204,10 @@ JWT claims (P1): `sub`, `role`, `collegeId` (null for SUPERADMIN and S_STUDENT),
 Errors:
 - `401 UNAUTHORIZED`, `"Invalid credentials"`, for **every** credential failure: unknown user, wrong password, email login for a college account, college login for an email account, inactive user, unknown college code.
 - `403 COLLEGE_INACTIVE` only **after** a correct password, for C_* users of a deactivated college.
-- `429 RATE_LIMITED`.
+- `400 VALIDATION_ERROR` when both or neither login mode is sent.
+- `429 RATE_LIMITED` (P8).
+
+Every rejected login is recorded in the audit log as `LOGIN_FAILED` (§7).
 
 ### 1.3 `POST /auth/refresh` — LIVE
 Public. The refresh token comes from the cookie (browsers) or the body `{ "refreshToken" }` (mobile). The body wins if both are present. The token is rotated: the old one is revoked.
@@ -216,15 +219,15 @@ Public. The refresh token comes from the cookie (browsers) or the body `{ "refre
 
 Errors:
 - `400 VALIDATION_ERROR` — no token in the body or cookie (`"refreshToken: must not be blank"`)
-- `401 UNAUTHORIZED` — unknown, expired or revoked token
-- **P1:** `403 COLLEGE_INACTIVE`
+- `401 UNAUTHORIZED` — unknown, expired or revoked token, or an inactive user
+- `403 COLLEGE_INACTIVE` (P1)
 
 Access token TTL is 15 min; refresh token TTL is 30 days.
 
 ### 1.4 `POST /auth/logout` — LIVE
 Public, idempotent. Revokes the token from the body or cookie if there is one, and always clears the cookie. `204 No Content`.
 
-### 1.5 `POST /auth/change-password` — PROPOSED (P1)
+### 1.5 `POST /auth/change-password` — LIVE (P1)
 Any signed-in role. Allowed while `mustChangePassword` is set.
 
 Request:
@@ -242,33 +245,37 @@ Request:
 { "accessToken": "eyJ…", "refreshToken": "n3wT…", "mustChangePassword": false }
 ```
 
-Errors: `400 VALIDATION_ERROR`, `429 RATE_LIMITED`.
+Errors: `400 VALIDATION_ERROR` (messages `currentPassword: is incorrect`, `newPassword: must be different from the current password`, `newPassword: must not be your login ID`), `429 RATE_LIMITED` (P8).
 
-### 1.6 `PASSWORD_CHANGE_REQUIRED` gate — PROPOSED (P1)
-While `mustChangePassword` is true, every endpoint except `POST /auth/change-password`, `POST /auth/logout`, `POST /auth/refresh` and `GET /users/me` returns `403 PASSWORD_CHANGE_REQUIRED`.
+### 1.6 `PASSWORD_CHANGE_REQUIRED` gate — LIVE (P1)
+While `mustChangePassword` is true, every endpoint except `POST /auth/change-password`, `POST /auth/logout`, `POST /auth/refresh` and `GET /users/me` returns `403 PASSWORD_CHANGE_REQUIRED`. (`/auth/login` and `/auth/register` are public and never gated either.)
+
+The flag is read from the access token. The fresh pair returned by change-password lifts the gate at once. When an administrator resets a password, the user's refresh tokens are revoked, so the gate applies from their next login, at the latest when the current access token expires (15 min).
 
 ---
 
 ## 2. Current user
 
-### 2.1 `GET /users/me` — LIVE → P1
+### 2.1 `GET /users/me` — LIVE (P1)
 Any signed-in role. `Cache-Control: no-store`.
 
-**LIVE:**
 ```json
 {
   "id": "7b1e4c0a-…",
-  "email": "priya@example.com",
-  "firstName": "Priya",
-  "fullName": "Priya Sharma",
-  "role": "STUDENT",
+  "email": "arjun@nlsiu.ac.in",
+  "firstName": "Arjun",
+  "fullName": "Arjun Rao",
+  "role": "C_STUDENT",
+  "mustChangePassword": false,
+  "loginId": "21BAL042",
+  "college": { "id": "…", "code": "NLSIU", "name": "National Law School of India University" },
   "createdAt": "2026-09-23T10:15:00Z"
 }
 ```
 
 `firstName` is the first whitespace-separated word of `fullName`, or `null` if `fullName` is blank. It is never derived from the email.
 
-**P1 adds:**
+Fields added in P1:
 
 | Field | Type | Notes |
 |---|---|---|
@@ -412,7 +419,7 @@ All signed-in roles. LIVE.
 
 ## 5. Content administration
 
-Role: `ADMIN` today, `SUPERADMIN` from P1 (TDD §7.1). All LIVE unless marked otherwise. Writes return `no-store`.
+Role: `SUPERADMIN` (TDD §7.1; `ADMIN` before P1). All LIVE unless marked otherwise. Writes return `no-store`.
 
 ### 5.1 Acts
 
@@ -431,7 +438,7 @@ Role: `ADMIN` today, `SUPERADMIN` from P1 (TDD §7.1). All LIVE unless marked ot
 
 Rules: `title` required, ≤ 255; `shortCode` ≤ 50, unique (`409 SHORT_CODE_ALREADY_EXISTS`); `description` optional.
 
-**ADDED (P1):** `GET /admin/acts/{actId}` → `ActResponse` (the admin form needs `description`, which `GET /acts` doesn't return).
+**ADDED, LIVE (P1):** `GET /admin/acts/{actId}` → `ActResponse` (the admin form needs `description`, which `GET /acts` doesn't return).
 
 ### 5.2 Sections
 
@@ -469,7 +476,7 @@ Rules: `title` required, ≤ 255; `shortCode` ≤ 50, unique (`409 SHORT_CODE_AL
 
 `AdminSectionResponse` = `{ id, bareActId, sectionNumber, title, bodyText, createdAt, inSimpleWords, provisionMeaning[], illustrations[], exceptions[], keyLegalTerms[] }`. Illustration and exception items here also carry `sectionId` and `displayOrder`.
 
-**ADDED (P1):** `GET /admin/sections/{sectionId}` → `AdminSectionResponse`, so the editor loads exactly what it will `PUT`.
+**ADDED, LIVE (P1):** `GET /admin/sections/{sectionId}` → `AdminSectionResponse`, so the editor loads exactly what it will `PUT`.
 
 ### 5.3 Illustrations & exceptions (per item)
 
@@ -535,7 +542,7 @@ Reorder rule: `orderedIds` must be **exactly** the current ids of that section (
 
 Sequence numbers (`issueNumber` etc.) are assigned by the server from list order and never sent.
 
-### 5.5 Bulk JSON import — LIVE → P0
+### 5.5 Bulk JSON import — LIVE
 
 | Method & path | Body | Limits |
 |---|---|---|
@@ -543,12 +550,7 @@ Sequence numbers (`issueNumber` etc.) are assigned by the server from list order
 | `POST /admin/bulk/sections` | `{ "actShortCode": "ICA", "sections": [ { sectionNumber, title, bodyText, illustrations: [string], exceptions: [string] } ] }` | ≤ 100 sections; ≤ 50 illustrations/exceptions each |
 | `POST /admin/bulk/caselaws` | `{ "caseLaws": [ { …CaseLawRequest, "citation" required, "content": CaseLawContentRequest, "sections": [ { actShortCode, sectionNumber } ] } ] }` | ≤ 10 cases; ≤ 50 section refs each |
 
-**LIVE behaviour (all-or-nothing):** any problem → `422 BULK_IMPORT_REJECTED`, `"N problem(s), nothing was inserted: items[i].field: reason; …"`. Success → `201`:
-```json
-{ "counts": { "acts": 2 }, "created": [{ "id": "…", "key": "ICA" }] }
-```
-
-**P0 behaviour (per row, TDD §7.1) — PROPOSED.** Each row runs in its own transaction. The response is always `200` unless the envelope itself is invalid (`400`, e.g. empty list or too many rows):
+**Per-row behaviour (TDD §7.1), live since P0.** Each row runs in its own transaction. The response is always `200` unless the envelope itself is invalid (`400`: empty list, too many rows, a `null` row, missing `actShortCode`, or a body that can't be parsed, such as an unknown `importance`):
 ```json
 {
   "summary": { "total": 12, "created": 10, "rejected": 1, "failed": 1 },
@@ -566,13 +568,17 @@ Sequence numbers (`issueNumber` etc.) are assigned by the server from list order
 | `index` | 0-based position in the request list |
 | `key` | acts: `shortCode`; sections: `"{actShortCode}-{sectionNumber}"`; case laws: `citation` |
 | `status` | `CREATED` \| `REJECTED` (validation, duplicate in batch or DB, missing parent) \| `FAILED` (unexpected) |
-| `errors` | `path: reason` strings, with paths relative to the row |
+| `errors` | `path: reason` strings, with paths relative to the row (`content.issues[0].question: must not be blank`). A `REJECTED` row lists every problem it has |
+
+- Within a batch, the first row with a key is the original; later rows with the same key are `REJECTED` as `"<field>: '<key>' is a duplicate of row <index>"`.
+- Sections: if `actShortCode` matches no act, **every** row is `REJECTED` with `actShortCode: no bare act found with short code '…'` (the act is each row's parent).
+- Case laws: an unknown section reference rejects the row with `sections[j]: no section '…' in act '…'`.
 
 This `BulkImportResult` shape is reused by user imports (§8.3), which add `CONVERTED`.
 
 ---
 
-## 6. Colleges & C_ADMIN accounts (SUPERADMIN) — PROPOSED (P1)
+## 6. Colleges & C_ADMIN accounts (SUPERADMIN) — LIVE (P1)
 
 ### 6.1 Colleges
 
@@ -601,8 +607,8 @@ This `BulkImportResult` shape is reused by user imports (§8.3), which add `CONV
 | `code` | required, 2–20 chars, `[A-Z0-9]+` after upper-casing, unique (`409 COLLEGE_CODE_ALREADY_EXISTS`). **Immutable** after creation, because it is part of every college login |
 | `name` | required, ≤ 255 |
 | `active` | `false` blocks login and refresh for every user of the college (`COLLEGE_INACTIVE`). Existing access tokens expire within 15 min |
-| `q` | matches code or name |
-| sort | whitelist `name`, `code`, `createdAt` |
+| `q` | matches code or name, case-insensitively |
+| sort | whitelist `name`, `code`, `createdAt`, direction `asc` (default) or `desc`; default `name,asc`. Anything else → `400` |
 
 There is no delete; deactivate instead.
 
@@ -627,7 +633,7 @@ There is no delete; deactivate instead.
 
 ---
 
-## 7. Audit log — PROPOSED (P1)
+## 7. Audit log — LIVE (P1)
 
 `GET /audit?collegeId=&action=&actorId=&entityType=&from=&to=&page=&size=`
 
@@ -649,7 +655,9 @@ Roles: SUPERADMIN (all colleges; `collegeId` optional) and C_ADMIN (own college 
 
 - `actor` is `null` for system events or deleted users.
 - `action` values (from TDD §11.1): `LOGIN_FAILED`, `PASSWORD_RESET`, `PASSWORD_CHANGED`, `COLLEGE_CREATED`, `COLLEGE_UPDATED`, `USER_CREATED`, `USER_UPDATED`, `USER_REMOVED`, `USER_IMPORT`, `CONTENT_IMPORT`, `SUBJECT_CREATED`, `SUBJECT_UPDATED`, `SUBJECT_DELETED`, `SUBJECT_PROFESSORS_CHANGED`, `ASSESSMENT_PUBLISHED`, `ASSESSMENT_REMOVED`, `AI_EVALUATION_REQUESTED`, `GRADE_EDITED`, `GRADE_PUBLISHED`, `SOLO_PLAN_CHANGED`, `SOLO_QUOTA_RESET`.
-- `details` is free-form JSON. It never contains passwords, tokens, answer text or feedback.
+- `entityType` values: `USER`, `COLLEGE`, `BARE_ACT`, `SECTION`, `CASE_LAW`, `SUBJECT`, `ASSESSMENT`, `GRADE`, `SOLO_PLAN`. An unknown `action` or `entityType` filter → `400 VALIDATION_ERROR`.
+- `details` is free-form JSON. It never contains passwords, tokens, answer text or feedback. `LOGIN_FAILED` has `{ "identifier": "<email or CODE:loginId>", "reason": "BAD_CREDENTIALS" | "COLLEGE_INACTIVE" }`, no actor, and the matched account as `entityId` (or `null`).
+- Recorded since P1: `LOGIN_FAILED`, `PASSWORD_CHANGED`, `PASSWORD_RESET`, `COLLEGE_CREATED`, `COLLEGE_UPDATED`, `USER_CREATED` / `USER_REMOVED` (C_ADMINs), `CONTENT_IMPORT` (summary only). The others are recorded from the phase that adds their feature.
 - Rows are purged after 30 days.
 
 ---
@@ -1256,8 +1264,8 @@ Placeholder. Designed in the Phase 8 payment addendum. The client contract will 
 
 | Endpoint | Removed by |
 |---|---|
-| `/practice/**` (question banks, attempts, responses, submit, result) | Phase 0 (TDD §3.1) |
-| `/admin/practice/**` | Phase 0 |
+| `/practice/**` (question banks, attempts, responses, submit, result) | Phase 0, V15 (done) |
+| `/admin/practice/**` | Phase 0 (done) |
 | `/subscriptions/**` (plans, me, checkout, verify, cancel, webhook) | V13 (done) |
 | `PUT /admin/caselaws/{id}/free-flag`, `PUT /admin/sections/{id}/free-flag` | V13 (done) |
 | `/admin/caselaws/{id}/summary` | V11 (done) |
@@ -1286,3 +1294,5 @@ The `isFree` field and the `PRO_REQUIRED` error no longer exist anywhere.
 | Date | Change |
 |---|---|
 | 2026-10-13 | First version. LIVE sections documented from `feature/epic1`; P0–P7 proposed from TDD v2 |
+| 2026-10-13 | P0 implemented: per-row bulk import (§5.5) live; practice endpoints, `BULK_IMPORT_REJECTED` and `FOLLOWUP_LIMIT_REACHED` removed; `page`/`size` validated (§0.4) |
+| 2026-10-13 | P1 implemented: five roles, both login modes, `role`/`mustChangePassword` in auth responses, change-password and its gate, extended `/users/me`, colleges and C_ADMIN accounts (§6), audit log (§7), content admin re-scoped to SUPERADMIN. The P1 ADDED items (`GET /admin/acts/{id}`, `GET /admin/sections/{id}`, `GET /superadmin/colleges/{id}`, `COLLEGE_CODE_ALREADY_EXISTS`) are live but still need sign-off. `RATE_LIMITED` moved to P8 to match Plan 8.3. O1 and O2 implemented with their proposed defaults |
