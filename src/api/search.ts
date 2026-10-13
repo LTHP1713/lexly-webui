@@ -1,6 +1,6 @@
 /**
- * Universal search. The response type is the target `GET /search` contract
- * (docs/HOME_DASHBOARD_API_CONTRACT.md §B). Until that endpoint exists, `universalSearch` builds
+ * Universal search. The response type is the old target `GET /search` contract, which isn't in
+ * TDD v2 (docs/Lexly-API-Contract.md §15; the flag stays off, decision D3). Until that endpoint exists, `universalSearch` builds
  * the same shape by fanning out to the existing `/sections/search`, `/caselaws?q=` and `/acts`
  * endpoints. Switching over is the `backendFeatures.unifiedSearch` flag — callers don't change.
  */

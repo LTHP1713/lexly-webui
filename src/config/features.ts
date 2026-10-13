@@ -1,9 +1,8 @@
 /**
- * Backend endpoints the Home dashboard is built against but which don't exist in
- * `lexly-backend` yet (see docs/HOME_DASHBOARD_API_CONTRACT.md). Each flag is off by default:
- * while off, the matching hook reports `unavailable` without making a request and the UI shows
- * its "not tracked yet" state. Once the Spring Boot endpoint ships, set the env var to `true` —
- * no component changes are needed.
+ * Backend endpoints the Home dashboard was built against. Apart from `/users/me`, they aren't in
+ * TDD v2 and won't be built (docs/Lexly-API-Contract.md §15), so their flags stay off (decision
+ * D3). While off, the matching hook reports `unavailable` without making a request and the UI shows
+ * its "not tracked yet" state. Setting an env var to `true` needs no component changes.
  */
 function flag(value: string | undefined): boolean {
   return value === 'true';
