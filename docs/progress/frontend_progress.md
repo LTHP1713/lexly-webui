@@ -2,6 +2,30 @@
 
 ## Completed
 
+### 2026-10-13 — Docs: frontend plan, UI spec, status report and API contract in sync
+
+**Status:** Done (docs only). Lint passes. No app behaviour changed.
+
+- **Added**
+  - `docs/Lexly-API-Contract.md`: copy of the backend repo's contract, which is the master.
+    Re-copy it when it changes.
+  - `docs/Lexly-Frontend-Implementation-Plan.md`: the phase plan F0–F8.
+  - `docs/Lexly-UI-Spec.md`: layout, data, states and copy per screen. F0 and F1 are written;
+    F2–F8 are stubs, each written before its phase starts.
+  - `docs/Lexly-Frontend-Status-Report.md`: what is built against the plan, task by task.
+- **Plan updated from the contract**
+  - Backend asks B1–B8 now have a Status column (B1 is a nested `college` object in `/users/me`).
+  - Three `*_ALREADY_EXISTS` codes added to the error catalogue.
+  - F3–F7 use `serverTime`, `uploadLimits`, `history`, `generatedAt` and `resetsAt`.
+  - F1.7: the section editor saves with one full-replace `PUT`.
+- **Removed**
+  - `docs/HOME_DASHBOARD_API_CONTRACT.md`, superseded by the contract (its §15 lists the
+    dropped endpoints).
+  - The duplicate `Lexly-API-Contract_backend.md`.
+- **Comments:** the code comments and `.env.example` that cited the old Home contract now point
+  at `Lexly-API-Contract.md` §15.
+- **Next Up:** rewritten from the plan.
+
 ### 2026-10-11 — Dev: API data no longer stale for up to 5 minutes
 
 The backend sends `Cache-Control: max-age=300, private` on content GETs, so after a backend
@@ -577,11 +601,25 @@ _Nothing blocked._ The auth status-code check from the Register & Login entry wa
 
 ## Next Up
 
-- Add an "Upgrade to Pro" action to the locked-section card once the subscriptions screen exists.
-- Choose an app-wide dark-mode approach (see the Content entry's notes).
-- Re-run the 2026-10-09 browser checks against the live backend (the cookie flow was verified
-  only against a mock).
-- Backend: implement docs/HOME_DASHBOARD_API_CONTRACT.md (order: §G/§D/§F → §A → §C → §B), then
-  flip the matching `VITE_API_*` flags.
-- Build the Practice flow (question banks → attempt → result) against §H–§K.
-- Build the Subjects feature and repoint the "Subjects" nav item.
+From `docs/Lexly-Frontend-Implementation-Plan.md` §8, using its task IDs. Screen details are in
+`docs/Lexly-UI-Spec.md`.
+
+1. **F0 on `feature/f0-cleanup`** (no backend dependency):
+   - F0.1 Remove MCQ practice: `PracticeProgress`, the `practiceStats` flag, its DTOs and mocks;
+     `/practice` becomes the "Solo practice — coming soon" placeholder; hide the Bare-Act Progress
+     and Continue Learning cards (D3).
+   - F0.4 Move the shared components from `pages/admin/` to `src/components/`.
+   - F0.2 Role from `/users/me` after every login (drop `roleFromAccessToken`).
+   - F0.3 `roles.ts`, `RequireRole`, role-driven nav with Library and Content sub-navs, NotFound
+     page, lazy areas.
+   - F0.5 Client: `FormData`, `patch`, `upload`, `download`, `AbortSignal`, `errors.ts`.
+   - F0.6 Vitest, Testing Library, MSW, Playwright, axe, CI workflow.
+   - F0.7 Re-run the 2026-10-09 cookie checks against the live backend; fix the in-flight-refresh
+     sign-out (G10).
+2. **F1.7 Acts & sections admin** and **F1.8 case-law ↔ section linking**: their endpoints are
+   live, so they can start now. Edit act waits for `GET /admin/acts/{id}`.
+3. **Before backend Phase 1:** agree B1/B2, then build F1.1 (two-mode login) and F1.2 (change
+   password) against MSW mocks of the contract.
+4. **F1.9 Bulk import:** build against the Phase 0 per-row result shape (mocks until it ships).
+5. Write the F2 UI spec before Phase 2 starts.
+6. Later (D4): choose an app-wide dark-mode approach.

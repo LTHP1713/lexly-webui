@@ -1,7 +1,7 @@
 /**
  * `/users/me/**` — the authenticated student's profile and learning progress. Only `GET /users/me`
- * exists in lexly-backend so far: the request/response types below mirror
- * docs/HOME_DASHBOARD_API_CONTRACT.md exactly, and each call is gated by a flag in
+ * exists in lexly-backend so far: the other request/response types below mirror the old
+ * Home dashboard contract, which TDD v2 dropped (docs/Lexly-API-Contract.md §15), and each call is gated by a flag in
  * `src/config/features.ts`. Raw DTOs are mapped to UI models here so components never see
  * backend field quirks.
  */
