@@ -153,6 +153,29 @@ export async function logoutSession(): Promise<void> {
   }
 }
 
+/** A non-2xx response → `ApiError`, from the `{ error, message }` body when it is JSON. */
+function errorFromBody(status: number, text: string, statusText: string): ApiError {
+  let body: ApiErrorBody = {};
+  try {
+    body = JSON.parse(text) as ApiErrorBody;
+  } catch {
+    // Not JSON; fall back to defaults below.
+  }
+  return new ApiError(body.error ?? 'UNKNOWN_ERROR', body.message ?? statusText, status);
+}
+
+function jsonBody(body: unknown): BodyInit | undefined {
+  if (body === undefined) return undefined;
+  return body instanceof FormData ? body : JSON.stringify(body);
+}
+
+/** True when a 401 should be answered with one silent refresh + retry. */
+async function refreshAfter401(sentToken: string | null): Promise<boolean> {
+  // Another request may already have rotated the token while this one was in flight.
+  const current = sessionStore.getAccessToken();
+  return (current !== null && current !== sentToken) || refreshSession();
+}
+
 async function request<T>(path: string, init: RequestOptions = {}, isRetry = false): Promise<T> {
   const { skipAuthHandling, headers, ...rest } = init;
   const accessToken = skipAuthHandling ? null : sessionStore.getAccessToken();
@@ -165,7 +188,7 @@ async function request<T>(path: string, init: RequestOptions = {}, isRetry = fal
       ...(isGet && rest.cache === undefined ? getCacheMode() : {}),
       headers: {
         Accept: 'application/json',
-        ...(rest.body ? { 'Content-Type': 'application/json' } : {}),
+        ...(rest.body && !(rest.body instanceof FormData) ? { 'Content-Type': 'application/json' } : {}),
         ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
         ...headers,
       },
@@ -174,23 +197,12 @@ async function request<T>(path: string, init: RequestOptions = {}, isRetry = fal
     throw new ApiError('NETWORK_ERROR', 'Could not reach the server. Check your connection and try again.', 0);
   }
 
-  if (response.status === 401 && !skipAuthHandling && !isRetry) {
-    // Another request may already have rotated the token while this one was in flight.
-    const current = sessionStore.getAccessToken();
-    const refreshed = (current !== null && current !== accessToken) || (await refreshSession());
-    if (refreshed) {
-      return request<T>(path, init, true);
-    }
+  if (response.status === 401 && !skipAuthHandling && !isRetry && (await refreshAfter401(accessToken))) {
+    return request<T>(path, init, true);
   }
 
   if (!response.ok) {
-    let body: ApiErrorBody = {};
-    try {
-      body = (await response.json()) as ApiErrorBody;
-    } catch {
-      // Response body wasn't JSON; fall back to defaults below.
-    }
-    throw new ApiError(body.error ?? 'UNKNOWN_ERROR', body.message ?? response.statusText, response.status);
+    throw errorFromBody(response.status, await response.text().catch(() => ''), response.statusText);
   }
 
   if (response.status === 204) {
@@ -206,9 +218,111 @@ async function request<T>(path: string, init: RequestOptions = {}, isRetry = fal
  */
 export const apiClient = {
   get: <T>(path: string, init?: RequestOptions) => request<T>(path, { ...init, method: 'GET' }),
+  /** A `FormData` body is sent as multipart (the browser sets the boundary); anything else as JSON. */
   post: <T>(path: string, body?: unknown, init?: RequestOptions) =>
-    request<T>(path, { ...init, method: 'POST', body: body !== undefined ? JSON.stringify(body) : undefined }),
+    request<T>(path, { ...init, method: 'POST', body: jsonBody(body) }),
   put: <T>(path: string, body?: unknown, init?: RequestOptions) =>
-    request<T>(path, { ...init, method: 'PUT', body: body !== undefined ? JSON.stringify(body) : undefined }),
+    request<T>(path, { ...init, method: 'PUT', body: jsonBody(body) }),
+  patch: <T>(path: string, body?: unknown, init?: RequestOptions) =>
+    request<T>(path, { ...init, method: 'PATCH', body: jsonBody(body) }),
   delete: <T>(path: string, init?: RequestOptions) => request<T>(path, { ...init, method: 'DELETE' }),
+  upload,
+  download,
 };
+
+// ---------- Files ----------
+
+export interface UploadOptions {
+  method?: 'POST' | 'PUT';
+  /** 0–1, from the upload's `progress` events (only when the length is computable). */
+  onProgress?: (fraction: number) => void;
+  signal?: AbortSignal;
+}
+
+/**
+ * Multipart upload with progress, on `XMLHttpRequest` because `fetch` reports no upload progress.
+ * No manual `Content-Type` (the browser adds the boundary). Same rules as `request`: bearer
+ * header, one silent refresh + retry on a 401, `ApiError` on failure, and `ABORTED` on abort.
+ */
+async function upload<T>(path: string, body: FormData, options: UploadOptions = {}, isRetry = false): Promise<T> {
+  const accessToken = sessionStore.getAccessToken();
+  const result = await new Promise<{ status: number; text: string; statusText: string }>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open(options.method ?? 'POST', `${API_BASE_URL}${path}`);
+    xhr.setRequestHeader('Accept', 'application/json');
+    if (accessToken) xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) options.onProgress?.(event.loaded / event.total);
+    };
+    xhr.onload = () => resolve({ status: xhr.status, text: xhr.responseText, statusText: xhr.statusText });
+    xhr.onerror = () =>
+      reject(new ApiError('NETWORK_ERROR', 'Could not reach the server. Check your connection and try again.', 0));
+    xhr.onabort = () => reject(new ApiError('ABORTED', 'The upload was cancelled.', 0));
+    if (options.signal) {
+      if (options.signal.aborted) {
+        xhr.abort();
+        return;
+      }
+      options.signal.addEventListener('abort', () => xhr.abort(), { once: true });
+    }
+    xhr.send(body);
+  });
+
+  if (result.status === 401 && !isRetry && (await refreshAfter401(accessToken))) {
+    return upload<T>(path, body, options, true);
+  }
+  if (result.status < 200 || result.status >= 300) {
+    throw errorFromBody(result.status, result.text, result.statusText);
+  }
+  return (result.status === 204 || !result.text ? undefined : JSON.parse(result.text)) as T;
+}
+
+export interface Download {
+  blob: Blob;
+  /** From `Content-Disposition`; null when the server sent none. */
+  filename: string | null;
+}
+
+/**
+ * A file from an access-checked endpoint (a plain `<a href>` can't send the bearer header).
+ * Never cached (`no-store`, plan §9.4).
+ */
+async function download(path: string, options: { signal?: AbortSignal } = {}, isRetry = false): Promise<Download> {
+  const accessToken = sessionStore.getAccessToken();
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      cache: 'no-store',
+      signal: options.signal,
+      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+    });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      throw new ApiError('ABORTED', 'The download was cancelled.', 0);
+    }
+    throw new ApiError('NETWORK_ERROR', 'Could not reach the server. Check your connection and try again.', 0);
+  }
+  if (response.status === 401 && !isRetry && (await refreshAfter401(accessToken))) {
+    return download(path, options, true);
+  }
+  if (!response.ok) {
+    throw errorFromBody(response.status, await response.text().catch(() => ''), response.statusText);
+  }
+  return { blob: await response.blob(), filename: filenameFrom(response.headers.get('Content-Disposition')) };
+}
+
+/** `inline; filename="a b.pdf"`, or RFC 5987 `filename*=UTF-8''a%20b.pdf` (preferred when both are sent). */
+export function filenameFrom(disposition: string | null): string | null {
+  if (!disposition) return null;
+  const extended = /filename\*\s*=\s*[^']*'[^']*'([^;]+)/i.exec(disposition);
+  if (extended) {
+    try {
+      return decodeURIComponent(extended[1].trim());
+    } catch {
+      // Fall through to the plain parameter.
+    }
+  }
+  const plain = /filename\s*=\s*(?:"([^"]*)"|([^;]+))/i.exec(disposition);
+  const name = (plain?.[1] ?? plain?.[2] ?? '').trim();
+  return name || null;
+}
