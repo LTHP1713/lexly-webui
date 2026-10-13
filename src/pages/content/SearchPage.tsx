@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { searchSections } from '@/api/content';
 import { ErrorState, LoadingState } from '@/components/QueryStates';
+import { LibrarySubNav } from '@/components/SubNav';
 import { useApiQuery } from '@/hooks/useApiQuery';
 import { sectionLabel, type SectionLinkState } from './navigation';
 import { HighlightedSnippet } from './HighlightedSnippet';
@@ -62,6 +63,7 @@ export function SearchPage() {
   return (
     <>
       <h1 className={styles.title}>Search sections</h1>
+      <LibrarySubNav />
 
       <form role="search" className={styles.searchForm} onSubmit={handleSubmit}>
         <label htmlFor="section-search" className={styles.searchLabel}>

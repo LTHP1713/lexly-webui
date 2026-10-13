@@ -6,11 +6,10 @@
  */
 import { ApiError } from '@/api/client';
 import type { HomeMockMode } from '@/config/features';
-import type { BareActProgressItem, ContinueLearningItem, CurrentUserDto } from '@/api/users';
+import type { BareActProgressItem, ContinueLearningItem } from '@/api/users';
 import { toBareActProgressItems, toContinueLearningItem } from '@/api/users';
 
 const populated = {
-  currentUser: { id: 'dev', email: 'student@example.com', firstName: 'Student', fullName: 'Sample Student' },
   bareActs: toBareActProgressItems({
     acts: [
       {
@@ -64,13 +63,11 @@ const populated = {
 };
 
 const empty = {
-  currentUser: { id: 'dev', email: 'student@example.com', firstName: null, fullName: null },
   bareActs: [] as BareActProgressItem[],
   continueLearning: null as ContinueLearningItem | null,
 };
 
 export interface HomeMockData {
-  currentUser: CurrentUserDto;
   bareActs: BareActProgressItem[];
   continueLearning: ContinueLearningItem | null;
 }

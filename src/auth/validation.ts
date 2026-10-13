@@ -54,3 +54,50 @@ export function mapServerFieldError(message: string): FieldErrors | undefined {
   if (!knownFields.includes(field)) return undefined;
   return { [field]: reason };
 }
+
+// ---------- Change password (contract §1.5, UI spec F1.2) ----------
+
+export const CHANGE_PASSWORD_FIELDS = ['currentPassword', 'newPassword', 'confirmPassword'] as const;
+
+/** Copy for the server's `VALIDATION_ERROR` reasons (contract §1.5, UI spec F1.2). */
+const SERVER_COPY: Record<string, string> = {
+  'currentPassword: is incorrect': 'Your current password is incorrect.',
+  'newPassword: must be different from the current password': 'Choose a password different from your current one.',
+  'newPassword: must not be your login ID': "Don't use your roll no. or employee ID as your password.",
+  'newPassword: must be at least 8 characters': 'Use at least 8 characters.',
+};
+
+export function validateChangePassword(
+  values: { currentPassword: string; newPassword: string; confirmPassword: string },
+  loginId: string | null,
+): FieldErrors {
+  const errors: FieldErrors = {};
+  if (!values.currentPassword) errors.currentPassword = 'Enter your current password.';
+  if (!values.newPassword) errors.newPassword = 'Enter a new password.';
+  else if (values.newPassword.length < 8) errors.newPassword = 'Use at least 8 characters.';
+  else if (values.newPassword === values.currentPassword) {
+    errors.newPassword = 'Choose a password different from your current one.';
+  } else if (loginId && values.newPassword === loginId) {
+    errors.newPassword = "Don't use your roll no. or employee ID as your password.";
+  }
+  if (!errors.newPassword && values.confirmPassword !== values.newPassword) {
+    errors.confirmPassword = "Passwords don't match.";
+  }
+  return errors;
+}
+
+/** `path: reason, path: reason` → field errors for the known fields; null if nothing matched. */
+export function mapChangePasswordErrors(message: string): FieldErrors | null {
+  const errors: FieldErrors = {};
+  for (const part of message.split(/, (?=\w+: )/)) {
+    const match = /^(\w+): (.+)$/.exec(part.trim());
+    if (!match || !(CHANGE_PASSWORD_FIELDS as readonly string[]).includes(match[1])) continue;
+    errors[match[1]] ??= SERVER_COPY[`${match[1]}: ${match[2]}`] ?? sentence(match[2]);
+  }
+  return Object.keys(errors).length > 0 ? errors : null;
+}
+
+function sentence(reason: string): string {
+  const text = reason.charAt(0).toUpperCase() + reason.slice(1);
+  return /[.!?]$/.test(text) ? text : `${text}.`;
+}

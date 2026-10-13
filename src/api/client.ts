@@ -1,4 +1,4 @@
-import { sessionStore } from '@/auth/session-store';
+import { sessionStore, type SessionEndReason } from '@/auth/session-store';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080/api/v1';
 
@@ -78,9 +78,9 @@ function getCacheMode(): { cache?: RequestCache } {
 }
 
 /** Drops the local session; a session that belonged to someone also starts the cache bypass. */
-function endSession() {
+function endSession(reason: SessionEndReason) {
   if (sessionStore.getSnapshot().status === 'authenticated') bypassHttpCacheForNextUser();
-  sessionStore.clear();
+  sessionStore.clear(reason);
 }
 
 // ---------- Refresh ----------
@@ -121,17 +121,26 @@ function withRefreshLock<T>(task: () => Promise<T>): Promise<T> {
     : task();
 }
 
+/**
+ * `keepalive` lets the request finish if the page navigates or reloads mid-flight (G10). The
+ * server rotates the token as soon as it receives the call; an aborted response would never
+ * store the new cookie, and the next refresh would send a revoked token and sign the user out.
+ */
 async function performRefresh(): Promise<boolean> {
+  const wasSignedIn = sessionStore.getSnapshot().status === 'authenticated';
   try {
     const tokens = await request<RefreshedTokens>('/auth/refresh', {
       method: 'POST',
       credentials: 'include',
+      keepalive: true,
       skipAuthHandling: true,
     });
     sessionStore.setAccessToken(tokens.accessToken);
     return true;
-  } catch {
-    endSession();
+  } catch (err) {
+    // On page load (no session yet) a missing or stale cookie just means "not signed in".
+    const inactive = err instanceof ApiError && err.code === 'COLLEGE_INACTIVE';
+    endSession(inactive ? 'college-inactive' : wasSignedIn ? 'expired' : null);
     return false;
   }
 }
@@ -202,7 +211,10 @@ async function request<T>(path: string, init: RequestOptions = {}, isRetry = fal
   }
 
   if (!response.ok) {
-    throw errorFromBody(response.status, await response.text().catch(() => ''), response.statusText);
+    const error = errorFromBody(response.status, await response.text().catch(() => ''), response.statusText);
+    // Every endpoint but a few is gated until the password is changed (contract §1.6).
+    if (error.code === 'PASSWORD_CHANGE_REQUIRED') sessionStore.requirePasswordChange();
+    throw error;
   }
 
   if (response.status === 204) {

@@ -9,6 +9,7 @@ import {
   type CaseLawSummary,
 } from '@/api/caselaws';
 import { ErrorState } from '@/components/QueryStates';
+import { LibrarySubNav } from '@/components/SubNav';
 import { ArrowRightIcon, CourthouseIcon, DocumentIcon, ScalesIcon, SearchIcon } from '@/components/icons/Icons';
 import { useApiQuery } from '@/hooks/useApiQuery';
 import { ImportanceBadge } from './ImportanceBadge';
@@ -101,6 +102,7 @@ export function CaseLawsPage() {
         <p className={styles.eyebrow}>Judgments</p>
         <h1 className={styles.title}>Case Laws</h1>
         <p className={styles.subtitle}>Judgments, explained issue by issue.</p>
+        <LibrarySubNav />
 
         <form role="search" className={styles.searchForm} onSubmit={handleSubmit}>
           <label htmlFor="caselaw-search" className={contentStyles.visuallyHidden}>

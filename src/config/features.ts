@@ -1,5 +1,5 @@
 /**
- * Backend endpoints the Home dashboard was built against. Apart from `/users/me`, they aren't in
+ * Backend endpoints the Home dashboard was built against. They aren't in
  * TDD v2 and won't be built (docs/Lexly-API-Contract.md §15), so their flags stay off (decision
  * D3). While off, the matching hook reports `unavailable` without making a request and the UI shows
  * its "not tracked yet" state. Setting an env var to `true` needs no component changes.
@@ -9,8 +9,6 @@ function flag(value: string | undefined): boolean {
 }
 
 export const backendFeatures = {
-  /** `GET /users/me` — supplies `firstName` for the greeting. */
-  currentUser: flag(import.meta.env.VITE_API_USERS_ME),
   /** `GET /search` — replaces the frontend fan-out over /sections/search, /caselaws, /acts. */
   unifiedSearch: flag(import.meta.env.VITE_API_UNIFIED_SEARCH),
   /**

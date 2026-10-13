@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { listActs, type ActSummary } from '@/api/content';
 import type { BareActProgressItem } from '@/api/users';
 import { ErrorState } from '@/components/QueryStates';
+import { LibrarySubNav } from '@/components/SubNav';
 import { ArrowRightIcon, BookIcon, SearchIcon } from '@/components/icons/Icons';
 import { useApiQuery } from '@/hooks/useApiQuery';
 import { useBareActProgress } from '@/hooks/useHomeData';
@@ -40,6 +41,7 @@ export function ActsPage() {
         <p className={styles.eyebrow}>Statutes</p>
         <h1 className={styles.title}>Bare Acts</h1>
         <p className={styles.subtitle}>Every section, in simple words.</p>
+        <LibrarySubNav />
 
         <form role="search" className={styles.searchForm} onSubmit={(event) => event.preventDefault()}>
           <label htmlFor="act-filter" className={contentStyles.visuallyHidden}>

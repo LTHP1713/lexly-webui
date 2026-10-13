@@ -2,11 +2,9 @@ import { useEffect } from 'react';
 import {
   getBareActProgress,
   getContinueLearning,
-  getCurrentUser,
   recordLearningActivity,
   type BareActProgressItem,
   type ContinueLearningItem,
-  type CurrentUserDto,
   type LearningContentType,
 } from '@/api/users';
 import { backendFeatures, homeMockMode } from '@/config/features';
@@ -40,10 +38,6 @@ function useBackendQuery<T>(
 
   if (result.status === 'idle') return { status: 'unavailable', sample: false, retry: result.retry };
   return { ...result, sample: mockMode !== null };
-}
-
-export function useCurrentUser(): HomeQuery<CurrentUserDto> {
-  return useBackendQuery('users/me', backendFeatures.currentUser, getCurrentUser, 'currentUser');
 }
 
 export function useBareActProgress(): HomeQuery<BareActProgressItem[]> {
