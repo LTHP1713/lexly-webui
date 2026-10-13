@@ -6,7 +6,7 @@ import styles from './Home.module.css';
 const ACTIONS: { to: string; title: string; description: string; icon: ComponentType<{ size?: number }> }[] = [
   { to: '/acts', title: 'Bare Acts', description: 'Read Acts & provisions', icon: BookIcon },
   { to: '/caselaws', title: 'Case Laws', description: 'Study landmark judgments', icon: CourthouseIcon },
-  { to: '/practice', title: 'Practice', description: 'Practice MCQs', icon: ChecklistIcon },
+  { to: '/practice', title: 'Practice', description: 'Solo practice, coming soon', icon: ChecklistIcon },
 ];
 
 export function QuickActions() {

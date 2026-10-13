@@ -25,45 +25,8 @@ export function getCurrentUser() {
   return apiClient.get<CurrentUserDto>('/users/me');
 }
 
-// ---------- Practice stats ----------
-
-export interface PracticeStatsDto {
-  attempted: number;
-  uniqueQuestionsAttempted: number;
-  correct: number;
-  wrong: number;
-  /** 0–100, up to one decimal place. */
-  accuracy: number;
-}
-
-export interface PracticeSummary {
-  attempted: number;
-  uniqueQuestionsAttempted: number;
-  correct: number;
-  wrong: number;
-  /** Whole-number percentage for display. */
-  accuracyPercent: number;
-}
-
 function count(value: unknown): number {
   return typeof value === 'number' && Number.isFinite(value) && value > 0 ? Math.floor(value) : 0;
-}
-
-export function toPracticeSummary(dto: PracticeStatsDto): PracticeSummary {
-  const attempted = count(dto.attempted);
-  const correct = Math.min(count(dto.correct), attempted);
-  const accuracy = attempted === 0 ? 0 : (correct / attempted) * 100;
-  return {
-    attempted,
-    uniqueQuestionsAttempted: count(dto.uniqueQuestionsAttempted),
-    correct,
-    wrong: attempted - correct,
-    accuracyPercent: Math.round(accuracy),
-  };
-}
-
-export async function getPracticeSummary(): Promise<PracticeSummary> {
-  return toPracticeSummary(await apiClient.get<PracticeStatsDto>('/users/me/practice-stats'));
 }
 
 // ---------- Bare act progress ----------

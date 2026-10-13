@@ -6,12 +6,11 @@
  */
 import { ApiError } from '@/api/client';
 import type { HomeMockMode } from '@/config/features';
-import type { BareActProgressItem, ContinueLearningItem, CurrentUserDto, PracticeSummary } from '@/api/users';
-import { toBareActProgressItems, toContinueLearningItem, toPracticeSummary } from '@/api/users';
+import type { BareActProgressItem, ContinueLearningItem, CurrentUserDto } from '@/api/users';
+import { toBareActProgressItems, toContinueLearningItem } from '@/api/users';
 
 const populated = {
   currentUser: { id: 'dev', email: 'student@example.com', firstName: 'Student', fullName: 'Sample Student' },
-  practice: toPracticeSummary({ attempted: 245, uniqueQuestionsAttempted: 190, correct: 184, wrong: 61, accuracy: 75.1 }),
   bareActs: toBareActProgressItems({
     acts: [
       {
@@ -66,14 +65,12 @@ const populated = {
 
 const empty = {
   currentUser: { id: 'dev', email: 'student@example.com', firstName: null, fullName: null },
-  practice: toPracticeSummary({ attempted: 0, uniqueQuestionsAttempted: 0, correct: 0, wrong: 0, accuracy: 0 }),
   bareActs: [] as BareActProgressItem[],
   continueLearning: null as ContinueLearningItem | null,
 };
 
 export interface HomeMockData {
   currentUser: CurrentUserDto;
-  practice: PracticeSummary;
   bareActs: BareActProgressItem[];
   continueLearning: ContinueLearningItem | null;
 }

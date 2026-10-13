@@ -13,8 +13,6 @@ export const backendFeatures = {
   currentUser: flag(import.meta.env.VITE_API_USERS_ME),
   /** `GET /search` — replaces the frontend fan-out over /sections/search, /caselaws, /acts. */
   unifiedSearch: flag(import.meta.env.VITE_API_UNIFIED_SEARCH),
-  /** `GET /users/me/practice-stats`. */
-  practiceStats: flag(import.meta.env.VITE_API_PRACTICE_STATS),
   /**
    * `GET /users/me/bare-act-progress`, `GET /users/me/continue-learning` and
    * `POST /users/me/learning-activity` — one flag because they share the same tracking tables.

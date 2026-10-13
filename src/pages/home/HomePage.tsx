@@ -1,9 +1,9 @@
 import { useAppLayout } from '@/components/appLayoutContext';
 import { CourthouseIcon } from '@/components/icons/Icons';
+import { backendFeatures, homeMockMode } from '@/config/features';
 import { BareActProgress } from './BareActProgress';
 import { ContinueLearning } from './ContinueLearning';
 import { greetingFor } from './format';
-import { PracticeProgress } from './PracticeProgress';
 import { QuickActions } from './QuickActions';
 import { UniversalSearch } from './UniversalSearch';
 import styles from './Home.module.css';
@@ -11,11 +11,11 @@ import styles from './Home.module.css';
 const dateFormat = new Intl.DateTimeFormat('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
 
 /**
- * Home dashboard. Each card loads independently, so one failing endpoint never blanks the page.
- * Visual order: search → quick actions → practice → bare acts → continue learning.
+ * Home dashboard (S_STUDENT). Visual order: search → quick actions → continue learning → bare
+ * acts. The two progress cards depend on endpoints TDD v2 dropped, so they aren't rendered at all
+ * while their flag is off (decision D3); each loads independently when it is on.
  */
 export function HomePage() {
-  // Loaded once by AppLayout (GET /users/me); until it exists the greeting is deliberately nameless.
   const { firstName } = useAppLayout();
   const now = new Date();
 
@@ -36,11 +36,12 @@ export function HomePage() {
 
       <QuickActions />
 
-      <div className={styles.dashboard}>
-        <PracticeProgress />
-        <BareActProgress />
-        <ContinueLearning />
-      </div>
+      {(backendFeatures.learningProgress || homeMockMode) && (
+        <div className={styles.dashboard}>
+          <BareActProgress />
+          <ContinueLearning />
+        </div>
+      )}
     </div>
   );
 }
