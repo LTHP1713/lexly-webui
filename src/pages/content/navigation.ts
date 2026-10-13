@@ -1,7 +1,8 @@
 /**
- * Router `state` passed when navigating into a section, so the detail screen can offer a
- * "back" link to wherever the user came from (an act's section list or a search results page).
- * The section detail response carries no act id, so this is the only way to know.
+ * Optional router `state` passed when navigating into a section, so the detail screen can offer a
+ * "Back to …" link to wherever the user came from (e.g. search results). It is only a hint: the
+ * section response itself carries `actId`/`actTitle`/`prev`/`next`, so the act breadcrumb, sidebar
+ * and Previous / Next work without it (deep link, reload, Continue Learning).
  */
 export interface SectionLinkState {
   backTo?: { to: string; label: string };

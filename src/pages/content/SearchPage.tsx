@@ -5,7 +5,6 @@ import { ErrorState, LoadingState } from '@/components/QueryStates';
 import { useApiQuery } from '@/hooks/useApiQuery';
 import { sectionLabel, type SectionLinkState } from './navigation';
 import { HighlightedSnippet } from './HighlightedSnippet';
-import { ProBadge } from './ProBadge';
 import styles from './Content.module.css';
 
 const PAGE_SIZE = 20;
@@ -13,8 +12,7 @@ const DEBOUNCE_MS = 300;
 
 /**
  * The query and page live in the URL (`?q=…&page=…`, page 1-based) so browser back from a
- * section returns to the same results. Locked hits are marked but their snippet is rendered as
- * returned — the backend doesn't redact it yet (see docs/progress/frontend_progress.md).
+ * section returns to the same results.
  */
 export function SearchPage() {
   const [params, setParams] = useSearchParams();
@@ -101,12 +99,9 @@ export function SearchPage() {
                   <Link
                     to={`/sections/${hit.id}`}
                     state={{ backTo } satisfies SectionLinkState}
-                    className={`${styles.item} ${styles.searchHit} ${hit.isFree ? '' : styles.itemLocked}`}
+                    className={`${styles.item} ${styles.searchHit}`}
                   >
-                    <span className={styles.hitHeading}>
-                      <span className={styles.itemTitle}>{sectionLabel(hit.sectionNumber, hit.title)}</span>
-                      {!hit.isFree && <ProBadge />}
-                    </span>
+                    <span className={styles.itemTitle}>{sectionLabel(hit.sectionNumber, hit.title)}</span>
                     {hit.snippet && <HighlightedSnippet snippet={hit.snippet} />}
                   </Link>
                 </li>

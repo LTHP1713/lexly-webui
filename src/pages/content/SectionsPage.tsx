@@ -3,7 +3,6 @@ import { listActs, listSections } from '@/api/content';
 import { ErrorState, LoadingState } from '@/components/QueryStates';
 import { useApiQuery } from '@/hooks/useApiQuery';
 import type { ActLinkState, SectionLinkState } from './navigation';
-import { ProBadge } from './ProBadge';
 import styles from './Content.module.css';
 
 /**
@@ -39,9 +38,7 @@ export function SectionsPage() {
         <Link to="/acts">← All acts</Link>
       </nav>
       <h1 className={styles.title}>{actTitle ?? 'Sections'}</h1>
-      <p className={styles.subtitle}>
-        Sections marked <ProBadge /> need a Pro subscription to read in full.
-      </p>
+      <p className={styles.subtitle}>Choose a section to read it with explanations, illustrations and key terms.</p>
 
       {query.status === 'loading' && <LoadingState label="Loading sections" lines={6} />}
       {query.status === 'error' && <ErrorState error={query.error} onRetry={query.retry} />}
@@ -52,15 +49,13 @@ export function SectionsPage() {
           <ul className={styles.list}>
             {query.data.sections.map((section) => (
               <li key={section.id}>
-                {/* Locked sections stay clickable on purpose: the detail screen renders the upsell. */}
                 <Link
                   to={`/sections/${section.id}`}
                   state={{ backTo } satisfies SectionLinkState}
-                  className={`${styles.item} ${section.isFree ? '' : styles.itemLocked}`}
+                  className={styles.item}
                 >
                   <span className={styles.sectionNumber}>{section.sectionNumber}</span>
                   <span className={styles.itemTitle}>{section.title ?? `Section ${section.sectionNumber}`}</span>
-                  {!section.isFree && <ProBadge />}
                 </Link>
               </li>
             ))}

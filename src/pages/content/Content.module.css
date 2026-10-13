@@ -89,85 +89,6 @@
   font-weight: 600;
 }
 
-.itemLocked {
-  background: #fafafa;
-  color: #777;
-}
-
-.itemLocked .itemTitle {
-  font-weight: 500;
-}
-
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.05rem 0.45rem;
-  border: 1px solid #ccc;
-  border-radius: 999px;
-  color: #555;
-  background: #fff;
-  font-size: 0.72rem;
-  font-weight: 700;
-  line-height: 1.5;
-  white-space: nowrap;
-  vertical-align: middle;
-}
-
-.lockIcon {
-  flex-shrink: 0;
-}
-
-/* Section detail */
-
-.bodyText {
-  margin-top: 1.25rem;
-  white-space: pre-line;
-  line-height: 1.7;
-}
-
-.entries {
-  margin-top: 2rem;
-}
-
-.entriesHeading {
-  margin: 0 0 0.6rem;
-  font-size: 1.1rem;
-}
-
-.entryList {
-  margin: 0;
-  padding-left: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
-
-.entry {
-  white-space: pre-line;
-  line-height: 1.6;
-}
-
-.lockedCard {
-  border: 1px solid #e2e2e2;
-  border-radius: 0.75rem;
-  padding: 1.75rem;
-  background: #fafafa;
-}
-
-.lockedLead {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin: 1rem 0 0.5rem;
-  font-weight: 600;
-}
-
-.lockedMessage {
-  margin: 0;
-  color: #555;
-}
-
 /* Search */
 
 .searchForm {
@@ -189,6 +110,11 @@
   border-radius: 0.4rem;
 }
 
+.searchHelp {
+  color: #666;
+  font-size: 0.8rem;
+}
+
 .resultSummary {
   margin: 0 0 0.75rem;
   color: #555;
@@ -203,12 +129,6 @@
   flex-direction: column;
   align-items: stretch;
   gap: 0.3rem;
-}
-
-.hitHeading {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
 }
 
 .snippet {
@@ -282,6 +202,14 @@
   color: #13294b;
 }
 
+.actTag {
+  border-color: #c9d3e3;
+  background: #f2f5fa;
+  color: #33415c;
+  font-weight: 600;
+  white-space: normal;
+}
+
 .badgeRow {
   display: inline-flex;
   flex-wrap: wrap;
@@ -291,7 +219,8 @@
 .filters {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
+  /* Top-aligned: the search field carries help text below its input. */
+  align-items: flex-start;
   gap: 0.75rem;
   margin: 1rem 0 1.5rem;
 }
@@ -337,36 +266,3 @@
   cursor: pointer;
 }
 
-.caseMeta {
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: 0.35rem 1rem;
-  margin: 1rem 0 0;
-  font-size: 0.9rem;
-}
-
-.caseMeta dt {
-  color: #666;
-  font-weight: 600;
-}
-
-.caseMeta dd {
-  margin: 0;
-  overflow-wrap: anywhere;
-}
-
-.summaryBlock {
-  margin-top: 1.75rem;
-}
-
-.summaryBlock p {
-  margin: 0;
-  white-space: pre-line;
-  line-height: 1.7;
-}
-
-.externalLink {
-  display: inline-block;
-  margin-top: 1.5rem;
-  font-weight: 600;
-}

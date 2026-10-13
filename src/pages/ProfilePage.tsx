@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { useAuth } from '@/auth/AuthContext';
 import { LogOutIcon, UserIcon } from '@/components/icons/Icons';
 import styles from './SimplePage.module.css';
@@ -17,7 +18,13 @@ export function ProfilePage() {
           <dt>Email</dt>
           <dd>{user?.email ?? '—'}</dd>
         </dl>
-        <button type="button" className={styles.secondaryButton} onClick={logout}>
+        {/* The admin area stays out of the student navigation; admins reach it from here. */}
+        {user?.role === 'ADMIN' && (
+          <Link to="/admin/caselaws" className={styles.secondaryButton}>
+            Admin: manage case laws
+          </Link>
+        )}
+        <button type="button" className={styles.secondaryButton} onClick={() => void logout()}>
           <LogOutIcon size={18} />
           Log Out
         </button>

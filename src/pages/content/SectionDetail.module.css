@@ -1,0 +1,497 @@
+/*
+ * Section detail (Bare Acts) — the section-specific parts of the study panel. The shared layout
+ * (panel, side columns, "On this page", insights, parts) lives in StudyPanel.module.css.
+ *   left  : reading progress, "On this page", the act's other sections (this file)
+ *   doc   : the section as a serif document — Bare Act text, clauses, illustrations, …
+ *   right : stats + insight cards
+ */
+
+/* ---------- Tones ---------- */
+
+.tonePlain {
+  --tone: var(--lx-navy);
+  --tone-soft: #eef1f6;
+}
+
+.toneTerms {
+  --tone: #a06600;
+  --tone-soft: #fdf0cc;
+}
+
+.toneClauses {
+  --tone: #6a4bd6;
+  --tone-soft: #efeafd;
+}
+
+.toneIllustrations {
+  --tone: #1d74a8;
+  --tone-soft: #e2f1fa;
+}
+
+.toneExceptions {
+  --tone: #c2443a;
+  --tone-soft: #fde6e2;
+}
+
+.toneSimple {
+  --tone: #17775f;
+  --tone-soft: #dcf3eb;
+}
+
+/* The act's sections, like a folder tree */
+
+.actBlock {
+  margin-top: 1.75rem;
+}
+
+.actTitle {
+  margin: 0 0 0.5rem 0.6rem;
+  color: var(--lx-navy);
+  font-family: var(--sd-serif);
+  font-size: 0.95rem;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.actTitleLink {
+  color: inherit;
+  text-decoration: none;
+}
+
+.actTitleLink:hover {
+  text-decoration: underline;
+}
+
+.actList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.actLink {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.1rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 0.5rem;
+  color: #4b5160;
+  font-size: 0.84rem;
+  text-decoration: none;
+}
+
+.actLink:hover {
+  background: #f1ede4;
+  color: var(--lx-navy);
+}
+
+.actLink[aria-current='page'] {
+  background: #fff;
+  color: var(--lx-navy);
+  font-weight: 650;
+  box-shadow: 0 0 0 1px #ece6d9, 0 1px 2px rgb(19 41 75 / 0.05);
+}
+
+.actNumber {
+  flex-shrink: 0;
+  min-width: 2.6rem;
+  color: var(--lx-muted);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.actName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- Document ---------- */
+
+.modeToggle {
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid #ece6d9;
+  border-radius: 999px;
+  background: #f7f4ed;
+}
+
+.modeToggle button {
+  min-height: 2rem;
+  padding: 0 0.95rem;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--lx-muted);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.modeToggle button[aria-pressed='true'] {
+  background: #fff;
+  color: var(--lx-navy);
+  box-shadow: 0 1px 3px rgb(19 41 75 / 0.12);
+}
+
+/* Bare Act text */
+
+.bareText {
+  font-family: var(--sd-serif);
+  font-size: 1.125rem;
+  line-height: 1.8;
+  color: #2c313d;
+}
+
+.bareText p {
+  margin: 0 0 0.8rem;
+  overflow-wrap: anywhere;
+}
+
+.bareText p:last-child {
+  margin-bottom: 0;
+}
+
+/* Hanging clause label: "(a)" sits in a gutter so wrapped lines align with the clause text. */
+.bareClause {
+  display: grid;
+  grid-template-columns: 2.3rem 1fr;
+  gap: 0.2rem;
+}
+
+.bareClauseLabel {
+  color: var(--lx-gold);
+  font-weight: 650;
+}
+
+/* Key-term highlight + popover */
+
+.termWrap {
+  position: relative;
+}
+
+.termMark {
+  padding: 0.1em 0.12em;
+  border-radius: 4px;
+  background: #fdf0cc;
+  color: inherit;
+  cursor: help;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  transition: background-color 0.15s;
+}
+
+.termMark:hover,
+.termMarkOpen {
+  background: #f9e2a1;
+}
+
+.termTip {
+  --shift: 0px;
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  left: 50%;
+  z-index: 40;
+  display: block;
+  width: max-content;
+  max-width: min(18rem, calc(100vw - 24px));
+  padding: 0.65rem 0.8rem;
+  border: 1px solid #ece6d9;
+  border-radius: 0.65rem;
+  background: #fff;
+  color: var(--lx-muted);
+  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  font-size: 0.84rem;
+  font-weight: 400;
+  line-height: 1.5;
+  text-align: left;
+  white-space: normal;
+  transform: translateX(calc(-50% + var(--shift)));
+  box-shadow: 0 8px 24px rgb(19 41 75 / 0.14);
+}
+
+.termTip[data-place='top'] {
+  top: auto;
+  bottom: calc(100% + 0.4rem);
+}
+
+.termTip[hidden] {
+  display: none;
+}
+
+.termTipTitle {
+  display: block;
+  margin-bottom: 0.15rem;
+  color: #7a4f00;
+  font-weight: 700;
+}
+
+/* Clause by clause */
+
+.clauseList {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.clause {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+  padding: 1rem 0;
+  border-top: 1px solid var(--sd-rule);
+}
+
+.clause:first-child {
+  padding-top: 0.25rem;
+  border-top: 0;
+}
+
+.clause:last-child {
+  padding-bottom: 0;
+}
+
+.clauseTag {
+  flex-shrink: 0;
+  min-width: 2.5rem;
+  margin-top: 0.1rem;
+  padding: 0.12rem 0.45rem;
+  border-radius: 0.45rem;
+  background: var(--tone-soft);
+  color: var(--tone);
+  font-family: var(--sd-serif);
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.clauseBody {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Illustrations — always the illustration colour, even inside Exceptions */
+
+.illustrationList {
+  --tone: #1d74a8;
+  --tone-soft: #e2f1fa;
+
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.illustration {
+  padding: 0.9rem 1.05rem;
+  border-left: 3px solid var(--tone);
+  border-radius: 0 0.7rem 0.7rem 0;
+  background: #f5f9fc;
+}
+
+.illustrationListNested {
+  margin-top: 0.85rem;
+}
+
+/* Set on the nested illustrations' RichText (a class from StudyPanel.module.css). */
+.nestedText {
+  font-size: 1rem;
+}
+
+.illustrationMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.6rem;
+  margin: 0 0 0.4rem;
+}
+
+.illustrationLabel {
+  color: var(--tone);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tag {
+  padding: 0.05rem 0.5rem;
+  border: 1px dashed #b98a2f;
+  border-radius: 999px;
+  background: #fff;
+  color: #7a5c22;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.tagAct {
+  border-style: solid;
+  border-color: var(--lx-navy);
+  color: var(--lx-navy);
+}
+
+/* Exceptions */
+
+.exceptionList {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.exception + .exception {
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--sd-rule);
+}
+
+.exceptionNumber {
+  margin-right: 0.45rem;
+  color: var(--tone);
+}
+
+/* Key legal terms */
+
+.termList {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.6rem;
+  margin: 0;
+}
+
+.term {
+  min-width: 0;
+  padding: 0.8rem 0.95rem;
+  border-left: 3px solid #e7b94b;
+  border-radius: 0 0.6rem 0.6rem 0;
+  background: #fffaf0;
+}
+
+.term dt {
+  color: var(--lx-navy);
+  font-family: var(--sd-serif);
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.term dd {
+  margin: 0.15rem 0 0;
+  color: #555b68;
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+/* ---------- Previous / Next ---------- */
+
+.pager {
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--sd-rule);
+}
+
+.pagerPosition {
+  margin: 0 0 0.75rem;
+  color: var(--lx-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.pagerLinks {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.65rem;
+}
+
+.pagerLink {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+  padding: 0.85rem 1rem;
+  border: 1px solid #ece6d9;
+  border-radius: 0.75rem;
+  background: #fff;
+  color: var(--lx-navy);
+  text-decoration: none;
+  box-shadow: 0 1px 2px rgb(19 41 75 / 0.04);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.pagerLink:hover {
+  border-color: var(--lx-gold);
+  box-shadow: 0 4px 14px rgb(19 41 75 / 0.08);
+}
+
+.pagerNext {
+  text-align: right;
+}
+
+.pagerDirection {
+  color: var(--lx-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.pagerTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  font-family: var(--sd-serif);
+  font-size: 1.02rem;
+  font-weight: 650;
+}
+
+.pagerNext .pagerTitle {
+  justify-content: flex-end;
+}
+
+.pagerNumber {
+  flex-shrink: 0;
+  color: var(--lx-gold);
+}
+
+.pagerName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- Breakpoints ---------- */
+
+@media (min-width: 600px) {
+  .termList {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .pagerLinks {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (min-width: 768px) {
+  .bareText {
+    font-size: 1.16rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .termMark {
+    transition: none;
+  }
+}

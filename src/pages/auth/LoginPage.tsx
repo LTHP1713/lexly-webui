@@ -3,18 +3,19 @@
  * — no UI kit. Later pages should follow this same pattern: colocate a `<PageName>.module.css`
  * (or a shared one, like `AuthForm.module.css` here) next to the component.
  */
-import { useId, useState, type FormEvent } from 'react';
-import { Link, useLocation, useNavigate, type Location } from 'react-router-dom';
+import { useState, type FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 import { ApiError } from '@/api/client';
 import { useAuth } from '@/auth/AuthContext';
-import { validateLogin, type FieldErrors } from '@/auth/validation';
+import { mapServerFieldError, validateLogin, type FieldErrors } from '@/auth/validation';
+import { AlertIcon, MailIcon } from '@/components/icons/Icons';
+import { AuthField, PasswordField } from './AuthField';
+import { AuthLayout } from './AuthLayout';
+import { describeAuthError, focusFirstError } from './authForm';
 import styles from './AuthForm.module.css';
 
 export function LoginPage() {
   const { login } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const errorId = useId();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -24,94 +25,85 @@ export function LoginPage() {
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
+    if (isSubmitting) return;
     setFormError(null);
 
     const errors = validateLogin({ email, password });
     setFieldErrors(errors);
-    if (Object.keys(errors).length > 0) return;
+    if (Object.keys(errors).length > 0) {
+      focusFirstError(errors, ['email', 'password']);
+      return;
+    }
 
     setIsSubmitting(true);
     try {
+      // On success the route's RedirectIfAuthenticated guard sends the user to the Dashboard.
       await login({ email, password });
-      const from = (location.state as { from?: Location })?.from;
-      navigate(from ? `${from.pathname}${from.search}` : '/dashboard', { replace: true });
     } catch (err) {
-      const message = err instanceof ApiError ? err.message : 'Something went wrong. Please try again.';
-      setFormError(message);
-    } finally {
+      const mapped = err instanceof ApiError && err.code === 'VALIDATION_ERROR' ? mapServerFieldError(err.message) : undefined;
+      if (mapped) {
+        setFieldErrors(mapped);
+      } else {
+        setFormError(describeAuthError(err, 'login'));
+      }
       setIsSubmitting(false);
     }
   }
 
   return (
-    <div className={styles.page}>
-      <div className={styles.card}>
-        <h1 className={styles.title}>Log in</h1>
-        <p className={styles.subtitle}>Welcome back to Lexly.</p>
+    <AuthLayout>
+      <h1 className={styles.title}>Welcome back</h1>
+      <p className={styles.subtitle}>Continue your legal learning journey.</p>
 
-        <form className={styles.form} onSubmit={handleSubmit} noValidate>
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="email">
-              Email
-            </label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              className={`${styles.input} ${fieldErrors.email ? styles.inputInvalid : ''}`}
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              aria-invalid={Boolean(fieldErrors.email)}
-              aria-describedby={fieldErrors.email ? 'email-error' : undefined}
-            />
-            {fieldErrors.email && (
-              <p id="email-error" className={styles.fieldError}>
-                {fieldErrors.email}
-              </p>
-            )}
-          </div>
+      <form className={styles.form} onSubmit={handleSubmit} noValidate aria-busy={isSubmitting}>
+        <AuthField
+          id="email"
+          name="email"
+          label="Email"
+          type="email"
+          inputMode="email"
+          autoComplete="email"
+          autoCapitalize="off"
+          spellCheck={false}
+          placeholder="you@example.com"
+          icon={<MailIcon size={20} />}
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          error={fieldErrors.email}
+        />
 
-          <div className={styles.field}>
-            <label className={styles.label} htmlFor="password">
-              Password
-            </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              className={`${styles.input} ${fieldErrors.password ? styles.inputInvalid : ''}`}
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              aria-invalid={Boolean(fieldErrors.password)}
-              aria-describedby={fieldErrors.password ? 'password-error' : undefined}
-            />
-            {fieldErrors.password && (
-              <p id="password-error" className={styles.fieldError}>
-                {fieldErrors.password}
-              </p>
-            )}
-          </div>
+        <PasswordField
+          id="password"
+          name="password"
+          label="Password"
+          autoComplete="current-password"
+          placeholder="Your password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          error={fieldErrors.password}
+        />
 
-          <div role="alert" aria-live="polite">
-            {formError && (
-              <p id={errorId} className={styles.banner}>
-                {formError}
-              </p>
-            )}
-          </div>
+        <div role="alert" className={styles.alertRegion}>
+          {formError && (
+            <p className={styles.banner}>
+              <AlertIcon size={20} />
+              <span>{formError}</span>
+            </p>
+          )}
+        </div>
 
-          <button type="submit" className={styles.submit} disabled={isSubmitting}>
-            {isSubmitting ? 'Logging in…' : 'Log in'}
-          </button>
+        <button type="submit" className={styles.submit} disabled={isSubmitting}>
+          {isSubmitting && <span className={styles.spinner} aria-hidden="true" />}
+          {isSubmitting ? 'Signing in…' : 'Sign In'}
+        </button>
+      </form>
 
-          <p className={styles.footer}>Don&apos;t have an account?</p>
-          <Link to="/register" className={styles.secondaryButton}>
-            Sign up
-          </Link>
-        </form>
-      </div>
-    </div>
+      <p className={styles.switch}>
+        New to Lexly?
+        <Link to="/register" className={styles.switchLink}>
+          Create an account
+        </Link>
+      </p>
+    </AuthLayout>
   );
 }

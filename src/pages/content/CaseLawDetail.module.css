@@ -1,0 +1,638 @@
+/*
+ * Case law detail — the case-specific parts of the study panel. The shared layout (panel, side
+ * columns, "On this page", insights, parts) lives in StudyPanel.module.css.
+ *   left  : reading progress, "On this page", the sections this case interprets (this file)
+ *   doc   : the case as a serif document — facts card, background, issues, arguments, holding, …
+ *   right : stats + insight cards
+ *
+ * Tones follow the section screen's rule: `--tone` is dark enough for white text (≥ 4.5:1),
+ * `--tone-soft` is a tint for surfaces.
+ */
+
+/* ---------- Tones ---------- */
+
+.toneBackground {
+  --tone: var(--lx-navy);
+  --tone-soft: #eef1f6;
+}
+
+.toneIssues {
+  --tone: #6a4bd6;
+  --tone-soft: #efeafd;
+}
+
+.toneArguments {
+  --tone: #1d74a8;
+  --tone-soft: #e2f1fa;
+}
+
+.toneHolding {
+  --tone: #17775f;
+  --tone-soft: #dcf3eb;
+}
+
+.toneRatio {
+  --tone: #a06600;
+  --tone-soft: #fdf0cc;
+}
+
+.toneObiter {
+  --tone: #5d6270;
+  --tone-soft: #eef0f3;
+}
+
+.toneProvisions {
+  --tone: #c2443a;
+  --tone-soft: #fde6e2;
+}
+
+.tonePrinciples {
+  --tone: #0f6e7a;
+  --tone-soft: #dff2f4;
+}
+
+.toneSections {
+  --tone: #1f3a66;
+  --tone-soft: #e9eef6;
+}
+
+/* ---------- Left column: sections this case interprets ---------- */
+
+.sideBlock {
+  margin-top: 1.75rem;
+}
+
+.sideList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sideLink {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.1rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 0.5rem;
+  color: #4b5160;
+  font-size: 0.84rem;
+  text-decoration: none;
+}
+
+.sideLink:hover {
+  background: #f1ede4;
+  color: var(--lx-navy);
+}
+
+.sideNumber {
+  flex-shrink: 0;
+  min-width: 2.6rem;
+  color: var(--lx-muted);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.sideName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+/* ---------- Header: lede + case facts ---------- */
+
+.lede {
+  margin: -0.35rem 0 1.4rem;
+  color: #3a4150;
+  font-family: var(--sd-serif);
+  font-size: 1.15rem;
+  line-height: 1.65;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  margin: 0 0 1.75rem;
+  padding: 0.35rem 1.1rem;
+  border: 1px solid #ece6d9;
+  border-radius: 0.75rem;
+  background: #fdfcf8;
+}
+
+.fact {
+  display: grid;
+  grid-template-columns: 7.5rem minmax(0, 1fr);
+  gap: 0.75rem;
+  padding: 0.55rem 0;
+  border-top: 1px solid var(--sd-rule);
+  font-size: 0.9rem;
+}
+
+.fact:first-child {
+  border-top: 0;
+}
+
+.fact dt {
+  color: var(--lx-muted);
+  font-weight: 600;
+}
+
+.fact dd {
+  margin: 0;
+  color: var(--lx-ink);
+  overflow-wrap: anywhere;
+}
+
+.empty {
+  margin: 1.5rem 0 0;
+  color: var(--lx-muted);
+}
+
+/* ---------- Issues ---------- */
+
+.issues {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.issue {
+  border: 1px solid #ece6d9;
+  border-left: 3px solid var(--tone);
+  border-radius: 0 0.7rem 0.7rem 0;
+  background: #fff;
+}
+
+.issueHead {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin: 0;
+  padding: 0.9rem 1.05rem;
+  font-size: 1rem;
+  font-weight: inherit;
+}
+
+.issueDetails > .issueHead {
+  position: relative;
+  padding-right: 2.75rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.issueDetails > .issueHead::-webkit-details-marker {
+  display: none;
+}
+
+/* Chevron: points down when closed, up when open. */
+.issueDetails > .issueHead::after {
+  content: '';
+  position: absolute;
+  top: 1.2rem;
+  right: 1.15rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-right: 2px solid var(--lx-muted);
+  border-bottom: 2px solid var(--lx-muted);
+  transform: rotate(45deg);
+  transition: transform 0.15s ease;
+}
+
+.issueDetails[open] > .issueHead::after {
+  top: 1.4rem;
+  transform: rotate(-135deg);
+}
+
+.issueDetails > .issueHead:hover {
+  background: #fbfaf6;
+}
+
+.issueLabel {
+  color: var(--tone);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.issueQuestion {
+  color: var(--lx-navy);
+  font-family: var(--sd-serif);
+  font-size: 1.1rem;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.issueBody {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin: 0;
+  padding: 0 1.05rem 1.05rem;
+}
+
+.issueBody dd {
+  margin: 0;
+}
+
+.issueTerm {
+  margin-bottom: 0.2rem;
+  color: var(--lx-muted);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.finding {
+  padding: 0.75rem 0.9rem;
+  border-radius: 0.6rem;
+  background: var(--tone-soft);
+}
+
+.finding .issueTerm {
+  color: var(--tone);
+}
+
+/* ---------- Arguments ---------- */
+
+.parties {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.85rem;
+}
+
+.party {
+  padding: 0.95rem 1.05rem;
+  border: 1px solid #ece6d9;
+  border-top: 3px solid var(--tone);
+  border-radius: 0.7rem;
+  background: #fbfdfe;
+}
+
+.partyName {
+  margin: 0 0 0.6rem;
+  color: var(--tone);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.argumentList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin: 0;
+  padding-left: 1.3rem;
+  font-family: var(--sd-serif);
+  font-size: 1.02rem;
+  line-height: 1.65;
+}
+
+.argumentList li {
+  padding-left: 0.2rem;
+  white-space: pre-line;
+}
+
+.argumentList li::marker {
+  color: var(--tone);
+  font-weight: 700;
+}
+
+/* ---------- Final holding ---------- */
+
+.holdingBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.outcome {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.6rem;
+}
+
+.outcomeLabel {
+  color: var(--tone);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.outcomeBadge {
+  padding: 0.15rem 0.7rem;
+  border-radius: 999px;
+  background: var(--tone);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+/* ---------- Ratio / obiter ---------- */
+
+.tag {
+  margin-right: 0.3rem;
+  padding: 0.05rem 0.5rem;
+  border: 1px solid;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.tagBinding {
+  border-color: var(--tone);
+  background: var(--tone);
+  color: #fff;
+}
+
+.tagPersuasive {
+  border-color: var(--tone);
+  border-style: dashed;
+  background: #fff;
+  color: var(--tone);
+}
+
+.propositions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.proposition {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  padding: 0.85rem 1rem;
+  border-radius: 0 0.7rem 0.7rem 0;
+}
+
+.ratio .proposition {
+  border-left: 3px solid var(--tone);
+  background: #fffaf0;
+}
+
+.obiter .proposition {
+  border-left: 3px dashed #c3c7d0;
+  background: #fafafb;
+}
+
+.obiter .proposition > :last-child {
+  font-style: italic;
+  color: #4b5160;
+}
+
+.propositionNumber {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin-top: 0.1rem;
+  border-radius: 0.45rem;
+  background: var(--tone-soft);
+  color: var(--tone);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.proposition > :last-child {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ---------- Important provisions ---------- */
+
+.provisions {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.provision {
+  padding: 0.85rem 0;
+  border-top: 1px solid var(--sd-rule);
+}
+
+.provision:first-child {
+  padding-top: 0.25rem;
+  border-top: 0;
+}
+
+.provision:last-child {
+  padding-bottom: 0;
+}
+
+.provisionHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.6rem;
+  margin: 0;
+}
+
+.provisionTag {
+  padding: 0.12rem 0.55rem;
+  border-radius: 0.45rem;
+  background: var(--tone-soft);
+  color: var(--tone);
+  font-family: var(--sd-serif);
+  font-size: 0.98rem;
+  font-weight: 700;
+}
+
+.provisionLaw {
+  color: var(--lx-navy);
+  font-family: var(--sd-serif);
+  font-size: 1.02rem;
+  font-weight: 600;
+}
+
+.provisionRelevance {
+  margin: 0.35rem 0 0;
+  color: #555b68;
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+/* ---------- Legal principles ---------- */
+
+.principles {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.6rem;
+  margin: 0;
+}
+
+.principle {
+  min-width: 0;
+  padding: 0.85rem 1rem;
+  border-left: 3px solid var(--tone);
+  border-radius: 0 0.6rem 0.6rem 0;
+  background: #f4fafb;
+}
+
+.principle dt {
+  color: var(--lx-navy);
+  font-family: var(--sd-serif);
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.principle dd {
+  margin: 0.2rem 0 0;
+  color: #555b68;
+  font-size: 0.93rem;
+  line-height: 1.6;
+}
+
+/* ---------- Related sections + judgment link ---------- */
+
+.sectionLinks {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sectionLink,
+.judgmentLink {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+  padding: 0.8rem 1rem;
+  border: 1px solid #ece6d9;
+  border-radius: 0.75rem;
+  background: #fff;
+  color: var(--lx-navy);
+  text-decoration: none;
+  box-shadow: 0 1px 2px rgb(19 41 75 / 0.04);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.sectionLink:hover,
+.judgmentLink:hover {
+  border-color: var(--lx-gold);
+  box-shadow: 0 4px 14px rgb(19 41 75 / 0.08);
+}
+
+.sectionNumber {
+  flex-shrink: 0;
+  color: var(--lx-gold);
+  font-family: var(--sd-serif);
+  font-weight: 700;
+}
+
+.sectionName {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--sd-serif);
+  font-size: 1.02rem;
+  font-weight: 650;
+}
+
+.sectionArrow {
+  flex-shrink: 0;
+  color: var(--lx-muted);
+}
+
+.judgmentLink {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  margin-top: 2.5rem;
+}
+
+.judgmentLabel {
+  color: var(--lx-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.judgmentTitle {
+  font-family: var(--sd-serif);
+  font-size: 1.02rem;
+  font-weight: 650;
+}
+
+/* ---------- Breakpoints ---------- */
+
+@media (min-width: 600px) {
+  .principles,
+  .sectionLinks {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (min-width: 768px) {
+  .lede {
+    font-size: 1.22rem;
+  }
+
+  .facts {
+    grid-template-columns: 1fr 1fr;
+    column-gap: 1.5rem;
+    padding: 0.35rem 1.25rem;
+  }
+
+  /* Two columns: the label sits above its value, so the value gets the full column width. */
+  .fact {
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    gap: 0.15rem;
+    padding: 0.7rem 0;
+  }
+
+  .fact dt {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .fact dd {
+    font-size: 0.95rem;
+  }
+
+  /* Rows pair up, so the first two have no top rule. */
+  .fact:nth-child(2) {
+    border-top: 0;
+  }
+
+  .parties {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .issueDetails > .issueHead::after,
+  .sectionLink,
+  .judgmentLink {
+    transition: none;
+  }
+}

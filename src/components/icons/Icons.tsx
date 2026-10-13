@@ -156,6 +156,63 @@ export function ClockIcon(props: IconProps) {
   );
 }
 
+export function MailIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <rect x="3.5" y="5.5" width="17" height="13" rx="2" />
+      <path d="m4 7 8 6 8-6" />
+    </Icon>
+  );
+}
+
+export function LockIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <rect x="5" y="10.5" width="14" height="10" rx="2" />
+      <path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" />
+      <path d="M12 14.5v2" />
+    </Icon>
+  );
+}
+
+export function EyeIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" />
+      <circle cx="12" cy="12" r="3" />
+    </Icon>
+  );
+}
+
+export function EyeOffIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M10 5.7c.6-.1 1.3-.2 2-.2 6 0 9.5 6.5 9.5 6.5a17 17 0 0 1-2.6 3.4M6.4 7.4C3.9 9.1 2.5 12 2.5 12S6 18.5 12 18.5c1.8 0 3.3-.6 4.6-1.4" />
+      <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+      <path d="m3.5 3.5 17 17" />
+    </Icon>
+  );
+}
+
+export function AlertIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 7.5v5.5" />
+      <circle cx="12" cy="16.2" r="0.6" fill="currentColor" />
+    </Icon>
+  );
+}
+
+export function LightbulbIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M9 18h6M10 21h4" />
+      <path d="M12 3a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1.1 2V16h5v-.2c.1-.8.5-1.5 1.1-2A6 6 0 0 0 12 3Z" />
+    </Icon>
+  );
+}
+
 /** Lexly brand mark: a section sign (§) on a navy tile. */
 export function LexlyMark({ size = 28 }: { size?: number }) {
   return (

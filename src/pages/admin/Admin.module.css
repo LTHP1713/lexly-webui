@@ -1,0 +1,552 @@
+/*
+ * Admin case law screens: an internal tool, so plain and dense, but on the Lexly palette and
+ * with the same focus/contrast standards as the student screens.
+ */
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.breadcrumb {
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+}
+
+.breadcrumb a {
+  color: var(--lx-muted);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.breadcrumb a:hover {
+  color: var(--lx-ink);
+  text-decoration: underline;
+}
+
+.pageHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--lx-gold);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 0.15rem 0 0.25rem;
+  color: var(--lx-navy);
+  font-family: var(--lx-serif);
+  font-size: 1.6rem;
+  line-height: 1.25;
+}
+
+.headerLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.hint {
+  margin: 0;
+  color: var(--lx-muted);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.notice {
+  margin: 0 0 1.25rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--lx-border);
+  border-left: 3px solid var(--lx-gold);
+  border-radius: 0.4rem;
+  background: var(--lx-gold-soft);
+  color: var(--lx-ink);
+  font-size: 0.9rem;
+}
+
+/* Buttons */
+
+.primaryButton,
+.secondaryButton,
+.dangerButton,
+.rowButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  border-radius: 0.45rem;
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.primaryButton,
+.secondaryButton,
+.dangerButton {
+  min-height: 2.5rem;
+  padding: 0.45rem 1rem;
+  font-size: 0.9rem;
+}
+
+.primaryButton {
+  border: 1px solid var(--lx-navy);
+  background: var(--lx-navy);
+  color: #fff;
+}
+
+.primaryButton:hover:not(:disabled) {
+  background: var(--lx-navy-soft);
+}
+
+.secondaryButton {
+  border: 1px solid #c9c2b2;
+  background: #fff;
+  color: var(--lx-navy);
+}
+
+.secondaryButton:hover:not(:disabled) {
+  border-color: var(--lx-navy);
+}
+
+.dangerButton {
+  border: 1px solid #9f3a22;
+  background: #9f3a22;
+  color: #fff;
+}
+
+.rowButton {
+  min-height: 2rem;
+  padding: 0.2rem 0.6rem;
+  border: 1px solid #d6cfbf;
+  background: #fff;
+  color: var(--lx-ink);
+  font-size: 0.8rem;
+}
+
+.rowButton:hover:not(:disabled) {
+  border-color: var(--lx-navy);
+}
+
+.rowButtonDanger {
+  color: #9f3a22;
+}
+
+.rowButtonDanger:hover:not(:disabled) {
+  border-color: #9f3a22;
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled,
+.dangerButton:disabled,
+.rowButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* List page */
+
+.searchRow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+
+.searchControls {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.searchControls .input {
+  flex: 1;
+}
+
+.adminList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.adminItem {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--lx-border);
+  border-radius: 0.6rem;
+  background: var(--lx-card);
+}
+
+.adminItemText {
+  display: flex;
+  flex: 1 1 20rem;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.adminItemTitle {
+  color: var(--lx-ink);
+  font-weight: 700;
+}
+
+.adminItemActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.badges {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+
+/* Forms */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.group,
+.editorSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  margin: 0;
+  padding: 1.1rem 1.25rem 1.25rem;
+  border: 1px solid var(--lx-border);
+  border-radius: var(--lx-radius);
+  background: var(--lx-card);
+}
+
+.editorSection {
+  margin-top: 0;
+}
+
+.form + .editorSection {
+  margin-top: 1.25rem;
+}
+
+.groupLegend {
+  padding: 0 0.35rem;
+  color: var(--lx-navy);
+  font-weight: 700;
+}
+
+.editorSectionHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.editorSectionTitle {
+  margin: 0;
+  color: var(--lx-navy);
+  font-family: var(--lx-serif);
+  font-size: 1.2rem;
+}
+
+.count {
+  color: var(--lx-muted);
+  font-family: system-ui, sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.fieldRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+}
+
+/* Side by side when there is room; the basis must not apply in the column layouts (it would become height). */
+.fieldRow > .field {
+  flex: 1 1 14rem;
+}
+
+.label {
+  color: var(--lx-ink);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.required {
+  color: var(--lx-muted);
+  font-weight: 500;
+}
+
+.input,
+.textarea {
+  width: 100%;
+  min-height: 2.5rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid #c9c2b2;
+  border-radius: 0.4rem;
+  background: #fff;
+  color: var(--lx-ink);
+  font: inherit;
+}
+
+.textarea {
+  resize: vertical;
+  line-height: 1.55;
+}
+
+.input[aria-invalid='true'],
+.textarea[aria-invalid='true'] {
+  border-color: #9f3a22;
+  box-shadow: 0 0 0 1px #9f3a22;
+}
+
+.counter {
+  align-self: flex-end;
+  color: var(--lx-muted);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.fieldError {
+  margin: 0;
+  color: #9f3a22;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.formError {
+  margin: 0 0 1rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid #e3b5a8;
+  border-radius: 0.4rem;
+  background: #fbefeb;
+  color: #7d2c18;
+}
+
+.form .formError {
+  margin: 0;
+}
+
+.errorSummary {
+  padding: 0.85rem 1rem;
+  border: 2px solid #9f3a22;
+  border-radius: 0.5rem;
+  background: #fbefeb;
+  color: #7d2c18;
+}
+
+.errorSummary ul {
+  margin: 0.35rem 0 0;
+  padding-left: 1.25rem;
+}
+
+.errorSummary a {
+  color: inherit;
+  font-weight: 600;
+}
+
+.errorSummaryTitle {
+  margin: 0;
+  font-weight: 700;
+}
+
+.plainList {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.emptyList {
+  margin: 0;
+  color: var(--lx-muted);
+  font-size: 0.9rem;
+  font-style: italic;
+}
+
+/* Repeatable rows */
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0.75rem 0.9rem 0.9rem;
+  border: 1px solid var(--lx-border);
+  border-radius: 0.5rem;
+  background: #fdfcf8;
+}
+
+.rowLegend {
+  float: left;
+  padding: 0;
+  color: var(--lx-navy);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.rowControls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.35rem;
+}
+
+.rowFields {
+  display: flex;
+  grid-column: 1 / -1;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+@media (max-width: 560px) {
+  .row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .rowControls {
+    justify-content: flex-start;
+  }
+}
+
+/* Save bar */
+
+.saveBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.saveBarSticky {
+  position: sticky;
+  bottom: calc(4.25rem + env(safe-area-inset-bottom, 0px));
+  z-index: 5;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--lx-border);
+  border-radius: var(--lx-radius);
+  background: rgb(255 255 255 / 0.96);
+  box-shadow: var(--lx-shadow);
+}
+
+@media (min-width: 768px) {
+  .saveBarSticky {
+    bottom: 1rem;
+  }
+}
+
+/* Dialog */
+
+.dialog {
+  width: min(28rem, calc(100vw - 2rem));
+  padding: 1.25rem 1.4rem;
+  border: 1px solid var(--lx-border);
+  border-radius: var(--lx-radius);
+  background: var(--lx-card);
+  color: var(--lx-ink);
+  box-shadow: 0 12px 40px rgb(19 41 75 / 0.25);
+}
+
+.dialog::backdrop {
+  background: rgb(19 41 75 / 0.45);
+}
+
+.dialogTitle {
+  margin: 0 0 0.5rem;
+  color: var(--lx-navy);
+  font-family: var(--lx-serif);
+  font-size: 1.25rem;
+}
+
+.dialogBody p {
+  margin: 0;
+  line-height: 1.55;
+}
+
+.dialogActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+}
+
+/* Toast */
+
+.toastRegion {
+  position: fixed;
+  left: 50%;
+  bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+  z-index: 50;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.toast {
+  margin: 0;
+  width: max-content;
+  max-width: calc(100vw - 2rem);
+  padding: 0.65rem 1.1rem;
+  border-radius: 0.6rem;
+  background: #1f5136;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: center;
+  box-shadow: var(--lx-shadow);
+}
+
+@media (min-width: 768px) {
+  .toastRegion {
+    bottom: 1.5rem;
+  }
+}

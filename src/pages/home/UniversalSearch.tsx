@@ -18,7 +18,6 @@ import {
 import { useApiQuery } from '@/hooks/useApiQuery';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { HighlightedSnippet } from '@/pages/content/HighlightedSnippet';
-import { ProBadge } from '@/pages/content/ProBadge';
 import { contentPath, type ActLinkState, type SectionLinkState } from '@/pages/content/navigation';
 import styles from './UniversalSearch.module.css';
 
@@ -202,10 +201,7 @@ export function UniversalSearch() {
                       <TypeIcon size={20} />
                     </span>
                     <span className={styles.optionText}>
-                      <span className={styles.optionTitle}>
-                        {result.title}
-                        {!result.isFree && <ProBadge />}
-                      </span>
+                      <span className={styles.optionTitle}>{result.title}</span>
                       <span className={styles.optionMeta}>
                         {typeSingular[group.type]}
                         {result.subtitle ? ` • ${result.subtitle}` : ''}

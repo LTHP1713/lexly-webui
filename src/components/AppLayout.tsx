@@ -1,7 +1,11 @@
 import type { ComponentType } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
+import { useAuth } from '@/auth/AuthContext';
+import { firstNameFrom } from '@/auth/firstName';
+import type { AppLayoutContext } from '@/components/appLayoutContext';
 import { BookIcon, ChecklistIcon, HomeIcon, LexlyMark, UserIcon } from '@/components/icons/Icons';
 import { NotificationsButton } from '@/components/NotificationsButton';
+import { useCurrentUser } from '@/hooks/useHomeData';
 import styles from './AppLayout.module.css';
 
 interface NavItem {
@@ -12,10 +16,10 @@ interface NavItem {
   matches: string[];
 }
 
-/** "Subjects" points at Bare Acts until the Subjects feature exists. */
+/** Mobile tab bar only — on wider screens the Dashboard is the navigation hub. */
 const NAV_ITEMS: NavItem[] = [
   { to: '/dashboard', label: 'Home', icon: HomeIcon, matches: ['/dashboard'] },
-  { to: '/acts', label: 'Subjects', icon: BookIcon, matches: ['/acts', '/sections'] },
+  { to: '/acts', label: 'Bare Acts', icon: BookIcon, matches: ['/acts', '/sections'] },
   { to: '/practice', label: 'Practice', icon: ChecklistIcon, matches: ['/practice'] },
   { to: '/profile', label: 'Profile', icon: UserIcon, matches: ['/profile'] },
 ];
@@ -25,13 +29,26 @@ function isActive(item: NavItem, pathname: string) {
 }
 
 /**
- * Shell for every authenticated screen: skip link, header (brand, desktop nav, notifications,
- * profile), the `<main>` landmark, and a fixed bottom tab bar below 768px. The two navs are
- * never visible at once (`display: none` also hides the inactive one from assistive tech).
+ * Shell for every authenticated screen: skip link, header (brand → Dashboard, greeting,
+ * notifications, profile), the `<main>` landmark, and a fixed bottom tab bar below 768px.
  */
 export function AppLayout() {
   const { pathname } = useLocation();
-  const isHome = pathname === '/dashboard';
+  // Dashboard, the act and case law lists (card grids), the section and case law study screens
+  // and admin screens use the wide (72rem) layout; other pages stay a reading column.
+  const isWide =
+    pathname === '/dashboard' ||
+    pathname === '/acts' ||
+    pathname === '/caselaws' ||
+    pathname.startsWith('/sections/') ||
+    pathname.startsWith('/caselaws/') ||
+    pathname.startsWith('/admin/');
+  const { user } = useAuth();
+  const currentUser = useCurrentUser();
+  // `/users/me` wins once it exists; until then the login/register response supplies the name.
+  const profile = currentUser.status === 'success' ? currentUser.data : null;
+  const fullName = profile?.fullName?.trim() || user?.fullName || null;
+  const firstName = (profile && firstNameFrom(profile)) ?? firstNameFrom({ fullName });
 
   return (
     <div className={styles.shell}>
@@ -40,26 +57,21 @@ export function AppLayout() {
       </a>
       <header className={styles.header}>
         <div className={styles.headerInner}>
-          <Link to="/dashboard" className={styles.brand} aria-label="Lexly home">
+          <Link to="/dashboard" className={styles.brand} aria-label="Go to dashboard">
             <LexlyMark />
             <span className={styles.brandName}>Lexly</span>
           </Link>
-          <nav aria-label="Primary" className={styles.topNav}>
-            <ul className={styles.topNavList}>
-              {NAV_ITEMS.filter((item) => item.to !== '/profile').map((item) => (
-                <li key={item.to}>
-                  <Link
-                    to={item.to}
-                    className={styles.topNavLink}
-                    aria-current={isActive(item, pathname) ? 'page' : undefined}
-                  >
-                    {item.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
           <div className={styles.actions}>
+            <p className={styles.greeting}>
+              Hi
+              {/* The leading space lives in the span so it hides with the name on very narrow screens. */}
+              {fullName && (
+                <span className={styles.greetingName} title={fullName}>
+                  {` ${fullName}`}
+                </span>
+              )}
+              !
+            </p>
             <NotificationsButton />
             <Link
               to="/profile"
@@ -73,8 +85,8 @@ export function AppLayout() {
         </div>
       </header>
 
-      <main id="main-content" className={`${styles.main} ${isHome ? styles.mainWide : ''}`} tabIndex={-1}>
-        <Outlet />
+      <main id="main-content" className={`${styles.main} ${isWide ? styles.mainWide : ''}`} tabIndex={-1}>
+        <Outlet context={{ firstName } satisfies AppLayoutContext} />
       </main>
 
       <nav aria-label="Primary" className={styles.bottomNav}>

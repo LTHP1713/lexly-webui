@@ -1,4 +1,4 @@
-import { ApiError, apiClient } from '@/api/client';
+import { apiClient } from '@/api/client';
 
 export interface ActSummary {
   id: string;
@@ -10,41 +10,99 @@ export interface SectionSummary {
   id: string;
   sectionNumber: string;
   title: string | null;
-  isFree: boolean;
 }
 
-export interface SectionEntry {
-  id: string;
+export interface SectionIllustration {
   text: string;
+  /** True for an example written by Lexly rather than one printed in the Act. */
+  hypothetical: boolean;
 }
 
+/** Plain-language explanation of one clause, e.g. `(a)` "Proposal (offer)". */
+export interface ProvisionMeaning {
+  clause: string;
+  title: string;
+  explanation: string;
+}
+
+export interface SectionException {
+  title: string;
+  explanation: string;
+  illustrations: SectionIllustration[];
+}
+
+export interface KeyLegalTerm {
+  term: string;
+  definition: string;
+}
+
+/**
+ * UI model for `GET /sections/{id}`. All lists keep the backend's order (display_order) — do not
+ * re-sort. Sections without study content yet simply have empty lists / a null summary.
+ */
 export interface SectionDetail {
   id: string;
   sectionNumber: string;
   title: string | null;
   bodyText: string;
-  /** Already ordered by the backend (display_order) — do not re-sort. */
-  illustrations: SectionEntry[];
-  /** Already ordered by the backend (display_order) — do not re-sort. */
-  exceptions: SectionEntry[];
+  inSimpleWords: string | null;
+  provisionMeaning: ProvisionMeaning[];
+  illustrations: SectionIllustration[];
+  exceptions: SectionException[];
+  keyLegalTerms: KeyLegalTerm[];
+  /** The act this section belongs to. */
+  actId: string | null;
+  actTitle: string | null;
+  /** Neighbours in the act's natural order; null at the start/end of the act. */
+  prev: SectionSummary | null;
+  next: SectionSummary | null;
 }
 
-/** The teaser fields the backend flattens into its 403 `PRO_REQUIRED` body for a locked section. */
-export interface LockedSectionTeaser {
-  id: string;
+/** Raw response: the study-content fields may be absent or null for sections not enriched yet. */
+interface SectionDetailDto {
+  id?: string;
   sectionNumber: string;
   title: string | null;
-  message: string;
+  bodyText: string;
+  actId?: string | null;
+  actTitle?: string | null;
+  prev?: SectionSummary | null;
+  next?: SectionSummary | null;
+  inSimpleWords?: string | null;
+  provisionMeaning?: ProvisionMeaning[] | null;
+  illustrations?: Partial<SectionIllustration>[] | null;
+  exceptions?: (Omit<SectionException, 'illustrations'> & { illustrations?: Partial<SectionIllustration>[] | null })[] | null;
+  keyLegalTerms?: KeyLegalTerm[] | null;
 }
 
-export type SectionResult =
-  | { access: 'full'; section: SectionDetail }
-  | { access: 'locked'; teaser: LockedSectionTeaser };
+function toIllustrations(list: Partial<SectionIllustration>[] | null | undefined): SectionIllustration[] {
+  return (list ?? [])
+    .filter((item) => item.text?.trim())
+    .map((item) => ({ text: item.text!.trim(), hypothetical: item.hypothetical === true }));
+}
 
-/**
- * Known backend gap: `snippet` is currently returned in full even for locked (`isFree: false`)
- * results — the intended redaction isn't implemented. Render whatever comes back.
- */
+function toSectionDetail(dto: SectionDetailDto, fallbackId: string): SectionDetail {
+  return {
+    id: dto.id ?? fallbackId,
+    sectionNumber: dto.sectionNumber,
+    title: dto.title,
+    bodyText: dto.bodyText ?? '',
+    inSimpleWords: dto.inSimpleWords?.trim() || null,
+    provisionMeaning: dto.provisionMeaning ?? [],
+    illustrations: toIllustrations(dto.illustrations),
+    exceptions: (dto.exceptions ?? []).map((ex) => ({
+      title: ex.title,
+      explanation: ex.explanation,
+      illustrations: toIllustrations(ex.illustrations),
+    })),
+    keyLegalTerms: dto.keyLegalTerms ?? [],
+    actId: dto.actId ?? null,
+    actTitle: dto.actTitle ?? null,
+    prev: dto.prev ?? null,
+    next: dto.next ?? null,
+  };
+}
+
 export interface SectionSearchHit extends SectionSummary {
   snippet: string;
 }
@@ -61,33 +119,27 @@ export function listActs() {
   return apiClient.get<ActSummary[]>('/acts');
 }
 
-export function listSections(actId: string) {
-  return apiClient.get<SectionSummary[]>(`/acts/${encodeURIComponent(actId)}/sections`);
-}
+const sectionNumberOrder = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
 
 /**
- * A 403 `PRO_REQUIRED` here is an expected outcome, not a failure: it is turned into a
- * `locked` result carrying the teaser so the detail screen can render an upsell.
+ * Natural order by section number, the same order the backend uses: numeric part first, then
+ * the letter suffix — 19 < 19A < 19AA < 19B < 20, not the string order 1, 10, 11, 2. Sections
+ * without a leading number go last.
  */
-export async function getSection(sectionId: string): Promise<SectionResult> {
-  try {
-    const section = await apiClient.get<SectionDetail>(`/sections/${encodeURIComponent(sectionId)}`);
-    return { access: 'full', section };
-  } catch (err) {
-    if (err instanceof ApiError && err.status === 403 && err.code === 'PRO_REQUIRED') {
-      const body = (err.body ?? {}) as Partial<LockedSectionTeaser>;
-      return {
-        access: 'locked',
-        teaser: {
-          id: body.id ?? sectionId,
-          sectionNumber: body.sectionNumber ?? '',
-          title: body.title ?? null,
-          message: err.message,
-        },
-      };
-    }
-    throw err;
-  }
+export function compareSectionNumbers(a: string, b: string): number {
+  if (!a || !b) return a ? -1 : b ? 1 : 0;
+  return sectionNumberOrder.compare(a, b);
+}
+
+/** The backend returns natural order; the sort is kept as a safety net and must agree with it. */
+export async function listSections(actId: string): Promise<SectionSummary[]> {
+  const sections = await apiClient.get<SectionSummary[]>(`/acts/${encodeURIComponent(actId)}/sections`);
+  return [...sections].sort((a, b) => compareSectionNumbers(a.sectionNumber, b.sectionNumber));
+}
+
+export async function getSection(sectionId: string): Promise<SectionDetail> {
+  const dto = await apiClient.get<SectionDetailDto>(`/sections/${encodeURIComponent(sectionId)}`);
+  return toSectionDetail(dto, sectionId);
 }
 
 export function searchSections(input: { query: string; page: number; size: number }) {

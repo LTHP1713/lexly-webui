@@ -1,7 +1,8 @@
-/* Mobile-first: bottom tab bar below 768px, top nav from 768px up. */
+/* Mobile-first: bottom tab bar below 768px. The header never carries section links — the
+   Dashboard is the navigation hub. */
 
 .shell {
-  /* The Lexly palette is light-only; scoped here so the auth screens keep their own behaviour. */
+  /* The Lexly palette is light-only (the auth screens opt in the same way in AuthLayout). */
   color-scheme: light;
   min-height: 100vh;
   min-height: 100dvh;
@@ -50,9 +51,11 @@
   display: inline-flex;
   align-items: center;
   gap: 0.55rem;
+  flex-shrink: 0;
   min-height: 44px;
   color: var(--lx-navy);
   text-decoration: none;
+  border-radius: 0.5rem;
 }
 
 .brandName {
@@ -62,57 +65,39 @@
   letter-spacing: 0.01em;
 }
 
-.topNav {
-  display: none;
-  flex: 1;
-}
-
-.topNavList {
-  display: flex;
-  gap: 0.25rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.topNavLink {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  padding: 0 0.85rem;
-  color: var(--lx-muted);
-  font-size: 0.95rem;
-  font-weight: 600;
-  text-decoration: none;
-  border-radius: 0.5rem;
-}
-
-.topNavLink:hover {
-  color: var(--lx-navy);
-  background: var(--lx-ivory-deep);
-}
-
-.topNavLink[aria-current='page'] {
-  color: var(--lx-navy);
-}
-
-.topNavLink[aria-current='page']::after {
-  content: '';
-  position: absolute;
-  left: 0.85rem;
-  right: 0.85rem;
-  bottom: 4px;
-  height: 2px;
-  border-radius: 2px;
-  background: var(--lx-gold);
-}
-
 .actions {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.25rem;
+  min-width: 0;
   margin-left: auto;
+}
+
+/* Shrinks before anything else in the header: a long name truncates rather than overflowing. */
+.greeting {
+  display: flex;
+  min-width: 0;
+  margin: 0 0.25rem 0 0;
+  color: var(--lx-navy);
+  font-size: 0.92rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.greetingName {
+  min-width: 0;
+  max-width: 9rem;
+  /* Keeps the leading space, which a flex item would otherwise trim. */
+  white-space: pre;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Below the narrowest supported phone (360px) only "Hi!" fits. */
+@media (max-width: 359.98px) {
+  .greetingName {
+    display: none;
+  }
 }
 
 .avatar {
@@ -219,8 +204,17 @@
     padding: 0 1.5rem;
   }
 
-  .topNav {
-    display: block;
+  .actions {
+    gap: 0.5rem;
+  }
+
+  .greeting {
+    margin-right: 0.5rem;
+    font-size: 0.98rem;
+  }
+
+  .greetingName {
+    max-width: 18rem;
   }
 
   .main {

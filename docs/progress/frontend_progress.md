@@ -2,6 +2,362 @@
 
 ## Completed
 
+### 2026-10-11 — Dev: API data no longer stale for up to 5 minutes
+
+The backend sends `Cache-Control: max-age=300, private` on content GETs, so after a backend
+change (a restart, a content edit, a contract change) the browser kept showing the previous
+response for up to 5 minutes. In development, `api/client.ts` now sends every GET with
+`cache: 'no-cache'` (`getCacheMode()`): the browser revalidates each time, which costs a 304 via the
+ETag when nothing changed. Production builds keep the browser cache, and the after-logout
+`reload` bypass is unchanged. Verified in Chrome: content changed through the API showed on the
+next in-app visit to the page.
+
+Seen while testing, not changed: navigating away while `/auth/refresh` is still in flight can sign
+the user out. The server has already rotated the token, but the aborted response never delivers
+the new cookie. Only reproducible with two page loads in very quick succession.
+
+### 2026-10-11 — Free/Pro removed (for now)
+
+**Status:** Done. Lint, `tsc -b` and the build pass. Checked in headless Chrome against the live
+backend, which no longer sends `isFree`, returns no `PRO_REQUIRED` teasers and has no
+`PUT /admin/caselaws/{id}/free-flag`.
+
+What changed:
+- **API:** `isFree` removed from `SectionSummary`, `SectionDetail`, `CaseLawSummary`,
+  `RelatedSection`, `SearchResult` and the admin case law request/response. `getSection` /
+  `getCaseLaw` now return the detail directly: the `SectionResult` / `CaseLawResult` "locked"
+  unions and the teaser types are gone, so any 403 is a normal error. `ApiError.body` (only used
+  for teasers) and `setCaseLawFree` are removed.
+- **Screens:** `ProBadge` is deleted, along with the lock icons in the act list, pager and
+  "Sections interpreted", the "locked" item styling, and the locked teaser views on both detail
+  pages. Also removed: the Pro marks in search, case law list and universal search. The
+  "Sections marked Pro…" note on an act's sections became a plain subtitle, which keeps the
+  spacing under the title (same pattern as the Acts page).
+- **Section page:** Previous / Next now always come from the section response. The fallback that
+  used the act's list for a locked section, and the pager under the error state, are gone.
+- **Admin:**
+  - The list loses its Free/Pro tag and Make free / Make Pro button.
+  - The details form loses the "Free for all students" checkbox; its group is now "Importance
+    and source".
+  - The content editor always fetches the case. The "start empty after create" hand-off existed
+    only because of Pro gating and is gone; the hand-off now carries just the toast message.
+- **Dead CSS removed:** `.badge`, `.lockIcon`, `.itemLocked`, `.locked*`, `.hitHeading` and
+  `.checkbox`. Also the leftovers from the old case and section layouts: `.caseMeta`,
+  `.externalLink`, `.entries`, `.entry*` and `.bodyText`.
+- **Docs:** `HOME_DASHBOARD_API_CONTRACT.md` has a note that free/Pro is suspended and its
+  `isFree`/Pro parts are out of scope until it returns. The master doc in the backend repo is
+  untouched, since the backend team is changing that contract.
+- **To bring Pro back:** restore from git history (this entry's diff). The study-panel layout
+  doesn't depend on it.
+
+### 2026-10-10 — Case law detail: Bare Acts study-panel design
+
+**Status:** Done. Lint, `tsc -b` and the build pass. Checked in headless Chrome against the live
+backend at 1440, 1100 and 390px; no horizontal scroll on phones. The section screen was
+pixel-compared before and after the refactor at all three widths and is unchanged.
+
+- **Shared study panel.** The section screen's reusable parts were moved out of
+  `SectionDetailPage.tsx` with no change in behaviour:
+  - **`StudyPanel.tsx`:** `ReadingProgress`, `OnThisPage`, `Insights`, `DocPart`, `RichText`.
+  - **`studyPanelModel.ts`:** `usePartNavigation` (scroll spy + jump), `StudyPart`, text helpers.
+  - **`StudyPanel.module.css`:** panel frame, side columns, chips, insights, parts and breadcrumb.
+  - **`SectionDetail.module.css`** keeps only the section's own parts: act list, statute text,
+    term popovers, clauses, illustrations, exceptions and pager.
+  - Each page passes a tone class per part. The tone defines `--tone` and `--tone-soft`.
+- **`CaseLawDetailPage` uses the same panel** (wide 72rem layout, like `/sections/*`):
+  - **Left rail:** reading progress, scroll-tracked "On this page", and "Sections interpreted"
+    (in place of "In this Act").
+  - **Centre:** a serif document. Meta line (case type · year, importance, Pro), title, lede, then
+    a case-facts card. The card's labels sit above their values in two columns from 768px.
+  - **Parts, each with its own tone:** Background, Issues, Arguments, Final Holding (callout with
+    outcome badge), Ratio (solid "Binding"), Obiter (dashed "Not binding", italic), Provisions,
+    Principles, Related Sections. Issues are collapsible from 3 issues on. Arguments are party
+    cards.
+  - **Right rail:** reading time, decided date and issue count, plus insight cards that jump to
+    each part.
+  - **Below 1024 / 1200px:** sticky chip bar and inline insights, as on the section screen.
+  - **Breadcrumb:** "Case Laws / {citation}". "Case Laws" returns to the filtered list the reader
+    came from.
+- **Backend drift found while testing:** the local backend's uncommitted work removes the
+  free/Pro model (`isFree`, the 403 teasers, `PUT …/free-flag`). Not migrated here. Until then,
+  every case and section shows a "Pro" badge (missing `isFree` reads as not free), and the admin
+  list's Make free / Make Pro button gets a 404.
+
+### 2026-10-10 — Case Law — Structured Content Migration
+
+**Status:** Done. Lint, `tsc -b` and the build pass. Verified with headless Chrome (Playwright,
+56 checks) against the dev server and the **live** local backend. The checks used a test admin
+and a test student account, and seeded case `22222222-2222-4222-8222-000000000006`.
+
+The backend replaced the free-text case summary (facts/issues/held/analysis) with structured
+content. Everything that used `summary`, `/summary` or `SUMMARY_ALREADY_EXISTS` was migrated or removed.
+
+**Read side**
+- **`api/caselaws.ts`:** `CaseLawDetail` now has `caseNumber`, `bench`, `judges`,
+  `jurisdiction`, `caseType`, `onlineSummary`, `background`, `issues[]`, `arguments` (keyed by
+  party), `finalHolding`, `ratioDecidendi[]`, `obiterDicta[]`, `importantProvisions[]` and
+  `legalPrinciples[]`. `CaseSummaryText` is gone. `toCaseLawDetail` turns blank strings into
+  `null` and drops blank entries and empty party lists, so no empty heading can render. List and
+  detail fetches accept `RequestOptions`, so admin screens can bypass the 5-minute browser cache.
+- **`pages/content/caseLawLabels.ts`** is the one shared util for code-like values:
+  `humanizeCode` turns `SIR_UPHELD_WITH_DIRECTIONS` into "Sir upheld with directions" and passes
+  plain text through. `caseTypeLabel` has a label map (`WRIT_PETITION` → "Writ Petition"), and
+  `partyLabel` maps the six parties (AMICUS → "Amicus Curiae") and title-cases unknown keys.
+- **`CaseLawDetailPage`** (+ new `CaseLawDetail.module.css`):
+  - **Header:** title, importance badge, `onlineSummary` lede, and a metadata `<dl>` that skips
+    null rows.
+  - **On this page:** jump links for the sections present. They scroll in place, move focus and
+    leave the URL hash alone.
+  - **Sections, in order:** Background → Issues → Arguments → Final Holding → Ratio → Obiter →
+    Provisions → Principles → Related Sections. Empty sections are left out.
+  - **Issues** are numbered. From 3 issues on, each one is a `<details>` and the first starts open.
+  - **Arguments** keep the order of the keys as they arrive. Two columns from 720px.
+  - **Outcome** is a text badge.
+  - **Ratio** has a solid "Binding" tag and a solid rule. **Obiter** has a dashed "Not binding"
+    tag and italic text.
+  - **Provisions** are plain text, not links.
+  - **Principles** are a `<dl>` of cards.
+  - The locked teaser is unchanged and renders no structured content.
+  - Removed `.summaryBlock` from `Content.module.css`.
+- **`CaseLawsPage`:** help text "Search by case name, citation, court, case number or judge",
+  linked with `aria-describedby`, plus a new placeholder. Filters are now top-aligned.
+
+**Admin side** (new: the Prompt 3/5 admin screens had never been built, so the case law part was
+built here)
+- **Role:** `SessionUser.role` comes from the JWT `role` claim at login/register and from
+  `GET /users/me` on reload. `RequireAdmin` sends anyone who isn't an admin to `/dashboard`. The
+  server still enforces the role; a stale role just gets the server's 403 shown as an error.
+  The only entry point is an "Admin: manage case laws" link on Profile, shown to admins only.
+- **Routing:** `main.tsx` now uses `createBrowserRouter` with a single splat route around `App`,
+  so `useBlocker` works. `App`'s `<Routes>` are unchanged. `/admin/*` uses the wide layout.
+- **`api/adminCaseLaws.ts`:** create/update/delete/free-flag and `PUT .../content`. Types
+  `CaseLawMetadataRequest`, `CaseLawAdmin` and `CaseLawContentRequest`, plus `CASE_LAW_LIMITS` /
+  `CONTENT_LIMITS` mirroring the server's `@Size` limits. `apiClient.delete` added.
+- **`/admin/caselaws`:** search, pagination, Details / Content links, a Make free / Make Pro quick
+  action, and Delete. The delete confirmation (native `<dialog>`) says it also deletes all
+  issues, arguments, holdings, other content and section links.
+- **`/admin/caselaws/new` and `/:id`:** metadata form with every new field. Client limits match
+  the server (citation is now 500). Case type suggests known codes and previews how it will
+  display. Linked sections are shown read-only. After a create, the app opens the content editor.
+- **`/admin/caselaws/:id/content`:** the content editor.
+  - **Loading:** reads `GET /caselaws/{id}` and flattens `arguments` into rows.
+  - **Lists** (`RepeatableList`): Add / Move up / Move down / Remove on every row. Row numbers
+    follow position live. Focus follows the moved row, and a polite live region announces moves.
+  - **Saving:** the whole body goes to `PUT .../content` and the form refreshes from the response.
+    Sequence fields are never sent.
+  - **Change tracking:** "dirty" means the request body differs from the loaded one. That drives
+    the single Save button and the unsaved-changes guard (in-app navigation via `useBlocker`,
+    plus `beforeunload`).
+  - **Feedback:** a saving state and a success toast.
+  - **Validation:** client checks mirror the server. A 400 `VALIDATION_ERROR` message
+    (`path: msg, path: msg`, or "… at path") is parsed into inline row errors and an error
+    summary with links. Errors follow their rows when rows move.
+  - **Round trip:** the seeded case saves back byte-identical, checked by comparing JSON after a
+    reorder, save, restore and save.
+
+Notes / backend gaps:
+- **`GET /caselaws/{id}` gates by subscription, not role.** A non-Pro admin gets the 403 teaser
+  for Pro cases, and there is no admin read endpoint, so the editors can't load them. The editors
+  explain this and refuse to show an empty form, because a full-replace save from it would wipe
+  the content. Workarounds: make the case free from the list, or use an admin with Pro.
+  Suggested backend fix: treat `ADMIN` as entitled in `CaseLawService`.
+- Straight after "Create case law", the editor starts empty from the create response, because a
+  new case has no content. That hand-off is read once and cleared from history, so a reload
+  fetches again.
+- Section linking UI (Prompt 5, unchanged endpoints) is not built yet; linked sections are listed
+  read-only.
+- After a save the admin refetches the public detail with `cache: 'reload'`, so the
+  student-facing page in the same browser isn't served the old cached copy.
+
+Files touched: `src/main.tsx`, `src/App.tsx`, `src/api/{caselaws,adminCaseLaws,auth,client}.ts`,
+`src/auth/{session-store.ts,AuthContext.tsx,RequireAdmin.tsx}`, `src/components/AppLayout.tsx`,
+`src/pages/ProfilePage.tsx`,
+`src/pages/content/{CaseLawDetailPage.tsx,CaseLawDetail.module.css,CaseLawsPage.tsx,Content.module.css,caseLawLabels.ts}`,
+`src/pages/admin/*` (new: list, metadata form, content editor, `RepeatableList`, `Field`,
+`ConfirmDialog`, `Toast`, `useUnsavedChangesGuard`, `contentForm.ts`, `adminCaseLaw.ts`,
+`Admin.module.css`). Docs: `Lexly-Frontend-Development-Master-Doc.md` (backend repo; copy mirrored
+to `lexly-web/design/`): module summary, error codes, case law and admin endpoint tables, data
+models, Prompts 4 and 5.
+
+### 2026-10-09 — Backend integration: refresh cookie, `/users/me`, section neighbours
+
+**Status:** Done in code; lint, `tsc -b` and the build pass. The **live** backend was not running,
+so the browser checks ran against a local mock written to the backend's integration note (cookie
+rotation, 400/401 refresh, 204 logout, `Cache-Control`/`ETag`, CORS with credentials). Re-run them
+against the real backend before merging it.
+
+What changed:
+- **Session survives a reload.** The refresh token is no longer held in JS at all: the backend sets
+  it as an HttpOnly `lexly_refresh_token` cookie (`Path=/api/v1/auth`, `SameSite=Lax`), and
+  `/auth/refresh` is called with no body. Only the access token is kept, in memory. `refreshToken` in
+  response bodies is ignored.
+- `credentials: 'include'` is sent on the **auth calls only** (register, login, refresh, logout).
+  The cookie's path means other requests would carry nothing.
+- **Bootstrap:** the session store starts in `loading`. `bootstrapSession()` (`api/auth.ts`, once
+  per page load) calls `/auth/refresh`, then `GET /users/me` for the user (the refresh body has no
+  user). 400/401 → `anonymous` with no error UI. `RequireAuth` and `RedirectIfAuthenticated` show
+  a neutral `SessionPending` screen meanwhile, so neither `/login` nor a protected page flashes.
+- **One refresh at a time:** `refreshSession()` shares one in-flight promise between the bootstrap,
+  401 retries and StrictMode's doubled effects. It also runs under a Web Lock
+  (`navigator.locks`, `lexly-auth-refresh`), so two tabs reloading together refresh one after the
+  other, and the second sends the cookie the first just rotated. Without the lock, the mock showed one
+  of the two tabs getting logged out. A 401 for a token that has already been replaced retries
+  without another refresh.
+- **Logout:** `POST /auth/logout` with credentials, then `sessionStore.clear()`, even if the request fails.
+- **HTTP cache after a user change** (option (b)): content GETs are now browser-cached for 5 minutes,
+  keyed by URL. After a logout or an expired session, every GET uses `cache: 'reload'` for 5 minutes
+  (a timestamp in localStorage, so it survives reloads and applies to all tabs). The next user
+  never sees the previous user's cached Pro section.
+- **`VITE_API_USERS_ME=true`** in `.env.example` and the local `.env`. Search, practice stats and
+  learning progress flags stay `false`.
+- **Section detail:** `actId`, `actTitle`, `prev`, `next` are mapped onto `SectionDetail`, and
+  `isFree`/`actId`/`actTitle` onto the locked teaser. The page builds the breadcrumb
+  (Bare Acts / {act} / Section n), the act sidebar and Previous / Next from the response, however it
+  was opened. Router `state` is now only an optional "Back to search results" hint. Locked
+  neighbours stay linked with the lock + "(Pro)". The locked teaser names its act and links back to
+  it. Its Previous / Next come from the act's section list, because the 403 body has no neighbours.
+- **Sort:** `compareSectionNumbers` (numeric `Intl.Collator`) matches the backend's natural order:
+  19 < 19A < 19AA < 19B < 20, and sections with no number last. The sort is kept as a safety net.
+- No code treated a 500 as "endpoint not deployed" (the flags gate those calls), so the change of
+  unknown routes to 404 needed nothing here.
+
+### 2026-10-08 — Bare Acts section screen: study content
+
+**Status:** Done. Verified with headless Chrome against the dev server and the **live** local
+backend. Section 2 of the Contract Act has every field filled, and Section 10 has only the bare
+text.
+
+What changed:
+- **`api/content.ts`:** `GET /sections/{id}` now maps the enriched response: `inSimpleWords`,
+  `provisionMeaning[]` (`clause`, `title`, `explanation`), `illustrations[]` (`text`,
+  `hypothetical`), `exceptions[]` (`title`, `explanation`, nested `illustrations[]`) and
+  `keyLegalTerms[]` (`term`, `definition`). `toSectionDetail` normalizes the response: a missing or
+  null list becomes `[]`, a blank summary becomes `null`, and `id` falls back to the route id.
+- **Layout (redesigned the same day as a study panel, modelled on a writing-app reference):** the
+  page uses the shell's wide 72rem layout (`AppLayout` treats `/sections/*` as wide) and renders
+  one white panel with three columns:
+  - **Left (≥1024px):** reading progress, "On this page" (scroll-spy) and "In this Act". That list
+    is every section of the act, from `GET /acts/{actId}/sections`, with the current one marked.
+    The act id is parsed from the `backTo` router state (`/acts/{id}`). Switching sections there
+    keeps the back link and scrolls to the top.
+  - **Centre:** the section as a serif document in **Source Serif 4**, self-hosted via
+    `@fontsource-variable/source-serif-4` with no Google Fonts request, and the reading line is
+    about 60–70 characters. A **Read / Study** toggle: Study highlights the first mention of each
+    key legal term in the Act text. A focusable `<mark>` shows its definition in a popover on
+    hover, focus or tap, and Escape closes it. The popover stays inside the viewport and opens
+    upward near the bottom of the screen.
+  - **Right (≥1200px):** stats (reading time, words in the Act, clauses) and colour-coded insight
+    cards. Each card jumps to its part.
+  - Below those widths the insights sit above the text (a swipeable card row on phones), and the
+    "On this page" links become a sticky chip bar.
+  - Each kind of content keeps one colour everywhere: key terms amber, clauses violet,
+    illustrations blue, exceptions red, summary green. Solid swatches use dark shades so white
+    text stays ≥ 4.5:1.
+  - The loading, error and locked states keep the 48rem column.
+- **`SectionDetailPage`:** the "On this page" links scroll in place and don't touch the hash,
+  which keeps the "Back to …" router state. The page shows Lexly cards in this order:
+  Bare Act text (clause labels such as "(a)" in a hanging gutter), In simple words (a gold card),
+  Clause by clause, Illustrations, Exceptions (with nested illustrations) and Key legal terms (a
+  two-column grid from 768px).
+- Each illustration is tagged **Hypothetical** (written by Lexly) or **From the Act**, so students
+  can tell the two apart. In explanations, "• " lines render as lists and short labels such as
+  "Promisor:" are bold.
+- The new styles are in `SectionDetail.module.css`, which uses the `--lx-*` tokens. The locked (Pro)
+  view is unchanged.
+
+- **Section order:** `GET /acts/{id}/sections` returns sections sorted as strings (1, 10, 100, 11,
+  …, 2, 20, …). `listSections` now sorts them by section number in natural order (1, 2, …, 19,
+  19A, 20, …, 100; sections without a number go last), using `Intl.Collator` with
+  `numeric: true`. This applies to both the act's section list and the "In this Act" sidebar.
+  The proper fix is ordering in the backend query; the frontend sort can stay as a safety net.
+
+- **Previous / Next section:** a pager at the end of every section shows "N of M sections in this
+  Act" and links to the neighbours in natural order (§19 → §19A → §20). Locked sections still
+  show the pager under the Pro teaser, so reading in order never dead-ends. The act's ordered
+  list is fetched once at page level and shared with the "In this Act" sidebar; switching
+  sections no longer re-fetches it. While the next section loads, the current one stays on
+  screen dimmed (`aria-busy`) instead of flashing a loading state. Like the sidebar, the pager
+  needs the act context from `backTo` (it's hidden for sections opened from search).
+- **Backend performance (measured 2026-10-08 against the local backend):** every response is
+  sent uncompressed with `Cache-Control: no-store` and no `ETag`. The CORS preflight has no
+  `Access-Control-Max-Age`, so authenticated GETs keep paying an extra OPTIONS round trip.
+  Section detail takes ~80 ms against ~40 ms for the list endpoints. The list (101 sections) is
+  15 KB uncompressed. See the recommendations given to the backend.
+
+Notes:
+- The live detail response doesn't include `isFree`. The page treats it as free and only shows
+  the Pro badge when `isFree` is `false`.
+
+### 2026-10-06 — Dashboard as hub: post-login routing & simplified header
+
+**Status:** Done. Verified with headless Chrome (CDP) against the dev server and the **live**
+local backend. The login response was rewritten only to simulate a backend that returns
+`firstName`.
+
+What changed:
+- **Routing:** the new `RedirectIfAuthenticated` guard wraps `/login` and `/register`. A signed-in
+  user is sent to `/dashboard`, both on opening those routes (and `/` or `*`, which go via
+  `/login`) and the moment login or registration succeeds. The pages no longer navigate
+  themselves. Login therefore always lands on the Dashboard: the `state.from` return-to-page was
+  dropped, and `RequireAuth` no longer sets it.
+- **Header:** the Home / Subjects / Practice links were removed. It now shows the brand (a `Link`
+  to `/dashboard`, `aria-label="Go to dashboard"`), then `Hi {fullName}!`, the bell and the avatar.
+  A long name truncates with an ellipsis and the full name is in a `title` tooltip. Below 360px,
+  or when there is no name, it reads "Hi!".
+- **Name source:** `/auth/login` and `/auth/register` now return `fullName`, stored on the session
+  user. `AppLayout` resolves the name once: `/users/me` takes priority when it exists, otherwise
+  the auth response is used. The Home hero keeps its first-name greeting (`firstNameFrom`, which
+  takes the first word of `fullName`) through the outlet context (`useAppLayout`), so Home no
+  longer calls `/users/me` itself. The name is never derived from the email.
+- **Mobile tab bar** is kept, with "Subjects" renamed to "Bare Acts" to match the Dashboard.
+
+Notes:
+- `GET /users/me` still returns 500 (not implemented), so the name currently comes only from the
+  login/register response. Because the session lives in memory, the name, like the session, is gone
+  after a page reload.
+- Throwaway account `lexly.navtest.<timestamp>@example.com` was registered on the local backend.
+
+### 2026-10-06 — Login & Register redesign
+
+**Status:** Done. Verified with headless Chrome (Playwright) against the dev server and the
+**live** local backend, with no mocks except the network-failure and bare-401 cases.
+
+What changed (frontend only — `api/auth.ts`, `AuthContext`, `session-store`, `RequireAuth` and
+`validation.ts` are untouched):
+- **`AuthLayout`**: a light ivory brand panel (navy wordmark, brass accents), plus the form. Phones get a
+  compact band with the wordmark and a cropped illustration of about 136px. The art is hidden when
+  the viewport is under 560px tall (keyboard open). From 600px the band shows the hero copy and
+  the form sits in a card. From 1024px the layout is a split screen with a sticky brand panel
+  (56%). The page uses `min-height: 100dvh` and never a fixed height.
+- **`AuthIllustration`**: an original inline SVG modelled on a supplied reference. A student at a
+  desk (law-book stack, open book, laptop) sits inside a dashed orbit of vignettes: Bare Acts,
+  court, advocate, scales, case law, graduation and practice. Both figures are faceless, with a
+  short tousled haircut and neutral clothing, so the scene is gender neutral. Phones show only the
+  student at the desk. It uses the Lexly palette only and is `aria-hidden`.
+- **`AuthField` / `PasswordField`**: a label above each input, a 48px control, and the error or
+  hint linked through `aria-describedby`. The show-password control is a 44px button with
+  `aria-pressed`.
+- **`authForm.ts`**: maps `ApiError`s to user-facing text, so the backend's `message` or HTTP status
+  text is never shown raw. Focus moves to the first invalid field when a submit fails validation.
+- Login copy is now "Welcome back" / "Sign In". The redirect is unchanged: `state.from`, else
+  `/dashboard`. Register still signs the user in and goes to `/dashboard`.
+- **Not added:** forgot password and remember me. No route or backend support exists, and the
+  session lives in memory by design.
+
+Verified: `tsc -b` + `vite build` clean, `oxlint` shows only the pre-existing `AuthContext.tsx`
+warning. Tested flows: login ↔ register links, password toggle, wrong password, Enter to submit,
+a double-click sending one request, register leading to `/dashboard`, duplicate email (409) with
+a "Sign in instead" link, anonymous `/acts` → login → back to `/acts`, login leading to
+`/dashboard`, network failure, and a bare 401. Nothing is written to Web Storage. There is no
+horizontal overflow at 360×800, 390×844, 430×932, 768×1024, 1024×768, 1280×800, 1440×900 or
+390×450 (simulated keyboard).
+
+Notes:
+- The backend CORS config allows only `http://localhost:5173`. Running the dev server on any
+  other port makes every auth call fail, which shows as "Unable to connect".
+- Throwaway accounts `webui-auth-redesign-<timestamp>@example.com` were registered on the local
+  backend during testing.
+
 ### 2026-10-05 — Home dashboard, Case Laws, Practice/Profile shells
 
 **Status:** Frontend done. Verified with a headless Playwright run against the dev server, with
@@ -199,7 +555,8 @@ while anonymous redirects back to `/login`. No console errors in any of it.
   as given, unverified. `ApiError.status` is exposed on every error, so once a backend is
   reachable this is a one-time manual check (register the same email twice, read `err.status`)
   rather than a code change.
-- **No persistence across reloads.** Per the prompt's instruction not to default to
+- **No persistence across reloads.** _Resolved 2026-10-09: the backend now sets the refresh token
+  as an HttpOnly cookie and the app restores the session on load. See that entry._ Per the prompt's instruction not to default to
   localStorage/sessionStorage for the refresh token either, both tokens live only in
   `session-store.ts`'s module memory — a full page reload always logs the user out. Flagging
   this explicitly as the deferred decision the prompt asked for, rather than picking a storage
@@ -222,7 +579,8 @@ _Nothing blocked._ The auth status-code check from the Register & Login entry wa
 
 - Add an "Upgrade to Pro" action to the locked-section card once the subscriptions screen exists.
 - Choose an app-wide dark-mode approach (see the Content entry's notes).
-- Decide and implement the reload-persistence follow-up (see Deviations).
+- Re-run the 2026-10-09 browser checks against the live backend (the cookie flow was verified
+  only against a mock).
 - Backend: implement docs/HOME_DASHBOARD_API_CONTRACT.md (order: §G/§D/§F → §A → §C → §B), then
   flip the matching `VITE_API_*` flags.
 - Build the Practice flow (question banks → attempt → result) against §H–§K.

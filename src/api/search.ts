@@ -18,7 +18,6 @@ export interface SearchResult {
   subtitle: string | null;
   /** May contain `<b>…</b>` highlight markup only. */
   snippet: string | null;
-  isFree: boolean;
   navigationPath: string | null;
 }
 
@@ -112,7 +111,6 @@ async function fanOutSearch(q: string): Promise<UniversalSearchResponse> {
         // `/sections/search` doesn't return the act's name; the unified endpoint will.
         subtitle: null,
         snippet: hit.snippet || null,
-        isFree: hit.isFree,
         navigationPath: `/sections/${hit.id}`,
       })),
     });
@@ -128,7 +126,6 @@ async function fanOutSearch(q: string): Promise<UniversalSearchResponse> {
         title: c.title,
         subtitle: [importanceLabel[c.importance], c.citation, c.court].filter(Boolean).join(' • ') || null,
         snippet: null,
-        isFree: c.isFree,
         navigationPath: `/caselaws/${c.id}`,
       })),
     });
@@ -145,7 +142,6 @@ async function fanOutSearch(q: string): Promise<UniversalSearchResponse> {
         title: act.title,
         subtitle: act.shortCode,
         snippet: null,
-        isFree: true,
         navigationPath: `/acts/${act.id}`,
       })),
     });

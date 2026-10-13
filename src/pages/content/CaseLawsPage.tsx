@@ -1,12 +1,20 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { importanceLabel, listCaseLaws, type CaseLawImportance } from '@/api/caselaws';
-import { ErrorState, LoadingState } from '@/components/QueryStates';
+import {
+  caseLawActs,
+  getCaseLaw,
+  importanceLabel,
+  listCaseLaws,
+  type CaseLawImportance,
+  type CaseLawSummary,
+} from '@/api/caselaws';
+import { ErrorState } from '@/components/QueryStates';
+import { ArrowRightIcon, CourthouseIcon, DocumentIcon, ScalesIcon, SearchIcon } from '@/components/icons/Icons';
 import { useApiQuery } from '@/hooks/useApiQuery';
 import { ImportanceBadge } from './ImportanceBadge';
 import type { SectionLinkState } from './navigation';
-import { ProBadge } from './ProBadge';
-import styles from './Content.module.css';
+import contentStyles from './Content.module.css';
+import styles from './Browse.module.css';
 
 const PAGE_SIZE = 20;
 const DEBOUNCE_MS = 300;
@@ -78,44 +86,75 @@ export function CaseLawsPage() {
   const backTo: SectionLinkState['backTo'] = { to: `/caselaws?${params.toString()}`, label: 'case laws' };
   const filtered = Boolean(query || importance || sectionId);
 
-  return (
-    <>
-      <h1 className={styles.title}>Case Laws</h1>
-      <p className={styles.subtitle}>Landmark and important judgments, with structured summaries.</p>
+  function clearFilters() {
+    window.clearTimeout(debounceTimer.current);
+    setInput('');
+    setParams(new URLSearchParams());
+  }
 
-      <div className={styles.filters}>
+  return (
+    <div className={styles.page}>
+      <header className={styles.hero}>
+        <div className={styles.heroArt} aria-hidden="true">
+          <ScalesIcon size="100%" strokeWidth={0.6} />
+        </div>
+        <p className={styles.eyebrow}>Judgments</p>
+        <h1 className={styles.title}>Case Laws</h1>
+        <p className={styles.subtitle}>Judgments, explained issue by issue.</p>
+
         <form role="search" className={styles.searchForm} onSubmit={handleSubmit}>
-          <label htmlFor="caselaw-search" className={styles.searchLabel}>
+          <label htmlFor="caselaw-search" className={contentStyles.visuallyHidden}>
             Search case laws
           </label>
-          <input
-            id="caselaw-search"
-            type="search"
-            className={styles.searchInput}
-            value={input}
-            onChange={(event) => handleChange(event.target.value)}
-            placeholder="e.g. Kesavananda, free consent"
-            autoComplete="off"
-          />
+          <div className={styles.searchField}>
+            <SearchIcon size={20} className={styles.searchIcon} />
+            <input
+              id="caselaw-search"
+              type="search"
+              className={styles.searchInput}
+              value={input}
+              onChange={(event) => handleChange(event.target.value)}
+              placeholder="e.g. Kesavananda, 2026 INSC 564, Bagchi"
+              aria-describedby="caselaw-search-help"
+              autoComplete="off"
+            />
+          </div>
+          <span id="caselaw-search-help" className={contentStyles.visuallyHidden}>
+            Search by case name, citation, court, case number or judge
+          </span>
         </form>
-        <div className={styles.filterField}>
-          <label htmlFor="caselaw-importance" className={styles.searchLabel}>
+      </header>
+
+      <div className={styles.toolbar}>
+        <div role="group" aria-labelledby="caselaw-importance-label" className={styles.chips}>
+          <span id="caselaw-importance-label" className={styles.chipsLabel}>
             Importance
-          </label>
-          <select
-            id="caselaw-importance"
-            className={styles.select}
-            value={importance ?? ''}
-            onChange={(event) => update({ importance: parseImportance(event.target.value) ?? null })}
-          >
-            <option value="">All</option>
-            {IMPORTANCE_VALUES.map((value) => (
-              <option key={value} value={value}>
-                {importanceLabel[value]}
-              </option>
-            ))}
-          </select>
+          </span>
+          {[undefined, ...IMPORTANCE_VALUES].map((value) => (
+            <button
+              key={value ?? 'ALL'}
+              type="button"
+              className={styles.chip}
+              aria-pressed={importance === value}
+              onClick={() => update({ importance: value ?? null })}
+            >
+              {value ? importanceLabel[value] : 'All'}
+            </button>
+          ))}
         </div>
+        {data && results.status !== 'error' && (
+          <p role="status" className={styles.resultSummary}>
+            {results.status === 'loading' ? (
+              'Loading…'
+            ) : data.totalElements > 0 ? (
+              <>
+                <span className={styles.resultCount}>{data.totalElements}</span>{' '}
+                {data.totalElements === 1 ? 'case law' : 'case laws'}
+                {data.totalPages > 1 && ` · page ${data.page + 1} of ${data.totalPages}`}
+              </>
+            ) : null}
+          </p>
+        )}
       </div>
 
       {sectionId && (
@@ -135,39 +174,38 @@ export function CaseLawsPage() {
         </p>
       )}
 
-      {results.status === 'loading' && !data && <LoadingState label="Loading case laws" />}
+      {results.status === 'loading' && !data && (
+        <div role="status" className={styles.grid}>
+          <span className={contentStyles.visuallyHidden}>Loading case laws…</span>
+          {Array.from({ length: 6 }, (_, i) => (
+            <div key={i} className={styles.skeletonCard} aria-hidden="true" />
+          ))}
+        </div>
+      )}
       {results.status === 'error' && <ErrorState error={results.error} onRetry={results.retry} />}
 
       {data && results.status !== 'error' && (
         <div aria-busy={results.status === 'loading'} className={results.status === 'loading' ? styles.stale : undefined}>
-          <p role="status" className={styles.resultSummary}>
-            {results.status === 'loading'
-              ? 'Loading…'
-              : data.totalElements === 0
-                ? filtered
-                  ? 'No case laws match these filters.'
-                  : 'No case laws are available yet.'
-                : `${data.totalElements} ${data.totalElements === 1 ? 'case law' : 'case laws'}`}
-          </p>
-
-          {data.content.length > 0 && (
-            <ul className={styles.list}>
+          {data.content.length === 0 ? (
+            <div className={styles.emptyState}>
+              <ScalesIcon size={40} className={styles.emptyIcon} />
+              <p className={styles.emptyTitle}>{filtered ? 'No matching case laws' : 'No case laws yet'}</p>
+              <p className={styles.emptyMessage}>
+                {filtered
+                  ? 'Try a different case name, citation or judge, or widen the importance filter.'
+                  : 'Judgments will appear here as they are added.'}
+              </p>
+              {filtered && (
+                <button type="button" className={styles.clearButton} onClick={clearFilters}>
+                  Clear filters
+                </button>
+              )}
+            </div>
+          ) : (
+            <ul className={styles.grid}>
               {data.content.map((caseLaw) => (
                 <li key={caseLaw.id}>
-                  <Link
-                    to={`/caselaws/${caseLaw.id}`}
-                    state={{ backTo } satisfies SectionLinkState}
-                    className={`${styles.item} ${styles.searchHit} ${caseLaw.isFree ? '' : styles.itemLocked}`}
-                  >
-                    <span className={styles.itemTitle}>{caseLaw.title}</span>
-                    {(caseLaw.citation || caseLaw.court) && (
-                      <span className={styles.snippet}>{[caseLaw.citation, caseLaw.court].filter(Boolean).join(' • ')}</span>
-                    )}
-                    <span className={styles.badgeRow}>
-                      <ImportanceBadge importance={caseLaw.importance} />
-                      {!caseLaw.isFree && <ProBadge />}
-                    </span>
-                  </Link>
+                  <CaseLawCard caseLaw={caseLaw} backTo={backTo} />
                 </li>
               ))}
             </ul>
@@ -204,6 +242,64 @@ export function CaseLawsPage() {
           )}
         </div>
       )}
-    </>
+    </div>
+  );
+}
+
+function CaseLawCard({ caseLaw, backTo }: { caseLaw: CaseLawSummary; backTo: SectionLinkState['backTo'] }) {
+  return (
+    <Link
+      to={`/caselaws/${caseLaw.id}`}
+      state={{ backTo } satisfies SectionLinkState}
+      className={`${styles.card} ${caseLaw.importance === 'LANDMARK' ? styles.cardLandmark : ''}`}
+    >
+      <span className={styles.cardTop}>
+        <ImportanceBadge importance={caseLaw.importance} />
+        <ScalesIcon size={20} className={styles.cardIcon} />
+      </span>
+      <span className={styles.cardTitle}>{caseLaw.title}</span>
+      {(caseLaw.citation || caseLaw.court) && (
+        <span className={styles.facts}>
+          {caseLaw.citation && (
+            <span className={styles.fact}>
+              <DocumentIcon size={16} />
+              <span className={styles.citation}>{caseLaw.citation}</span>
+            </span>
+          )}
+          {caseLaw.court && (
+            <span className={styles.fact}>
+              <CourthouseIcon size={16} />
+              <span>{caseLaw.court}</span>
+            </span>
+          )}
+        </span>
+      )}
+      <ActTags caseLaw={caseLaw} />
+      <span className={styles.cardFooter}>
+        Read case
+        <ArrowRightIcon size={16} />
+      </span>
+    </Link>
+  );
+}
+
+/**
+ * Act name tags for a case card. Uses `acts` from the list response when the backend sends it;
+ * otherwise falls back to the case detail (browser-cached, so opening the case reuses it).
+ * A failed fetch just renders no tags — the card is still usable.
+ */
+function ActTags({ caseLaw }: { caseLaw: CaseLawSummary }) {
+  const fromSummary = caseLaw.acts;
+  const detail = useApiQuery(fromSummary ? null : `caselaw:${caseLaw.id}`, () => getCaseLaw(caseLaw.id));
+  const acts = fromSummary ?? (detail.status === 'success' ? caseLawActs(detail.data) : []);
+  if (acts.length === 0) return null;
+  return (
+    <span className={styles.acts}>
+      {acts.map((act) => (
+        <span key={act} className={`${contentStyles.importance} ${contentStyles.actTag}`}>
+          {act}
+        </span>
+      ))}
+    </span>
   );
 }

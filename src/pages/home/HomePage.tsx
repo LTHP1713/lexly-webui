@@ -1,5 +1,5 @@
+import { useAppLayout } from '@/components/appLayoutContext';
 import { CourthouseIcon } from '@/components/icons/Icons';
-import { useCurrentUser } from '@/hooks/useHomeData';
 import { BareActProgress } from './BareActProgress';
 import { ContinueLearning } from './ContinueLearning';
 import { greetingFor } from './format';
@@ -15,10 +15,9 @@ const dateFormat = new Intl.DateTimeFormat('en-IN', { weekday: 'long', day: 'num
  * Visual order: search → quick actions → practice → bare acts → continue learning.
  */
 export function HomePage() {
-  const user = useCurrentUser();
+  // Loaded once by AppLayout (GET /users/me); until it exists the greeting is deliberately nameless.
+  const { firstName } = useAppLayout();
   const now = new Date();
-  // `firstName` arrives with GET /users/me; until then the greeting is deliberately nameless.
-  const firstName = user.status === 'success' ? user.data.firstName?.trim() : undefined;
 
   return (
     <div className={styles.page}>

@@ -5,6 +5,12 @@ PostgreSQL + Flyway). Every endpoint here is **missing today**; the web frontend
 against these exact shapes (see [§0.6 Frontend wiring](#06-frontend-wiring)), so implementing them
 as written means flipping a flag in the frontend's `.env` — no component changes.
 
+> **Free/Pro is suspended (2026-10-11).** The backend removed the free/Pro model, and the
+> frontend no longer reads `isFree` or handles `PRO_REQUIRED`: no Pro badges, lock icons or
+> locked teasers. Everything below about `isFree`, Pro checks, `EntitlementService`,
+> `PRO_REQUIRED` and locked content is **out of scope until Pro returns**. Omit `isFree` from
+> these responses and skip the Pro checks; if they are sent, the frontend ignores them.
+
 Status of each Home feature right now:
 
 | Home feature | Frontend | Current data source | Target API | Status |

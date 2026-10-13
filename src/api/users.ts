@@ -1,6 +1,6 @@
 /**
- * `/users/me/**` — the authenticated student's profile and learning progress. None of these
- * endpoints exist in lexly-backend yet: the request/response types below mirror
+ * `/users/me/**` — the authenticated student's profile and learning progress. Only `GET /users/me`
+ * exists in lexly-backend so far: the request/response types below mirror
  * docs/HOME_DASHBOARD_API_CONTRACT.md exactly, and each call is gated by a flag in
  * `src/config/features.ts`. Raw DTOs are mapped to UI models here so components never see
  * backend field quirks.
@@ -12,10 +12,15 @@ import { apiClient } from '@/api/client';
 export interface CurrentUserDto {
   id: string;
   email: string;
+  /** Null when `fullName` is blank. */
   firstName: string | null;
   fullName: string | null;
+  role?: string;
+  /** ISO-8601 UTC, possibly with fractional seconds: parse with `new Date()`, never a fixed format. */
+  createdAt?: string;
 }
 
+/** Also called by the session bootstrap (`src/api/auth.ts`), which doesn't check the feature flag. */
 export function getCurrentUser() {
   return apiClient.get<CurrentUserDto>('/users/me');
 }

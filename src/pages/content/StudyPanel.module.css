@@ -1,0 +1,574 @@
+/*
+ * Study panel — the reading layout shared by the section (Bare Acts) and case law screens:
+ *   left  (≥1024px): reading progress, "On this page", plus a page-specific block
+ *   doc            : the content as a clean serif document (Source Serif 4)
+ *   right (≥1200px): stats + colour-coded insight cards that jump to each part
+ * Below those widths the side content moves inline: insights above the text and a sticky chip bar.
+ *
+ * Each kind of content has one colour used everywhere (dot, chip, card, accents). Pages define
+ * their tone classes, which set `--tone` (dark: white text on it is ≥ 4.5:1) and `--tone-soft`
+ * (a tint for surfaces).
+ */
+
+.panel {
+  --sd-serif: 'Source Serif 4 Variable', 'Source Serif 4', var(--lx-serif);
+  --sd-text: #343a47;
+  --sd-rule: #f0ebe0;
+  --sd-side: #faf8f3;
+  /* Sticky app header: 3.5rem, 4rem from 768px. */
+  --sd-header: calc(3.5rem + env(safe-area-inset-top, 0px));
+
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  border: 1px solid var(--lx-border);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(19 41 75 / 0.04), 0 12px 32px rgb(19 41 75 / 0.06);
+  color: var(--sd-text);
+}
+
+/* Breadcrumb trail (e.g. Bare Acts / {act} / Section n), plus an optional "Back to …" hint */
+
+.breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+}
+
+.crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: #555;
+}
+
+.crumbs li {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.crumbs li + li::before {
+  content: '/';
+  margin: 0 0.45rem;
+  color: #999;
+}
+
+.crumbs [aria-current='page'] {
+  color: #333;
+}
+
+.backHint {
+  white-space: nowrap;
+}
+
+/** Loading and error states keep the narrower column. */
+.narrow {
+  max-width: 48rem;
+}
+
+.toneDot {
+  flex-shrink: 0;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 3px;
+  background: var(--tone);
+}
+
+/* ---------- Side columns ---------- */
+
+.left,
+.right {
+  display: none;
+  min-width: 0;
+}
+
+.sideSticky {
+  position: sticky;
+  top: calc(var(--sd-header) + 1rem);
+  max-height: calc(100vh - var(--sd-header) - 2rem);
+  max-height: calc(100dvh - var(--sd-header) - 2rem);
+  overflow-y: auto;
+  padding: 1.4rem 1rem 1.5rem;
+  scrollbar-width: thin;
+  scrollbar-color: #ddd5c4 transparent;
+}
+
+.sideHeading {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin: 0 0 0.55rem;
+  color: var(--lx-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.sideNote {
+  margin: 0;
+  color: var(--lx-muted);
+  font-size: 0.82rem;
+}
+
+/* Reading progress */
+
+.progressValue {
+  color: var(--lx-navy);
+  letter-spacing: 0;
+}
+
+.progressTrack {
+  display: block;
+  height: 6px;
+  border-radius: 999px;
+  background: #ebe5d8;
+  overflow: hidden;
+}
+
+.progressFill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--lx-gold), #d4ad62);
+  transition: width 0.2s ease-out;
+}
+
+/* On this page (sidebar) */
+
+.toc {
+  margin-top: 1.6rem;
+}
+
+.tocList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tocLink {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 2.25rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 0.5rem;
+  color: #4b5160;
+  font-size: 0.87rem;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.tocLink:hover {
+  background: #f1ede4;
+  color: var(--lx-navy);
+}
+
+.tocLink[aria-current='location'] {
+  background: #fff;
+  color: var(--lx-navy);
+  font-weight: 650;
+  box-shadow: 0 0 0 1px #ece6d9, 0 1px 2px rgb(19 41 75 / 0.05);
+}
+
+/* ---------- Insights (right column, or inline above the text) ---------- */
+
+.stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin: 0;
+}
+
+.statRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.86rem;
+}
+
+.statRow dt {
+  color: var(--lx-muted);
+}
+
+.statRow dd {
+  margin: 0;
+  color: var(--lx-navy);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.insightCards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 1.4rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.insightCard {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  width: 100%;
+  height: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ece6d9;
+  border-radius: 0.65rem;
+  background: #fff;
+  color: #4b5160;
+  font: inherit;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgb(19 41 75 / 0.04);
+  transition: border-color 0.15s, transform 0.15s;
+}
+
+.insightCard:hover {
+  border-color: var(--tone);
+  transform: translateY(-1px);
+}
+
+.insightCount {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.45rem;
+  background: var(--tone);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.insightText {
+  padding-top: 0.1rem;
+}
+
+/* Inline variant (below 1200px) */
+
+.inlineInsights {
+  margin-bottom: 1.5rem;
+}
+
+.inlineInsights .stats {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.4rem;
+}
+
+.inlineInsights .statRow {
+  justify-content: flex-start;
+  gap: 0.4rem;
+}
+
+/* Phones: one swipeable row of cards. */
+.inlineInsights .insightCards {
+  flex-direction: row;
+  margin: 1rem -1.1rem 0;
+  padding: 0.15rem 1.1rem 0.35rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.inlineInsights .insightCards::-webkit-scrollbar {
+  display: none;
+}
+
+.inlineInsights .insightCards > li {
+  flex: 0 0 15rem;
+}
+
+/* ---------- Document ---------- */
+
+.doc {
+  min-width: 0;
+  padding: 1.35rem 1.1rem 2.25rem;
+}
+
+.docTop {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.docMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  color: var(--lx-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.title {
+  margin: 0.4rem 0 1.1rem;
+  color: var(--lx-navy);
+  font-family: var(--sd-serif);
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+
+/* Sticky "On this page" chips (below 1024px) */
+
+.chips {
+  position: sticky;
+  top: var(--sd-header);
+  z-index: 20;
+  margin: 0 -1.1rem;
+  padding: 0.55rem 1.1rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  background: rgb(255 255 255 / 0.94);
+  backdrop-filter: saturate(1.2) blur(8px);
+  border-bottom: 1px solid var(--sd-rule);
+}
+
+.chips::-webkit-scrollbar {
+  display: none;
+}
+
+.chipList {
+  display: flex;
+  gap: 0.45rem;
+  width: max-content;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 2.2rem;
+  padding: 0 0.85rem;
+  border: 1px solid #ece6d9;
+  border-radius: 999px;
+  background: #fff;
+  color: #4b5160;
+  font-size: 0.84rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.chip[aria-current='location'] {
+  border-color: var(--lx-navy);
+  background: var(--lx-navy);
+  color: #fff;
+}
+
+.chip[aria-current='location'] .toneDot {
+  box-shadow: 0 0 0 2px #fff;
+}
+
+/* Parts */
+
+.part {
+  /* Clears the sticky header + chip bar when jumped to. */
+  scroll-margin-top: calc(var(--sd-header) + 3.75rem);
+  padding-top: 1.75rem;
+}
+
+.part + .part {
+  margin-top: 2rem;
+  border-top: 1px solid var(--sd-rule);
+}
+
+.part:focus {
+  outline: none;
+}
+
+.partHeader {
+  margin-bottom: 1rem;
+}
+
+.partTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0;
+  color: var(--lx-navy);
+  font-family: var(--sd-serif);
+  font-size: 1.4rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.partNote {
+  margin: 0.15rem 0 0 1.15rem;
+  color: var(--lx-muted);
+  font-size: 0.85rem;
+}
+
+/* Explanations */
+
+.richText {
+  font-family: var(--sd-serif);
+  font-size: 1.0625rem;
+  line-height: 1.75;
+}
+
+.richText p {
+  margin: 0 0 0.55rem;
+  overflow-wrap: anywhere;
+}
+
+.richText ul {
+  margin: 0 0 0.55rem;
+  padding-left: 1.2rem;
+}
+
+.richText li {
+  margin-bottom: 0.3rem;
+  padding-left: 0.15rem;
+}
+
+.richText li::marker {
+  color: var(--tone, var(--lx-gold));
+}
+
+.richText > :last-child {
+  margin-bottom: 0;
+}
+
+.inlineLabel {
+  color: var(--lx-navy);
+  font-weight: 650;
+}
+
+.itemTitle {
+  margin: 0 0 0.25rem;
+  color: var(--lx-navy);
+  font-family: var(--sd-serif);
+  font-size: 1.1rem;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+/* Tinted callout (e.g. "In simple words") */
+
+.callout {
+  display: flex;
+  gap: 0.85rem;
+  padding: 1rem 1.1rem;
+  border-radius: 0.75rem;
+  background: var(--tone-soft);
+}
+
+.calloutIcon {
+  flex-shrink: 0;
+  margin-top: 0.25rem;
+  color: var(--tone);
+}
+
+.callout .richText {
+  color: #23322d;
+}
+
+/* While the next page loads, the current one stays visible but dimmed. */
+.busy {
+  opacity: 0.55;
+  transition: opacity 0.15s;
+}
+
+/* ---------- Breakpoints ---------- */
+
+@media (min-width: 768px) {
+  .panel {
+    --sd-header: calc(4rem + env(safe-area-inset-top, 0px));
+  }
+
+  .doc {
+    padding: 2rem 2.5rem 3rem;
+  }
+
+  .title {
+    font-size: 2.5rem;
+  }
+
+  .chips {
+    margin: 0 -2.5rem;
+    padding: 0.55rem 2.5rem;
+  }
+
+  .inlineInsights .insightCards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    margin: 1rem 0 0;
+    padding: 0;
+    overflow: visible;
+  }
+}
+
+@media (min-width: 1024px) {
+  .panel {
+    grid-template-columns: 15rem minmax(0, 1fr);
+  }
+
+  .left {
+    display: block;
+    border-right: 1px solid var(--sd-rule);
+    border-radius: 15px 0 0 15px;
+    background: var(--sd-side);
+  }
+
+  .chips {
+    display: none;
+  }
+
+  .part {
+    scroll-margin-top: calc(var(--sd-header) + 1.25rem);
+  }
+}
+
+@media (min-width: 1200px) {
+  .panel {
+    grid-template-columns: 15rem minmax(0, 1fr) 16.5rem;
+  }
+
+  .right {
+    display: block;
+    border-left: 1px solid var(--sd-rule);
+  }
+
+  .inlineInsights {
+    display: none;
+  }
+
+  .doc {
+    padding: 2.25rem 2.75rem 3rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progressFill,
+  .insightCard {
+    transition: none;
+  }
+
+  .insightCard:hover {
+    transform: none;
+  }
+}
