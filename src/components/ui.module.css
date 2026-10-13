@@ -1,6 +1,7 @@
 /*
- * Admin case law screens: an internal tool, so plain and dense, but on the Lexly palette and
- * with the same focus/contrast standards as the student screens.
+ * Shared work-area styles (admin, college and professor screens, and the components in this folder):
+ * plain and dense, but on the Lexly palette and with the same focus/contrast standards as the
+ * student screens. Moved from pages/admin/Admin.module.css (F0.4).
  */
 
 .visuallyHidden {

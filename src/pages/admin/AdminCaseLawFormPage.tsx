@@ -14,10 +14,10 @@ import { useApiQuery } from '@/hooks/useApiQuery';
 import { caseTypeLabel, KNOWN_CASE_TYPES } from '@/pages/content/caseLawLabels';
 import { sectionLabel } from '@/pages/content/navigation';
 import { loadCaseLawForAdmin, refreshCachedCaseLaw, type ContentEditorHandoff } from './adminCaseLaw';
-import { TextField } from './Field';
-import { useToast } from './Toast';
-import { useUnsavedChangesGuard } from './useUnsavedChangesGuard';
-import styles from './Admin.module.css';
+import { TextField } from '@/components/Field';
+import { useToast } from '@/components/Toast';
+import { useUnsavedChangesGuard } from '@/components/useUnsavedChangesGuard';
+import styles from '@/components/ui.module.css';
 
 const IMPORTANCE_VALUES: CaseLawImportance[] = ['LANDMARK', 'IMPORTANT', 'STANDARD'];
 

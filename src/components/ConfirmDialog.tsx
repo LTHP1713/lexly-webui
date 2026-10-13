@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, type ReactNode } from 'react';
-import styles from './Admin.module.css';
+import styles from './ui.module.css';
 
 /**
  * Modal confirmation on the native <dialog>: `showModal()` gives focus containment, Escape to
