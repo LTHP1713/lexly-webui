@@ -1,17 +1,13 @@
-import { Suspense, useEffect } from 'react';
-import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Suspense } from 'react';
+import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/auth/AuthContext';
 import { CHANGE_PASSWORD_PATH, homeFor, isNavItemActive, navFor } from '@/auth/roles';
 import { LexlyMark, LogOutIcon, UserIcon } from '@/components/icons/Icons';
+import { useFlash } from '@/components/flash';
 import { NotificationsButton } from '@/components/NotificationsButton';
 import { LoadingState } from '@/components/QueryStates';
 import { useToast } from '@/components/Toast';
 import styles from './AppLayout.module.css';
-
-/** Router state any screen can pass when navigating, to show a toast on arrival ("Password updated."). */
-export interface FlashState {
-  flash?: string;
-}
 
 /** Wide (72rem) layout: card grids, study screens and the work areas; other pages stay a reading column. */
 function isWidePath(pathname: string): boolean {
@@ -33,22 +29,13 @@ function isWidePath(pathname: string): boolean {
  * are hidden and the header offers only Log out (UI spec F1.2).
  */
 export function AppLayout() {
-  const { pathname, search, hash, state } = useLocation();
-  const navigate = useNavigate();
+  const { pathname } = useLocation();
   const { user, logout } = useAuth();
   const toast = useToast();
-  const showToast = toast.show;
+  useFlash(toast.show);
   const forced = user?.mustChangePassword === true;
   const role = user?.role ?? null;
   const navItems = forced ? [] : navFor(role);
-
-  const flash = (state as FlashState | null)?.flash;
-  useEffect(() => {
-    if (!flash) return;
-    showToast(flash);
-    // Show it once: drop it from history so Back/reload don't repeat it.
-    navigate({ pathname, search, hash }, { replace: true, state: null });
-  }, [flash, pathname, search, hash, navigate, showToast]);
 
   return (
     <div className={styles.shell}>

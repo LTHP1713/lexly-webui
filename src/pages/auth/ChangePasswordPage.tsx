@@ -10,7 +10,7 @@ import {
   validateChangePassword,
   type FieldErrors,
 } from '@/auth/validation';
-import type { FlashState } from '@/components/AppLayout';
+import { flash } from '@/components/flash';
 import { AlertIcon } from '@/components/icons/Icons';
 import { PasswordField } from './AuthField';
 import { focusFirstError } from './authForm';
@@ -50,10 +50,8 @@ export function ChangePasswordPage() {
     setIsSubmitting(true);
     try {
       await changePassword({ currentPassword: values.currentPassword, newPassword: values.newPassword });
-      const flash: FlashState = forced
-        ? { flash: 'Password updated.' }
-        : { flash: "Password updated. You've been signed out on other devices." };
-      navigate(forced ? homeFor(user?.role ?? null) : '/profile', { replace: true, state: flash });
+      flash(forced ? 'Password updated.' : "Password updated. You've been signed out on other devices.");
+      navigate(forced ? homeFor(user?.role ?? null) : '/profile', { replace: true });
     } catch (err) {
       const mapped =
         err instanceof ApiError && err.code === ErrorCode.VALIDATION_ERROR ? mapChangePasswordErrors(err.message) : null;
