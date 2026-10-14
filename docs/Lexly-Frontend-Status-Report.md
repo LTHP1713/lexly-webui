@@ -5,7 +5,7 @@
 **Compared against:** `Lexly-Frontend-Implementation-Plan.md` (revised 2026-10-13) and `Lexly-API-Contract.md` (identical to the backend repo's copy on 2026-10-13).
 **Method:** I checked each plan task against the code, `package.json` and `docs/progress/frontend_progress.md`. I did not run the app or the backend for this report.
 **Update, same day (backend P0 + P1):** backend Phase 0 is merged to `lexly-backend` `main` (`0545ab9`) and Phase 1 is committed on `feature/phase1` (`ddac579`, not yet merged). `docs/Lexly-API-Contract.md` was re-copied from that commit, and §1, §3 and §5 below were updated. F0 and all of F1 are now unblocked.
-**Update, 2026-10-14 (F0 and F1 built):** F0 is done on `feature/f0-cleanup`, and all of F1 is built on `feature/f1-identity` (stacked on F0). Both were exercised against the live backend (`feature/phase1`, `ddac579`): `npm run test:e2e` 24 passed, 10 skipped by design. F1 stays open until backend `feature/phase1` merges (plan §10 gate). §1–§3 below are updated; the progress file has the details.
+**Update, 2026-10-14 (F0 and F1 built):** F0 is done on `feature/f0-cleanup`, and all of F1 is built on `feature/f1-identity` (stacked on F0). Both were exercised against the live backend (`feature/phase1`, `ddac579`): `npm run test:e2e` 24 passed, 10 skipped by design. Backend `feature/phase1` was then merged to `main` (`ca7c842`) and the e2e suite re-run against it: 24 passed, 10 skipped by design, 0 failed, so F1 is Done (plan §10 gate). PRs: #2 (F0) and #3 (F1, stacked on #2). §1–§3 below are updated; the progress file has the details.
 **Update, 2026-10-13:** the doc findings in §4 have been applied. The plan and `Lexly-UI-Spec.md` now agree, and the stale references to the deleted Home contract in the code comments and `.env.example` are fixed. The progress file was restored and its Next Up rewritten from this plan; see §4.4.
 
 ---
@@ -14,7 +14,7 @@
 
 - **Done:** everything the plan lists as "built and working" (§1.1). That covers the reading app (Bare Acts, Case Laws, search, Home), email login and register with the cookie session, the case-law admin, and the free/Pro removal. The code matches the plan's description.
 - **F0 done (2026-10-14):** F0.1–F0.7 on `feature/f0-cleanup`, with F1.2 pulled in. The cookie-session checks pass against the live backend.
-- **F1 built (2026-10-14), awaiting the backend merge:** F1.1–F1.11 on `feature/f1-identity`, checked live. By the §10 gate it is Done only once `feature/phase1` is merged to backend `main`.
+- **F1 done (2026-10-14):** F1.1–F1.11 on `feature/f1-identity` (PR #3). Backend Phase 1 is merged to `main` (`ca7c842`), and the e2e suite passes against it.
 - **Blocked on the backend:** F2–F8 (Phases 2–8 still PROPOSED).
 - **Fixed:** the UI no longer breaks against a P1 backend. Roles come from `/users/me`, `RequireRole` replaced `RequireAdmin`, and gated accounts are sent to `/change-password`.
 - **Docs:** the UI spec, the plan and the contract are now in sync (§4). The UI spec covers F0 and F1, including F1.7 and F1.8. The progress file was restored and its Next Up rewritten (§4.4).
@@ -22,7 +22,7 @@
 | Phase | Tasks | Done | Can start now | Blocked by backend |
 |---|---|---|---|---|
 | F0 Clean-up & foundations | 7 | 7 | — | — |
-| F1 Identity, roles, SUPERADMIN, content admin | 11 | 11 built (Done after P1 merges) | — | — (ships after P1 merges) |
+| F1 Identity, roles, SUPERADMIN, content admin | 11 | 11 | — | — |
 | F2 College administration | 9 | 0 | — | Phase 2 |
 | F3 Assessments & answering | 10 | 0 | — | Phase 3 |
 | F4 Manual grading & results | 7 | 0 | — | Phase 4 |
@@ -68,23 +68,23 @@ These match the plan's §1.1. The progress file has the full entries and how eac
 | F0.3 | Role skeleton | Done (`2c60601`) | `roles.ts`, `RequireRole`, role nav, NotFound, lazy areas, Library and Content sub-navs |
 | F0.4 | Shared components to `src/components/` | Done (`e5af6e3`) | |
 | F0.5 | Client extensions | Done (`6e0f896`) | `FormData`, `patch`, `upload`, `download`, `AbortSignal`, `errors.ts` |
-| F0.6 | Tests & CI | Done (`f63ff60`) | Vitest + MSW, Playwright + axe, CI workflow (it hasn't run on GitHub yet: the branch isn't pushed) |
+| F0.6 | Tests & CI | Done (`f63ff60`) | Vitest + MSW, Playwright + axe, CI workflow (passes on PRs #2 and #3) |
 | F0.7 | Session edge cases | Done (`4e688f4`) | Cookie checks live; G10 fixed |
 
 ### F1 — Identity, roles, SUPERADMIN & content admin (backend Phase 1)
 
 | # | Task | Status | Notes |
 |---|---|---|---|
-| F1.1 | Two-mode login | Built · checked live | Email and College tabs; tab name remembered |
-| F1.2 | Forced password change | Built · checked live | Pulled into F0 (`2c60601`) |
+| F1.1 | Two-mode login | Done | Email and College tabs; tab name remembered |
+| F1.2 | Forced password change | Done | Pulled into F0 (`2c60601`) |
 | F1.3 | Registration | Nothing to do | Always `S_STUDENT` |
-| F1.4 | Role areas live | Built · checked live | `/admin` hub; `/college`, `/professor`, `/student` placeholders |
-| F1.5 | Profile | Built · checked live | Name, email, role, college, roll no. / employee ID |
-| F1.6 | Colleges + C_ADMIN accounts | Built · checked live | List, add, detail with Admins tab, rename, (de)activate, add / reset / remove admin with a one-time share step |
-| F1.7 | Acts & sections admin | Built · checked live | Acts list, act detail, full section editor (one `PUT`) |
-| F1.8 | Case-law ↔ section linking | Built · checked live | Picker dialog; link / unlink at once |
-| F1.9 | Bulk JSON import | Built · checked live | `ImportResultTable`, download rejected rows |
-| F1.10 | Audit log | Built · checked live | `/admin/audit` and `/college/audit` |
+| F1.4 | Role areas live | Done | `/admin` hub; `/college`, `/professor`, `/student` placeholders |
+| F1.5 | Profile | Done | Name, email, role, college, roll no. / employee ID |
+| F1.6 | Colleges + C_ADMIN accounts | Done | List, add, detail with Admins tab, rename, (de)activate, add / reset / remove admin with a one-time share step |
+| F1.7 | Acts & sections admin | Done | Acts list, act detail, full section editor (one `PUT`) |
+| F1.8 | Case-law ↔ section linking | Done | Picker dialog; link / unlink at once |
+| F1.9 | Bulk JSON import | Done | `ImportResultTable`, download rejected rows |
+| F1.10 | Audit log | Done | `/admin/audit` and `/college/audit` |
 | F1.11 | Tests | Done | 113 unit tests; e2e golden path + phone pass |
 
 ### F2–F8
