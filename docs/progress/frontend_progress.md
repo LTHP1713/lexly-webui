@@ -2,6 +2,51 @@
 
 ## Completed
 
+### 2026-10-14 — F0 Clean-up & foundations (F0.1–F0.7), with F1.2 pulled in
+
+**Status:** F0 Done (backend P0 is merged). F1.2 is Done in code and checked live, but by the
+§10 gate it stays open until backend `feature/phase1` is merged. Branch `feature/f0-cleanup`, not
+pushed yet, so the CI workflow hasn't run on GitHub; locally lint, `tsc -b`, the build and all
+72 unit tests pass.
+
+What changed (one commit per task; see the commit bodies for detail):
+- **F0.1** (`831bc7c`): MCQ practice removed: the Practice Progress card, the `practiceStats` flag,
+  its DTOs, mapper and mocks. `/practice` is the "Solo practice is coming soon" placeholder. The
+  Bare-Act Progress and Continue Learning cards are hidden while their flags are off (D3).
+- **F0.4** (`e5af6e3`): `ConfirmDialog`, `Toast`, `Field`, `RepeatableList` and
+  `useUnsavedChangesGuard` moved to `src/components/`, with `Admin.module.css` as
+  `components/ui.module.css`.
+- **F0.5** (`6e0f896`): `FormData` bodies, `patch`, `upload` (XHR with progress) and `download`
+  (blob + `Content-Disposition` filename), `AbortSignal`, and the `errors.ts` catalogue.
+- **F0.2, F0.3, F1.2** (`2c60601`, `768ef83`): the session user comes from `GET /users/me` after
+  every sign-in (`roleFromAccessToken` is gone); `roles.ts`, `RequireRole`, role nav, NotFound,
+  lazy admin chunk, Library sub-nav; `/change-password` forced and voluntary; a
+  `403 PASSWORD_CHANGE_REQUIRED` from any call switches to forced mode; post-navigation toasts
+  come from a flash store; the refresh call uses `keepalive` (G10).
+- **F0.6** (`f63ff60`): Vitest + Testing Library + MSW (72 tests), Playwright + axe golden paths
+  at 390×844 and 1280×800, and a CI workflow (lint, `tsc -b`, tests, build).
+- **F0.7** (this entry's commit): `e2e/f0-cookie-session.spec.ts` turns the 2026-10-09 cookie
+  checks into a committed suite and runs them against the live backend.
+
+**Verified against the live backend** (`lexly-backend` `feature/phase1` at `ddac579`, Postgres +
+Redis in Docker), `npm run test:e2e` with an installed Chromium (`PW_CHROMIUM_PATH`): 16/16 pass on
+phone and desktop.
+- The refresh cookie is `HttpOnly`, `Path=/api/v1/auth`, `SameSite=Lax`; JS can't read it, and Web
+  Storage holds no token. A reload keeps the session.
+- Two tabs reloading together, three rounds: both stay signed in (the Web Lock serialises the
+  rotations).
+- G10: starting a load and navigating away before the bootstrap refresh settles, three rounds:
+  still signed in. The `keepalive` fix holds, so no retry-after-rotation was needed.
+- Logout: `204`, the cookie is cleared, the 5-minute cache-bypass timestamp is set, and the next
+  load goes to `/login` with no "session ended" banner.
+- On the wire: `/auth/refresh` without a token → `400`; replaying a rotated token → `401
+  UNAUTHORIZED`; `GET /acts` → `private, max-age=300` + `ETag`; `GET /users/me` → `no-store`;
+  the preflight from `http://localhost:5173` allows credentials.
+- F0 golden paths (`f0-session.spec.ts`): NotFound signed out; the seeded SUPERADMIN is held on
+  the forced change and a wrong current password maps to its field; a new S_STUDENT gets the
+  student nav, is kept out of `/admin`, and survives a reload. axe finds no WCAG A/AA violations
+  on those screens.
+
 ### 2026-10-13 — Docs: synced with backend Phase 0 and Phase 1
 
 **Status:** Done (docs only). No app behaviour changed.
@@ -636,22 +681,10 @@ From `docs/Lexly-Frontend-Implementation-Plan.md` §8, using its task IDs. Scree
 `docs/Lexly-UI-Spec.md`.
 
 Backend Phase 0 and Phase 1 are done, so all of F0 and F1 can be built against a local backend
-on `feature/phase1`. The current UI breaks on that backend (roles renamed; gated accounts get
-`403 PASSWORD_CHANGE_REQUIRED`), so the role and password-change work comes first.
+on `feature/phase1`.
 
-1. **F0 on `feature/f0-cleanup`**, with F1.2 pulled in:
-   - F0.2 Role from `/users/me` after every login (drop `roleFromAccessToken`); five roles only.
-   - F0.3 `roles.ts`, `RequireRole`, role-driven nav with Library and Content sub-navs, NotFound
-     page, lazy areas.
-   - F1.2 `/change-password`, forced and voluntary; switch to the returned access token.
-   - F0.1 Remove MCQ practice: `PracticeProgress`, the `practiceStats` flag, its DTOs and mocks;
-     `/practice` becomes the "Solo practice — coming soon" placeholder; hide the Bare-Act Progress
-     and Continue Learning cards (D3).
-   - F0.4 Move the shared components from `pages/admin/` to `src/components/`.
-   - F0.5 Client: `FormData`, `patch`, `upload`, `download`, `AbortSignal`, `errors.ts`.
-   - F0.6 Vitest, Testing Library, MSW, Playwright, axe, CI workflow.
-   - F0.7 Re-run the 2026-10-09 cookie checks against the live backend; fix the in-flight-refresh
-     sign-out (G10).
+1. ~~**F0 on `feature/f0-cleanup`**~~ — done 2026-10-14 (entry above). Push the branch and open
+   its PR so CI runs.
 2. **F1 on `feature/f1-identity`:** F1.1 two-mode login, F1.4 role homes, F1.5 Profile, F1.6
    colleges + C_ADMINs, F1.10 audit log, then F1.7 acts & sections admin, F1.8 case-law linking,
    F1.9 bulk import (per-row shape), F1.11 tests. Ship after `feature/phase1` merges.
