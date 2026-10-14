@@ -9,8 +9,9 @@ import { RowMenu } from '@/components/RowMenu';
 import { ContentSubNav } from '@/components/SubNav';
 import { useToast } from '@/components/Toast';
 import { TypedConfirmDialog } from '@/components/TypedConfirmDialog';
-import { useApiQuery } from '@/hooks/useApiQuery';
+import { useCachedQuery } from '@/hooks/useCachedQuery';
 import { TABLE_QUERY, useMediaQuery } from '@/hooks/useMediaQuery';
+import { queryKeys } from '@/lib/queryClient';
 import { ActDialog } from './ActDialog';
 import styles from '@/components/ui.module.css';
 
@@ -19,7 +20,7 @@ export function AdminActsPage() {
   const toast = useToast();
   const [params, setParams] = useSearchParams();
   const filter = params.get('q') ?? '';
-  const acts = useApiQuery('admin-acts', () => listActs({ cache: 'no-cache' }));
+  const acts = useCachedQuery(queryKeys.adminActs.list, () => listActs({ cache: 'no-cache' }));
   const [dialog, setDialog] = useState<{ actId: string | null } | null>(null);
   const [toDelete, setToDelete] = useState<ActSummary | null>(null);
   const [deleting, setDeleting] = useState(false);

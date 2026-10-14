@@ -122,6 +122,17 @@ export function UserIcon(props: IconProps) {
   );
 }
 
+export function UsersIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <circle cx="9" cy="8.5" r="3.2" />
+      <path d="M3 19.5c.7-3.2 3.1-5 6-5s5.3 1.8 6 5" />
+      <path d="M15.5 5.6a3.2 3.2 0 0 1 0 5.8" />
+      <path d="M17.5 14.8c1.8.6 3.1 2.2 3.5 4.7" />
+    </Icon>
+  );
+}
+
 export function ArrowRightIcon(props: IconProps) {
   return (
     <Icon {...props}>

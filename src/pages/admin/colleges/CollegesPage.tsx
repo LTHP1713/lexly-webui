@@ -5,10 +5,11 @@ import { flash } from '@/components/flash';
 import { Pagination } from '@/components/Pagination';
 import { EmptyState, ErrorState, LoadingState } from '@/components/QueryStates';
 import { StatusBadge } from '@/components/StatusBadge';
-import { useApiQuery } from '@/hooks/useApiQuery';
+import { useCachedQuery } from '@/hooks/useCachedQuery';
 import { TABLE_QUERY, useMediaQuery } from '@/hooks/useMediaQuery';
 import { pageFromParam } from '@/lib/urlParams';
 import { formatCount, formatDate } from '@/lib/format';
+import { queryKeys } from '@/lib/queryClient';
 import { AddCollegeDialog } from './collegeDialogs';
 import styles from '@/components/ui.module.css';
 
@@ -70,7 +71,7 @@ export function CollegesPage() {
   }
 
   const active = status === 'all' ? undefined : status === 'active';
-  const results = useApiQuery(`colleges:${q}:${status}:${sort}:${page}`, () =>
+  const results = useCachedQuery(queryKeys.colleges.list({ q, active, sort, page }), () =>
     listColleges({ q: q || undefined, active, sort, page, size: PAGE_SIZE }),
   );
   const data = results.status === 'success' ? results.data : results.status === 'loading' ? results.staleData : undefined;

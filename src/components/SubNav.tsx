@@ -75,3 +75,13 @@ export function LibrarySubNav() {
   if (!hasLibrarySubNav(user?.role ?? null)) return null;
   return <SubNav label="Library" items={LIBRARY_ITEMS} />;
 }
+
+const USERS_ITEMS: SubNavItem[] = [
+  { to: '/college/users', label: 'People', end: true },
+  { to: '/college/users/import', label: 'Import', end: true },
+];
+
+/** People · Import on the C_ADMIN user pages (UI spec F2 shell changes). */
+export function UsersSubNav() {
+  return <SubNav label="Users" items={USERS_ITEMS} />;
+}

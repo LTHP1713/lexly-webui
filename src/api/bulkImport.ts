@@ -29,21 +29,22 @@ export const IMPORT_CONFIG: Record<ImportKind, KindConfig> = {
   caselaws: { path: '/admin/bulk/caselaws', listKey: 'caseLaws', max: 10, noun: 'case laws' },
 };
 
-export type ImportRowStatus = 'CREATED' | 'REJECTED' | 'FAILED';
+export type ImportRowStatus = 'CREATED' | 'CONVERTED' | 'REJECTED' | 'FAILED';
 
 /** One outcome per request row, in request order. Shared with the user imports of F2 (`CONVERTED`). */
 export interface ImportRow {
-  /** 0-based position in the request list. */
+  /** Content imports: the 0-based position in the request list. User imports: the spreadsheet row number. */
   index: number;
   key: string | null;
   status: ImportRowStatus | string;
-  /** The created item's id, for `CREATED` rows. */
+  /** The created item's id, for `CREATED` and `CONVERTED` rows. */
   id: string | null;
   errors: string[];
 }
 
 export interface ImportResult {
-  summary: { total: number; created: number; rejected: number; failed: number };
+  /** `converted` is always 0 for content imports (contract §5.5). */
+  summary: { total: number; created: number; converted: number; rejected: number; failed: number };
   rows: ImportRow[];
 }
 
@@ -100,6 +101,7 @@ export function toImportResult(dto: Partial<ImportResult> | null | undefined): I
     summary: {
       total: count(dto?.summary?.total) || rows.length,
       created: count(dto?.summary?.created),
+      converted: count(dto?.summary?.converted),
       rejected: count(dto?.summary?.rejected),
       failed: count(dto?.summary?.failed),
     },

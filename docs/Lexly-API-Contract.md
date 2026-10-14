@@ -102,10 +102,10 @@ Each endpoint below lists the roles that may call it. Other roles get `403 FORBI
 | `PASSWORD_CHANGE_REQUIRED` | 403 | LIVE (P1) | `mustChangePassword` is set and the endpoint isn't allowed (§1.6) |
 | `COLLEGE_INACTIVE` | 403 | LIVE (P1) | Login/refresh for a user whose college is deactivated, after a correct password |
 | `COLLEGE_CODE_ALREADY_EXISTS` | 409 | ADDED, LIVE (P1) | College code taken |
-| `LOGIN_ID_ALREADY_EXISTS` | 409 | ADDED (P2) | Roll no / employee ID already used in the college |
-| `SUBJECT_CODE_ALREADY_EXISTS` | 409 | ADDED (P2) | Subject code already used in the college |
-| `IMPORT_FILE_INVALID` | 400 | PROPOSED (P2) | Unreadable file, wrong headers, > 2,000 rows, wrong format |
-| `SUBJECT_IN_USE` | 409 | PROPOSED (P2) | Deleting a subject that has assessments |
+| `LOGIN_ID_ALREADY_EXISTS` | 409 | ADDED, LIVE (P2) | Roll no / employee ID already used in the college |
+| `SUBJECT_CODE_ALREADY_EXISTS` | 409 | ADDED, LIVE (P2) | Subject code already used in the college |
+| `IMPORT_FILE_INVALID` | 400 | LIVE (P2) | Unreadable file, wrong headers, > 2,000 rows, wrong format |
+| `SUBJECT_IN_USE` | 409 | LIVE (P2) | Deleting a subject that has assessments (can first happen in P3) |
 | `ASSESSMENT_NOT_EDITABLE` | 409 | PROPOSED (P3) | Edit/delete/publish on a non-`DRAFT` assessment, or remove on a `DRAFT` |
 | `ASSESSMENT_CLOSED` | 409 | PROPOSED (P3) | Upload/submit after `dueAt` or on a closed/removed assessment |
 | `ANSWER_LOCKED` | 409 | PROPOSED (P3) | Upload/submit on an already `SUBMITTED` answer |
@@ -553,7 +553,7 @@ Sequence numbers (`issueNumber` etc.) are assigned by the server from list order
 **Per-row behaviour (TDD §7.1), live since P0.** Each row runs in its own transaction. The response is always `200` unless the envelope itself is invalid (`400`: empty list, too many rows, a `null` row, missing `actShortCode`, or a body that can't be parsed, such as an unknown `importance`):
 ```json
 {
-  "summary": { "total": 12, "created": 10, "rejected": 1, "failed": 1 },
+  "summary": { "total": 12, "created": 10, "converted": 0, "rejected": 1, "failed": 1 },
   "rows": [
     { "index": 0, "key": "ICA-2",  "status": "CREATED",  "id": "…", "errors": [] },
     { "index": 4, "key": "ICA-10", "status": "REJECTED", "id": null, "errors": ["sectionNumber: duplicate of row 1"] },
@@ -657,12 +657,12 @@ Roles: SUPERADMIN (all colleges; `collegeId` optional) and C_ADMIN (own college 
 - `action` values (from TDD §11.1): `LOGIN_FAILED`, `PASSWORD_RESET`, `PASSWORD_CHANGED`, `COLLEGE_CREATED`, `COLLEGE_UPDATED`, `USER_CREATED`, `USER_UPDATED`, `USER_REMOVED`, `USER_IMPORT`, `CONTENT_IMPORT`, `SUBJECT_CREATED`, `SUBJECT_UPDATED`, `SUBJECT_DELETED`, `SUBJECT_PROFESSORS_CHANGED`, `ASSESSMENT_PUBLISHED`, `ASSESSMENT_REMOVED`, `AI_EVALUATION_REQUESTED`, `GRADE_EDITED`, `GRADE_PUBLISHED`, `SOLO_PLAN_CHANGED`, `SOLO_QUOTA_RESET`.
 - `entityType` values: `USER`, `COLLEGE`, `BARE_ACT`, `SECTION`, `CASE_LAW`, `SUBJECT`, `ASSESSMENT`, `GRADE`, `SOLO_PLAN`. An unknown `action` or `entityType` filter → `400 VALIDATION_ERROR`.
 - `details` is free-form JSON. It never contains passwords, tokens, answer text or feedback. `LOGIN_FAILED` has `{ "identifier": "<email or CODE:loginId>", "reason": "BAD_CREDENTIALS" | "COLLEGE_INACTIVE" }`, no actor, and the matched account as `entityId` (or `null`).
-- Recorded since P1: `LOGIN_FAILED`, `PASSWORD_CHANGED`, `PASSWORD_RESET`, `COLLEGE_CREATED`, `COLLEGE_UPDATED`, `USER_CREATED` / `USER_REMOVED` (C_ADMINs), `CONTENT_IMPORT` (summary only). The others are recorded from the phase that adds their feature.
+- Recorded since P1: `LOGIN_FAILED`, `PASSWORD_CHANGED`, `PASSWORD_RESET`, `COLLEGE_CREATED`, `COLLEGE_UPDATED`, `USER_CREATED` / `USER_REMOVED` (C_ADMINs), `CONTENT_IMPORT` (summary only). Since P2: `USER_CREATED`, `USER_UPDATED`, `USER_REMOVED` and `PASSWORD_RESET` for students and professors, `USER_IMPORT` (summary only) and the four `SUBJECT_*` actions. The others are recorded from the phase that adds their feature.
 - Rows are purged after 30 days.
 
 ---
 
-## 8. College administration (C_ADMIN) — PROPOSED (P2)
+## 8. College administration (C_ADMIN) — LIVE (P2)
 
 ### 8.1 Users
 
@@ -670,26 +670,33 @@ Roles: SUPERADMIN (all colleges; `collegeId` optional) and C_ADMIN (own college 
 |---|---|---|
 | `GET /college/users?role=&q=&page=&size=&sort=fullName,asc` | — | `200 PagedResponse<UserSummary>` |
 | `POST /college/users` | `{ "role", "fullName", "email", "loginId" }` | `201 UserSummary` |
-| `GET /college/users/{id}` (ADDED) | — | `200 UserSummary` |
+| `GET /college/users/{id}` (ADDED, agreed 2026-10-14) | — | `200 UserSummary` |
 | `PUT /college/users/{id}` | `{ "fullName", "email", "loginId" }` | `200 UserSummary` |
 | `POST /college/users/{id}/reset-password` | — | `204` |
 | `DELETE /college/users/{id}` | — | `204` |
 
 | Field | Rules |
 |---|---|
-| `role` | `C_STUDENT` \| `C_PROFESSOR` (filter and create) |
-| `fullName` | required, ≤ 255 |
-| `email` | required, platform-unique (`409 EMAIL_ALREADY_EXISTS`) |
-| `loginId` | required, ≤ 50, unique within the college across both roles (`409 LOGIN_ID_ALREADY_EXISTS`) |
-| `q` | matches name, email, login ID |
-| sort | whitelist `fullName`, `loginId`, `createdAt` |
+| `role` | `C_STUDENT` \| `C_PROFESSOR` (filter and create); any other role → `400` |
+| `fullName` | required, ≤ 255, trimmed |
+| `email` | required, ≤ 255, platform-unique (`409 EMAIL_ALREADY_EXISTS`), trimmed |
+| `loginId` | required, ≤ 50, unique within the college across both roles (`409 LOGIN_ID_ALREADY_EXISTS`), trimmed |
+| `q` | matches name, email, login ID, case-insensitively |
+| sort | whitelist `fullName`, `loginId`, `createdAt`; default `fullName,asc`. Anything else → `400` |
 
+- Single create starts with password = `loginId` and `mustChangePassword = true`. An email that belongs to an S_STUDENT is `409 EMAIL_ALREADY_EXISTS` here; only the student import converts (§8.3).
+- Editing doesn't change the password or the role, even when `loginId` changes.
 - Reset password sets the password to `loginId`, sets `mustChangePassword = true` and revokes refresh tokens.
-- Delete is a hard delete per TDD §4.7. A student's answers, files, grades and grade history go with them; a professor's assessments remain with `createdBy = null`.
+- Delete is a hard delete per TDD §4.7. The user's refresh tokens and professor↔subject mappings go with them. From P3, a student's answers, files, grades and grade history go too, and a professor's assessments remain with `createdBy = null`.
 - Ids outside the college, or C_ADMIN ids → `404`.
+- Audit: `USER_CREATED`, `USER_UPDATED`, `PASSWORD_RESET`, `USER_REMOVED`.
 
 ### 8.2 Import templates
-The templates are static files shipped by the web app (`/templates/students.csv|xlsx`, `/templates/professors.csv|xlsx`). Headers are exactly `full_name,email,roll_no` and `full_name,email,employee_id`.
+Sample templates live in the backend repo under `docs/templates/` (`students.csv|xlsx`, `professors.csv|xlsx`, two example rows each); the web app copies them to `/templates/`. Approved 2026-10-14 (Deferred Items B1). Parsing rules:
+
+- Row 1 is the header: exactly `full_name, email, roll_no` (students) or `full_name, email, employee_id` (professors). Headers are trimmed and matched case-insensitively, columns may be in any order, and a missing, unknown or repeated column is `IMPORT_FILE_INVALID`. Blank header cells are ignored.
+- The format comes from the extension (`.csv` or `.xlsx`). CSV must be UTF-8 (a BOM is allowed). For XLSX only the first sheet is read; cells are read as displayed, so the templates format every column as text to keep leading zeros in IDs.
+- Cell values are trimmed. Fully blank rows are skipped, but they still count for row numbers.
 
 ### 8.3 Bulk user import
 
@@ -698,18 +705,20 @@ The templates are static files shipped by the web app (`/templates/students.csv|
 | `POST /college/users/import/students` | multipart `file` (`.csv` or `.xlsx`) | `200 BulkImportResult` |
 | `POST /college/users/import/professors` | multipart `file` | `200 BulkImportResult` |
 
-- `BulkImportResult` is as in §5.5, with `status` ∈ `CREATED | CONVERTED | REJECTED | FAILED` and `summary.converted` added.
-- `index` is the **spreadsheet row number** (the header is row 1, so the first data row is 2); `key` = `loginId`.
-- `CONVERTED` (students only): the email belonged to an `S_STUDENT`, who is now a `C_STUDENT` of this college. Their solo data is deleted and the password is reset to the roll no (§4.6).
-- Rejection reasons include: missing field, bad email, duplicate email or ID within the file (`"duplicate of row 7"`), ID already used in the college, and email used by a non-S_STUDENT.
-- Errors: `400 IMPORT_FILE_INVALID` (unreadable, wrong or missing headers, > 2,000 data rows, not CSV/XLSX), `429 RATE_LIMITED`.
+- `BulkImportResult` is as in §5.5, with `status` ∈ `CREATED | CONVERTED | REJECTED | FAILED` and `summary.converted` added (always `0` for content imports).
+- `index` is the **spreadsheet row number** (the header is row 1, so the first data row is 2); `key` = `loginId` (`null` when the cell is blank). `id` is set for `CREATED` and `CONVERTED`.
+- `CONVERTED` (students only): the email belonged to an `S_STUDENT`, who is now a `C_STUDENT` of this college, with the file's name and roll no. Their solo data is deleted (from P7), the password is reset to the roll no with a forced change, and their sessions end (§4.6). In a professor import the same email is `REJECTED`.
+- Errors use column names as paths: `full_name: must not be blank`, `email: must be a well-formed email address`, `email: duplicate of row 2`, `roll_no: duplicate of row 2`, `roll_no: 'R-17' is already used in this college`, `email: is already used by another account`. A `REJECTED` row lists every problem it has. Limits match §8.1.
+- Created users start with password = their ID and `mustChangePassword = true`.
+- Errors: `400 IMPORT_FILE_INVALID` (no `file` part, empty, unreadable, not UTF-8, wrong headers, no data rows, > 2,000 data rows, not CSV/XLSX), `400 VALIDATION_ERROR` (`file: is larger than the upload limit`, 5 MB). `429 RATE_LIMITED` comes with the rate limits in P8.
+- Audit: one `USER_IMPORT` event with `{ kind: STUDENTS|PROFESSORS, total, created, converted, rejected, failed }`.
 
 ### 8.4 Subjects
 
 | Method & path | Roles | Body | Success |
 |---|---|---|---|
 | `GET /college/subjects?q=` | C_ADMIN, C_PROFESSOR (mapped only), C_STUDENT | — | `200 Subject[]` |
-| `GET /college/subjects/{id}` (ADDED) | same scoping | — | `200 Subject` |
+| `GET /college/subjects/{id}` (ADDED, agreed 2026-10-14) | same scoping | — | `200 Subject` |
 | `POST /college/subjects` | C_ADMIN | `{ "code", "name", "description" }` | `201 Subject` |
 | `PUT /college/subjects/{id}` | C_ADMIN | same | `200 Subject` |
 | `DELETE /college/subjects/{id}` | C_ADMIN | — | `204` / `409 SUBJECT_IN_USE` |
@@ -729,9 +738,13 @@ The templates are static files shipped by the web app (`/templates/students.csv|
 }
 ```
 
-- `code` is required, ≤ 30, unique within the college (`409 SUBJECT_CODE_ALREADY_EXISTS`). `name` is required, ≤ 255.
-- `professorIds` **replaces** the mapping. An id that isn't a C_PROFESSOR of this college → `400 VALIDATION_ERROR` (`"professorIds[2]: not a professor of this college"`).
-- Sorted by `name`.
+- `code` is required, ≤ 30, trimmed and stored upper-case, unique within the college (`409 SUBJECT_CODE_ALREADY_EXISTS`). It can be changed on update. `name` is required, ≤ 255. `description` is optional, ≤ 2,000.
+- `professorIds` **replaces** the mapping; `[]` clears it and repeated ids count once. An id that isn't a C_PROFESSOR of this college → `400 VALIDATION_ERROR` naming every bad position (`"professorIds[2]: not a professor of this college"`).
+- `professors` is sorted by `fullName`. `assessmentCount` is `0` until P3.
+- `q` matches code or name, case-insensitively. Sorted by `name`.
+- Out of scope → `404`: another college's subject, or a subject not mapped to the calling professor. SUPERADMIN and S_STUDENT get `403`.
+- Delete: `409 SUBJECT_IN_USE` once the subject has assessments (P3); its professor mappings go with it.
+- Audit: `SUBJECT_CREATED`, `SUBJECT_UPDATED`, `SUBJECT_DELETED`, `SUBJECT_PROFESSORS_CHANGED` (with the new `professorIds`).
 
 ---
 
@@ -1296,3 +1309,4 @@ The `isFree` field and the `PRO_REQUIRED` error no longer exist anywhere.
 | 2026-10-13 | First version. LIVE sections documented from `feature/epic1`; P0–P7 proposed from TDD v2 |
 | 2026-10-13 | P0 implemented: per-row bulk import (§5.5) live; practice endpoints, `BULK_IMPORT_REJECTED` and `FOLLOWUP_LIMIT_REACHED` removed; `page`/`size` validated (§0.4) |
 | 2026-10-13 | P1 implemented: five roles, both login modes, `role`/`mustChangePassword` in auth responses, change-password and its gate, extended `/users/me`, colleges and C_ADMIN accounts (§6), audit log (§7), content admin re-scoped to SUPERADMIN. The P1 ADDED items (`GET /admin/acts/{id}`, `GET /admin/sections/{id}`, `GET /superadmin/colleges/{id}`, `COLLEGE_CODE_ALREADY_EXISTS`) are live but still need sign-off. `RATE_LIMITED` moved to P8 to match Plan 8.3. O1 and O2 implemented with their proposed defaults |
+| 2026-10-14 | P2 implemented: §8 is LIVE. The P2 ADDED items (`GET /college/users/{id}`, `GET /college/subjects/{id}`, `LOGIN_ID_ALREADY_EXISTS`, `SUBJECT_CODE_ALREADY_EXISTS`) were signed off. Import templates approved and their parsing rules written down (§8.2). `BulkImportResult.summary` gained `converted` for every import (§5.5 too, always `0` there). Subject codes are stored upper-case; `description` ≤ 2,000 |

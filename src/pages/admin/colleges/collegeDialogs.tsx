@@ -5,7 +5,6 @@
  * never stored, logged or put in a URL.
  */
 import { useState, type FormEvent } from 'react';
-import { ApiError } from '@/api/client';
 import {
   COLLEGE_CODE_PATTERN,
   COLLEGE_LIMITS,
@@ -17,59 +16,14 @@ import {
   type College,
   type UserSummary,
 } from '@/api/colleges';
-import { conflictFieldError, errorMessage } from '@/api/errors';
 import { validateEmail } from '@/auth/validation';
 import { Dialog } from '@/components/Dialog';
+import { Banner, DialogButtons } from '@/components/DialogForm';
 import { TextField } from '@/components/Field';
-import { parseServerErrors } from '@/pages/admin/contentForm';
+import { saveErrors, type FieldErrors } from '@/lib/forms';
 import styles from '@/components/ui.module.css';
 
-type Errors = Record<string, string>;
-
-/** Field errors from a failed save, plus a banner for anything without a field. */
-function saveErrors(err: unknown, fields: readonly string[]): { fields: Errors; banner: string | null } {
-  const conflict = conflictFieldError(err);
-  if (conflict) return { fields: conflict, banner: null };
-  if (err instanceof ApiError && err.code === 'VALIDATION_ERROR') {
-    const parsed = parseServerErrors(err.message);
-    const known = Object.fromEntries(Object.entries(parsed).filter(([path]) => fields.includes(path)));
-    if (Object.keys(known).length > 0) return { fields: known, banner: null };
-  }
-  return { fields: {}, banner: errorMessage(err) };
-}
-
-function DialogButtons({
-  busy,
-  submitLabel,
-  busyLabel,
-  onCancel,
-  destructive = false,
-}: {
-  busy: boolean;
-  submitLabel: string;
-  busyLabel: string;
-  onCancel: () => void;
-  destructive?: boolean;
-}) {
-  return (
-    <div className={styles.dialogActions}>
-      <button type="button" className={styles.secondaryButton} onClick={onCancel} disabled={busy}>
-        Cancel
-      </button>
-      <button type="submit" className={destructive ? styles.dangerButton : styles.primaryButton} disabled={busy}>
-        {busy ? busyLabel : submitLabel}
-      </button>
-    </div>
-  );
-}
-
-function Banner({ message }: { message: string | null }) {
-  return (
-    <div role="alert">
-      {message && <p className={styles.formError}>{message}</p>}
-    </div>
-  );
-}
+type Errors = FieldErrors;
 
 // ---------- Add college ----------
 

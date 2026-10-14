@@ -4,10 +4,11 @@ import { AUDIT_ACTIONS, isAuditAction, listAudit, type AuditEvent } from '@/api/
 import { listColleges } from '@/api/colleges';
 import { Pagination } from '@/components/Pagination';
 import { EmptyState, ErrorState, LoadingState } from '@/components/QueryStates';
-import { useApiQuery } from '@/hooks/useApiQuery';
+import { useCachedQuery } from '@/hooks/useCachedQuery';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { pageFromParam } from '@/lib/urlParams';
 import { formatInstant, formatListInstant, startOfLocalDay, toDateInputValue } from '@/lib/format';
+import { queryKeys } from '@/lib/queryClient';
 import { ACTION_LABELS, actionLabel, auditActor, auditSummary, detailValue, humaniseCode, humaniseKey } from './auditFormat';
 import styles from '@/components/ui.module.css';
 
@@ -48,15 +49,18 @@ export function AuditLogPage({ scope }: { scope: 'all' | 'college' }) {
   const wide = useMediaQuery('(min-width: 1024px)');
   const [expanded, setExpanded] = useState<string | null>(null);
 
-  const results = useApiQuery(rangeError ? null : `audit:${scope}:${collegeId}:${action}:${from}:${to}:${page}`, () =>
-    listAudit({
-      collegeId: collegeId || undefined,
-      action: action || undefined,
-      from: fromInstant ?? undefined,
-      to: toInstant ?? undefined,
-      page,
-      size: PAGE_SIZE,
-    }),
+  const results = useCachedQuery(
+    queryKeys.audit.list({ scope, collegeId, action, from, to, page }),
+    () =>
+      listAudit({
+        collegeId: collegeId || undefined,
+        action: action || undefined,
+        from: fromInstant ?? undefined,
+        to: toInstant ?? undefined,
+        page,
+        size: PAGE_SIZE,
+      }),
+    { enabled: !rangeError },
   );
   const data = results.status === 'success' ? results.data : results.status === 'loading' ? results.staleData : undefined;
 
@@ -197,7 +201,9 @@ export function AuditLogPage({ scope }: { scope: 'all' | 'college' }) {
 
 /** "All colleges" plus every college by name (up to 100; type-ahead works in the native select). */
 function CollegeFilter({ value, onChange }: { value: string; onChange: (value: string) => void }) {
-  const colleges = useApiQuery('audit-colleges', () => listColleges({ page: 0, size: 100, sort: 'name,asc' }));
+  const colleges = useCachedQuery(queryKeys.colleges.list({ page: 0, size: 100, sort: 'name,asc' }), () =>
+    listColleges({ page: 0, size: 100, sort: 'name,asc' }),
+  );
   const options = colleges.status === 'success' ? colleges.data.content : [];
   const known = !value || options.some((college) => college.id === value);
   return (

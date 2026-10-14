@@ -11,6 +11,7 @@ export function TypedConfirmDialog({
   title,
   phrase,
   confirmLabel,
+  busyLabel = 'Deleting…',
   busy = false,
   children,
   onConfirm,
@@ -21,6 +22,8 @@ export function TypedConfirmDialog({
   /** What must be typed, e.g. the act's short code. */
   phrase: string;
   confirmLabel: string;
+  /** Shown on the confirm button while `busy`. */
+  busyLabel?: string;
   busy?: boolean;
   children: ReactNode;
   onConfirm: () => void;
@@ -28,7 +31,14 @@ export function TypedConfirmDialog({
 }) {
   return (
     <Dialog open={open} title={title} description={children} busy={busy} onClose={onCancel}>
-      <TypedConfirmForm phrase={phrase} confirmLabel={confirmLabel} busy={busy} onConfirm={onConfirm} onCancel={onCancel} />
+      <TypedConfirmForm
+        phrase={phrase}
+        confirmLabel={confirmLabel}
+        busyLabel={busyLabel}
+        busy={busy}
+        onConfirm={onConfirm}
+        onCancel={onCancel}
+      />
     </Dialog>
   );
 }
@@ -36,12 +46,14 @@ export function TypedConfirmDialog({
 function TypedConfirmForm({
   phrase,
   confirmLabel,
+  busyLabel,
   busy,
   onConfirm,
   onCancel,
 }: {
   phrase: string;
   confirmLabel: string;
+  busyLabel: string;
   busy: boolean;
   onConfirm: () => void;
   onCancel: () => void;
@@ -74,7 +86,7 @@ function TypedConfirmForm({
           Cancel
         </button>
         <button type="submit" className={styles.dangerButton} disabled={!matches || busy}>
-          {busy ? 'Deleting…' : confirmLabel}
+          {busy ? busyLabel : confirmLabel}
         </button>
       </div>
     </form>
