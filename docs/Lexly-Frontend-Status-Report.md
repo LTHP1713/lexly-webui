@@ -4,6 +4,7 @@
 **Repo state:** `master` at `fab9df4` ("bare act & case laws"). The doc sync is on branch `docs/sync-frontend-plan`.
 **Compared against:** `Lexly-Frontend-Implementation-Plan.md` (revised 2026-10-13) and `Lexly-API-Contract.md` (identical to the backend repo's copy on 2026-10-13).
 **Method:** I checked each plan task against the code, `package.json` and `docs/progress/frontend_progress.md`. I did not run the app or the backend for this report.
+**Update, same day (backend P0 + P1):** backend Phase 0 is merged to `lexly-backend` `main` (`0545ab9`) and Phase 1 is committed on `feature/phase1` (`ddac579`, not yet merged). `docs/Lexly-API-Contract.md` was re-copied from that commit, and §1, §3 and §5 below were updated. F0 and all of F1 are now unblocked.
 **Update, same day:** the doc findings in §4 have been applied. The plan and `Lexly-UI-Spec.md` now agree, and the stale references to the deleted Home contract in the code comments and `.env.example` are fixed. The progress file was restored and its Next Up rewritten from this plan; see §4.4.
 
 ---
@@ -12,16 +13,15 @@
 
 - **Done:** everything the plan lists as "built and working" (§1.1). That covers the reading app (Bare Acts, Case Laws, search, Home), email login and register with the cookie session, the case-law admin, and the free/Pro removal. The code matches the plan's description.
 - **Not started:** every plan task, F0.1 through F8.7. F0 (clean-up and foundations) has no backend dependency and can start now.
-- **Blocked on the backend:** F1–F8. The contract labels backend Phases 0–8 **PROPOSED**; none of them are agreed or merged yet. Only the LIVE endpoints (auth, `/users/me`, content reads, content admin) can be used for real today.
-- **Can start now besides F0:**
-  - **F1.7, acts and sections admin.** The `/admin/acts`, `/admin/sections` and per-item endpoints are LIVE.
-  - **F1.8, case-law ↔ section linking.** The link and unlink endpoints are LIVE.
+- **Unblocked by the backend:** F0 and F1. Contract §1 (both login modes, change password, the `PASSWORD_CHANGE_REQUIRED` gate), §2.1 (`/users/me` with `college`, `loginId`, `mustChangePassword`), §5 (content admin incl. `GET /admin/acts/{id}` and `GET /admin/sections/{id}`, per-row bulk import), §6 (colleges, C_ADMINs) and §7 (audit) are LIVE.
+- **Blocked on the backend:** F2–F8 (Phases 2–8 still PROPOSED).
+- **The current UI breaks against a P1 backend.** Roles are now `SUPERADMIN` / `S_STUDENT` / …, so `RequireAdmin` and the Profile admin link (both check `'ADMIN'`) shut admins out. And any account with `mustChangePassword` (the seeded SUPERADMIN, every reset account) gets `403 PASSWORD_CHANGE_REQUIRED` on every call except `/users/me`, with no screen to fix it. F0.2, F0.3 and F1.2 are therefore the first things to build.
 - **Docs:** the UI spec, the plan and the contract are now in sync (§4). The UI spec covers F0 and F1, including F1.7 and F1.8. The progress file was restored and its Next Up rewritten (§4.4).
 
 | Phase | Tasks | Done | Can start now | Blocked by backend |
 |---|---|---|---|---|
 | F0 Clean-up & foundations | 7 | 0 | 7 | — |
-| F1 Identity, roles, SUPERADMIN, content admin | 11 | 0 | 2 (F1.7, F1.8); F1.9 against mocks | Phase 1 (and Phase 0 for F1.9) |
+| F1 Identity, roles, SUPERADMIN, content admin | 11 | 0 | 11 (P0 merged, P1 on `feature/phase1`) | — (ships after P1 merges) |
 | F2 College administration | 9 | 0 | — | Phase 2 |
 | F3 Assessments & answering | 10 | 0 | — | Phase 3 |
 | F4 Manual grading & results | 7 | 0 | — | Phase 4 |
@@ -76,16 +76,16 @@ These match the plan's §1.1. The progress file has the full entries and how eac
 
 | # | Task | Status | Notes |
 |---|---|---|---|
-| F1.1 | Two-mode login | Blocked (P1) | Login is email-only today. Can be built against MSW mocks of contract §1.2 |
-| F1.2 | Forced password change | Blocked (P1) | Needs `POST /auth/change-password` (§1.5) and the `PASSWORD_CHANGE_REQUIRED` gate (§1.6) |
-| F1.3 | Registration | Nothing to do | Unchanged; the backend makes the role `S_STUDENT` |
-| F1.4 | Role areas live | Blocked (P1) | Needs F0.3 first |
-| F1.5 | Profile | Partial · Blocked (P1) | Shows email and log out. College, role and change password need the P1 `/users/me` fields |
-| F1.6 | Colleges + C_ADMIN accounts | Blocked (P1) | Contract §6 |
-| F1.7 | Acts & sections admin | Not started · **Ready** | Endpoints LIVE (§5.1–5.3). `GET /admin/acts/{id}` and `GET /admin/sections/{id}` are only ADDED (P1). Until then the editor can load from the public `GET /sections/{id}`, but it can't show an act's `description` |
-| F1.8 | Case-law ↔ section linking | Partial · **Ready** | The form shows linked sections read-only (`AdminCaseLawFormPage.tsx:293`). The link/unlink endpoints are LIVE (§5.4) |
-| F1.9 | Bulk JSON import | Not started · Blocked (P0) | The endpoints are LIVE, but backend Phase 0 changes the response to per-row results. Build against the P0 shape with mocks |
-| F1.10 | Audit log | Blocked (P1) | Contract §7 |
+| F1.1 | Two-mode login | Not started · Ready | Login is email-only today. Contract §1.2 LIVE |
+| F1.2 | Forced password change | Not started · Ready · **urgent** | `POST /auth/change-password` (§1.5) and the gate (§1.6) LIVE. Without this screen, a gated account can't use the app |
+| F1.3 | Registration | Nothing to do | The backend makes the role `S_STUDENT`; the response now also has `role` and `mustChangePassword` |
+| F1.4 | Role areas live | Not started · Ready | Needs F0.3 first |
+| F1.5 | Profile | Partial · Ready | Shows email and log out. The P1 `/users/me` fields are LIVE |
+| F1.6 | Colleges + C_ADMIN accounts | Not started · Ready | Contract §6 LIVE (paths under `/superadmin/…`) |
+| F1.7 | Acts & sections admin | Not started · Ready | All endpoints LIVE, including `GET /admin/acts/{id}` and `GET /admin/sections/{id}` |
+| F1.8 | Case-law ↔ section linking | Partial · Ready | The form shows linked sections read-only (`AdminCaseLawFormPage.tsx:293`). The link/unlink endpoints are LIVE (§5.4) |
+| F1.9 | Bulk JSON import | Not started · Ready | Per-row `BulkImportResult` LIVE since P0 (§5.5) |
+| F1.10 | Audit log | Not started · Ready | Contract §7 LIVE |
 | F1.11 | Tests | Blocked | Needs F0.6 |
 
 ### F2–F8
@@ -180,7 +180,7 @@ Order and dependencies, starting from today. Each frontend phase ships only afte
 | Step | Tasks | Done when |
 |---|---|---|
 | 1 | F0.1 remove MCQ practice + rewrite Next Up · F0.4 move shared components | No MCQ practice code left except the "coming soon" page; no behaviour change |
-| 2 | F0.2 role from `/users/me` · F0.3 role skeleton (`roles.ts`, `RequireRole`, nav from config, NotFound, lazy areas; `ADMIN` → SUPERADMIN area, `STUDENT`/`LAWYER` → S_STUDENT) | An `ADMIN` sees an admin nav without going through Profile |
+| 2 | F0.2 role from `/users/me` · F0.3 role skeleton (`roles.ts`, `RequireRole`, nav from config, NotFound, lazy areas; the five P1 roles only, no legacy mapping) · F1.2 forced password change, pulled forward | A `SUPERADMIN` sees an admin nav without going through Profile, and the seeded account can sign in, change its password and use the app |
 | 3 | F0.5 client: `FormData`, `patch`, `upload`, `download`, `AbortSignal`, `errors.ts` | Unit tests for each |
 | 4 | F0.6 Vitest, Testing Library, MSW, Playwright, axe, CI workflow | `npm test` runs in CI |
 | 5 | F0.7 cookie checks against the live backend; fix G10 | Results recorded in the progress file |
@@ -193,10 +193,11 @@ Order and dependencies, starting from today. Each frontend phase ships only afte
 - Done: `Lexly-UI-Spec.md` revised to match the plan, with F1.7 and F1.8 added.
 - Done: progress file restored and Next Up rewritten (§4.4).
 
-### F1 — after backend Phase 0 and Phase 1 are agreed
+### F1 — backend Phase 0 and Phase 1 done
 
-- **Start against mocks once the contract is agreed:** F1.1 two-mode login, F1.2 forced password change, F1.9 bulk import (P0 shape, which builds `ImportResultTable` and `DataTable`).
-- **After Phase 1 merges:** F1.4 role areas (drop the legacy mapping), F1.5 Profile, F1.6 colleges + C_ADMINs, F1.10 audit log, F1.11 tests.
+- **Build now against a local backend on `feature/phase1`:** F1.2 forced password change first (with F0.2/F0.3), then F1.1 two-mode login, F1.4 role areas, F1.5 Profile, F1.6 colleges + C_ADMINs, F1.10 audit log, F1.7–F1.9 content admin (F1.9 builds `ImportResultTable` and `DataTable`), F1.11 tests.
+- **Ship** after `feature/phase1` is merged to backend `main`.
+- **Dev login:** the seeded SUPERADMIN is `superadmin@lexly.local` / `lexly-superadmin-dev` (backend `.env.example`; dev only), forced to change the password on first sign-in.
 - **Done when:** the plan's F1 scenario passes. SUPERADMIN signs in and is forced to change the password, creates a college and a C_ADMIN, the C_ADMIN signs in, and an import with 3 bad rows shows them.
 
 ### F2 — College administration (backend Phase 2)

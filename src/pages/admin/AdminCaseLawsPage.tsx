@@ -6,9 +6,9 @@ import { ApiError } from '@/api/client';
 import { ErrorState, LoadingState } from '@/components/QueryStates';
 import { useApiQuery } from '@/hooks/useApiQuery';
 import { ImportanceBadge } from '@/pages/content/ImportanceBadge';
-import { ConfirmDialog } from './ConfirmDialog';
-import { useToast } from './Toast';
-import styles from './Admin.module.css';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { useToast } from '@/components/Toast';
+import styles from '@/components/ui.module.css';
 
 const PAGE_SIZE = 20;
 

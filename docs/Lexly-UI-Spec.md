@@ -1,6 +1,6 @@
 # Lexly — UI Spec (web)
 
-**Status:** Draft, revised 2026-10-13. F0 and F1 written; F2–F8 not yet written.
+**Status:** Draft, revised 2026-10-13. F0 and F1 written and synced with backend Phase 0 and Phase 1 (contract §1, §2, §5–§7 LIVE); F2–F8 not yet written.
 **Audience:** frontend developers on `lexly-webui`, plus backend and design reviewers.
 **Companion docs:**
 - [`Lexly-Frontend-Implementation-Plan.md`](Lexly-Frontend-Implementation-Plan.md) says **which** screens each phase builds. Task IDs (F1.6 …) come from there.
@@ -112,7 +112,7 @@ This expands the plan's §3.6 catalogue with copy. Clients switch on `error`, ne
 | `FORBIDDEN` | Full page | You don't have access to this page. + **Go to my home** |
 | `NOT_FOUND` on page load | Full page | `NotFound` (F0.3) |
 | `NOT_FOUND` on an action | Banner, then reload the list | This item no longer exists. The list has been refreshed. |
-| `RATE_LIMITED` | Toast; the form banner on sign-in and change password | Too many requests, try again shortly. No automatic retry |
+| `RATE_LIMITED` | Toast; the form banner on sign-in and change password | Too many requests, try again shortly. No automatic retry. (Raised by the backend from P8; handled from F1) |
 | `PASSWORD_CHANGE_REQUIRED` | — | No message. Go to `/change-password` (F1.2) |
 | `COLLEGE_INACTIVE` | Login screen banner | Your college's account is inactive. Contact your administrator. |
 | `EMAIL_ALREADY_EXISTS` | Field `email` | This email is already used by another Lexly account. |
@@ -133,7 +133,7 @@ This expands the plan's §3.6 catalogue with copy. Clients switch on `error`, ne
 | `C_STUDENT` | Student | `/student` | College code + roll no |
 | `S_STUDENT` | Student | `/dashboard` | Email |
 
-Until backend Phase 1 ships, `ADMIN` maps to the SUPERADMIN area and `STUDENT` / `LAWYER` to S_STUDENT (F0.3).
+These are the only roles. Backend P1 remapped the old `ADMIN` to `SUPERADMIN` and `STUDENT` / `LAWYER` to `S_STUDENT`, so the UI has no legacy mapping. An unrecognised role gets the Library only, with home `/acts`.
 
 ### 0.8 Accessibility baseline
 
@@ -241,7 +241,9 @@ Contract: §0.7, §0.8, §1, §2, §5, §6, §7.
 | Refresh returns `401` | Clear the session, go to `/login` with "Your session has ended. Please sign in again." Not shown after a deliberate logout |
 | `/` | Signed in → role home. Signed out → `/login` |
 
-Content admin routes (`/admin/**`) accept `SUPERADMIN` (and `ADMIN` until Phase 1).
+Content admin routes (`/admin/**`) accept `SUPERADMIN` only.
+
+The gate is read from the access token (contract §1.6). After a successful change the client must switch to the access token from the change-password response; the old one stays gated until it expires.
 
 ### F1.1 Login
 
@@ -293,7 +295,16 @@ Switching tabs keeps the password and clears field errors.
 
 Button **Save password** ("Saving…").
 
-**Server errors:** `currentPassword: is incorrect` → field error "Your current password is incorrect." Other paths → under their field. `RATE_LIMITED` → form banner.
+**Server errors** (contract §1.5, all `400 VALIDATION_ERROR`):
+
+| Server message | Field | Copy |
+|---|---|---|
+| `currentPassword: is incorrect` | Current password | Your current password is incorrect. |
+| `newPassword: must be different from the current password` | New password | Choose a password different from your current one. |
+| `newPassword: must not be your login ID` | New password | Don't use your roll no. or employee ID as your password. |
+| `newPassword: must be at least 8 characters` | New password | Use at least 8 characters. |
+
+Other paths → under their field. `RATE_LIMITED` → form banner.
 
 **Success:** take the new access token (the server rotates the cookie), refetch `/users/me`, then:
 - Forced → role home, toast "Password updated."
@@ -309,7 +320,7 @@ Button **Save password** ("Saving…").
 | `C_STUDENT` | `/student` placeholder: "Your assessments will appear here. Meanwhile, the Library is open to you." + **Open the Library** |
 | `S_STUDENT` | `/dashboard` (F0.1) |
 
-Placeholders use the `SimplePage` panel style. The legacy role mapping from F0.3 is removed.
+Placeholders use the `SimplePage` panel style.
 
 ### F1.5 Profile
 
@@ -439,7 +450,7 @@ Phone cards: title, short code, menu.
 | `shortCode` | Short code | ≤ 50, upper-cased. Hint: "Used in imports to refer to this act, e.g. ICA." |
 | `description` | Description | Optional, textarea |
 
-Edit loads `GET /admin/acts/{id}` (contract: ADDED, P1) because `GET /acts` has no `description` and `PUT` replaces it. **Until that endpoint exists, Edit is not offered**; Add and Delete work. Toasts: "Act added." / "Act updated."
+Edit loads `GET /admin/acts/{id}` (contract: ADDED, LIVE since P1) because `GET /acts` has no `description` and `PUT` replaces it. Toasts: "Act added." / "Act updated."
 
 **Delete act (typed confirm)**
 - Title: Delete {title}?
@@ -474,7 +485,7 @@ Empty: "This act has no sections yet." + **Add section** · **Import sections**.
 #### Section editor — `/admin/sections/:sectionId`
 
 **Purpose:** edit everything the reader shows for one section.
-**Data:** loads `GET /admin/sections/{id}` (ADDED, P1). Until that exists it loads the public `GET /sections/{id}`, which has the same fields; list order stands in for `displayOrder`.
+**Data:** loads `GET /admin/sections/{id}` (ADDED, LIVE since P1), so the editor loads exactly what it `PUT`s. List order is sent as `displayOrder`.
 **Save:** one **Save section** sends `PUT /admin/sections/{id}` with the whole `SectionRequest`, nested lists included. The per-item illustration and exception endpoints (§5.3) are not used: `PUT` replaces the nested lists anyway, and one save keeps the "load → save unchanged → identical body" check (F1.11) simple. This matches the case-law content editor.
 
 **Layout:** wide layout. From 1024px a sticky left index of the groups ("On this form") with an error count per group after a failed save; on smaller screens, no index. Breadcrumb "Acts / {shortCode} / Section {sectionNumber}". Header action: **View as reader**.
@@ -534,7 +545,8 @@ Save bar (sticky): **Save section** ("Saving…") and "Unsaved changes" / "All c
 | State | Look |
 |---|---|
 | Sending | **Import** shows "Importing…"; the textarea is read-only |
-| `400` (envelope invalid) | Banner with the server message; no results |
+| `400` (envelope invalid: empty list, too many rows, a `null` row, missing `actShortCode`, unparseable body) | Banner with the server message; no results |
+| Sections batch with an unknown `actShortCode` | Not a `400`: every row comes back `REJECTED` with `actShortCode: no bare act found…`. The summary adds "No act has the short code {code}." |
 | All created | Summary in the success colour; toast "{n} items imported." |
 
 ### F1.10 Audit log
@@ -546,7 +558,7 @@ Save bar (sticky): **Save section** ("Saving…") and "Unsaved changes" / "All c
 | Filter | Param | Notes |
 |---|---|---|
 | College | `collegeId` | SUPERADMIN only. Searchable select, plus "All colleges" |
-| Action | `action` | Select with the labels below |
+| Action | `action` | Select with the labels below. Only contract values are sent (an unknown one is a `400`) |
 | From / To | `from`, `to` | Date inputs. Sent as the start of the `from` day and the start of the day **after** `to` (local time), because `to` is exclusive. Default: the last 7 days |
 
 Under the filters, muted: "Entries are kept for 30 days."
@@ -558,12 +570,12 @@ Clicking a row expands it to show `details` as text: a key–value list with hum
 
 | `action` | Label | Summary (when `details` has the fields) |
 |---|---|---|
-| `LOGIN_FAILED` | Failed sign-in | Identifier tried |
-| `PASSWORD_RESET` / `PASSWORD_CHANGED` | Password reset / Password changed | Whose password |
-| `COLLEGE_CREATED` / `COLLEGE_UPDATED` | College added / College updated | Code; "Deactivated" / "Activated" when `active` changed |
-| `USER_CREATED` / `USER_UPDATED` / `USER_REMOVED` | User added / updated / removed | Name and role |
+| `LOGIN_FAILED` | Failed sign-in | `details.identifier`; adds "College inactive" when `details.reason` is `COLLEGE_INACTIVE` |
+| `PASSWORD_RESET` / `PASSWORD_CHANGED` | Password reset / Password changed | Reset: "{role label} account" from `details.role`. Changed: "By {actor}" (`details` is empty) |
+| `COLLEGE_CREATED` / `COLLEGE_UPDATED` | College added / College updated | `college.code` and `details.name`. Updated also shows "Active" / "Inactive" from `details.active` (the new state; the old one isn't recorded) |
+| `USER_CREATED` / `USER_UPDATED` / `USER_REMOVED` | User added / updated / removed | `details.email` and the role label of `details.role` (no name is recorded) |
 | `USER_IMPORT` | Users imported | "{created} created, {converted} converted, {rejected} rejected, {failed} failed of {total}" |
-| `CONTENT_IMPORT` | Content imported | Same pattern |
+| `CONTENT_IMPORT` | Content imported | `details.kind`, then "{created} created, {rejected} rejected, {failed} failed of {total}" |
 | `SUBJECT_CREATED` / `_UPDATED` / `_DELETED` | Subject added / updated / deleted | Subject code |
 | `SUBJECT_PROFESSORS_CHANGED` | Subject professors changed | Subject code |
 | `ASSESSMENT_PUBLISHED` / `ASSESSMENT_REMOVED` | Assessment published / removed | Title |
@@ -571,7 +583,7 @@ Clicking a row expands it to show `details` as text: a key–value list with hum
 | `GRADE_EDITED` / `GRADE_PUBLISHED` | Grade edited / published | — |
 | `SOLO_PLAN_CHANGED` / `SOLO_QUOTA_RESET` | Solo plan changed / Solo quota reset | — |
 
-Unknown actions show the raw code in monospace, so a new backend action never breaks the page. Missing summary fields show "—".
+Unknown actions show the raw code in monospace, so a new backend action never breaks the page. Missing summary fields show "—". Since P1 the backend records only `LOGIN_FAILED`, `PASSWORD_CHANGED`, `PASSWORD_RESET`, `COLLEGE_CREATED`, `COLLEGE_UPDATED`, `USER_CREATED`, `USER_REMOVED` and `CONTENT_IMPORT`; the rest appear as their phases ship. `CONTENT_IMPORT` rows have no college, so a SUPERADMIN sees them only under "All colleges".
 
 | State | Copy |
 |---|---|
@@ -606,8 +618,8 @@ Each stub lists what the section must cover. Task IDs are the plan's.
 |---|---|---|---|
 | U1 | Library sub-nav (Bare Acts · Case Laws · Search) for roles with a single Library nav item | As specified in F0.3 | F0.3 |
 | U2 | Is a typed temporary password for college admins final (contract O1)? | Yes, with **Generate** and a one-time share step | F1.6 |
-| U3 | Should college admins see `LOGIN_FAILED` entries (they reveal identifiers people tried)? | Yes, for their own college | F1.10 |
-| U4 | Edit act before `GET /admin/acts/{id}` exists | Not offered until the endpoint ships | F1.7 |
+| U3 | Should college admins see `LOGIN_FAILED` entries (they reveal identifiers people tried)? | Settled by P1: each entry carries the matched account's college, so a C_ADMIN sees failed sign-ins on their college's accounts. Identifiers that match no account have no college | F1.10 |
+| U4 | Edit act before `GET /admin/acts/{id}` exists | Closed: the endpoint is LIVE since P1 | F1.7 |
 
 ---
 
@@ -617,3 +629,4 @@ Each stub lists what the section must cover. Task IDs are the plan's.
 |---|---|
 | 2026-10-13 | First version: shared conventions, Phase 0 and Phase 1 |
 | 2026-10-13 | Aligned with `Lexly-Frontend-Implementation-Plan.md`: plan task IDs; plan routes (`/admin/**`, `/student`, `/admin/audit`, `/college/audit`); role nav with Library; `/practice` kept as a placeholder; Home cards hidden, not deleted; bulk import moved to F1.9; college detail tabs; error copy from plan §3.6. Added F0.3 navigation and NotFound, F1.7 acts and sections admin, F1.8 case-law linking |
+| 2026-10-13 | Synced with backend Phase 0 and Phase 1: no legacy role mapping; P1 endpoints marked LIVE (Edit act and the section editor load the admin GETs); change-password server messages; bulk-import `400` cases and the unknown-act case; audit summaries match the recorded `details`; `RATE_LIMITED` raised only from P8; U3 and U4 closed |

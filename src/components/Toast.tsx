@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import styles from './Admin.module.css';
+import styles from './ui.module.css';
 
 const TOAST_MS = 4000;
 

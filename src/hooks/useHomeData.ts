@@ -2,14 +2,10 @@ import { useEffect } from 'react';
 import {
   getBareActProgress,
   getContinueLearning,
-  getCurrentUser,
-  getPracticeSummary,
   recordLearningActivity,
   type BareActProgressItem,
   type ContinueLearningItem,
-  type CurrentUserDto,
   type LearningContentType,
-  type PracticeSummary,
 } from '@/api/users';
 import { backendFeatures, homeMockMode } from '@/config/features';
 import type { HomeMockData } from '@/dev/homeMocks';
@@ -42,14 +38,6 @@ function useBackendQuery<T>(
 
   if (result.status === 'idle') return { status: 'unavailable', sample: false, retry: result.retry };
   return { ...result, sample: mockMode !== null };
-}
-
-export function useCurrentUser(): HomeQuery<CurrentUserDto> {
-  return useBackendQuery('users/me', backendFeatures.currentUser, getCurrentUser, 'currentUser');
-}
-
-export function usePracticeStats(): HomeQuery<PracticeSummary> {
-  return useBackendQuery('practice-stats', backendFeatures.practiceStats, getPracticeSummary, 'practice');
 }
 
 export function useBareActProgress(): HomeQuery<BareActProgressItem[]> {

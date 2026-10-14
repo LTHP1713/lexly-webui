@@ -18,11 +18,11 @@ import {
   type ContentForm,
   type ListName,
 } from './contentForm';
-import { TextAreaField, TextField } from './Field';
-import { RepeatableList } from './RepeatableList';
-import { useToast } from './Toast';
-import { useUnsavedChangesGuard } from './useUnsavedChangesGuard';
-import styles from './Admin.module.css';
+import { TextAreaField, TextField } from '@/components/Field';
+import { RepeatableList } from '@/components/RepeatableList';
+import { useToast } from '@/components/Toast';
+import { useUnsavedChangesGuard } from '@/components/useUnsavedChangesGuard';
+import styles from '@/components/ui.module.css';
 
 /** `/admin/caselaws/:caseLawId/content` — the whole structured content, saved in one full replace. */
 export function AdminCaseLawContentPage() {

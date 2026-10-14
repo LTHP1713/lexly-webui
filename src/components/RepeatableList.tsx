@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import styles from './Admin.module.css';
+import styles from './ui.module.css';
 
 type Keyed = { key: string };
 

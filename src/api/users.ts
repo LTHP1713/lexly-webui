@@ -1,7 +1,7 @@
 /**
- * `/users/me/**` — the authenticated student's profile and learning progress. Only `GET /users/me`
- * exists in lexly-backend so far: the other request/response types below mirror the old
- * Home dashboard contract, which TDD v2 dropped (docs/Lexly-API-Contract.md §15), and each call is gated by a flag in
+ * `/users/me/**`. `GET /users/me` (contract §2.1) is the source of truth for the signed-in user.
+ * The learning-progress types below mirror the old Home dashboard contract, which TDD v2 dropped
+ * (docs/Lexly-API-Contract.md §15); each of those calls is gated by a flag in
  * `src/config/features.ts`. Raw DTOs are mapped to UI models here so components never see
  * backend field quirks.
  */
@@ -15,55 +15,23 @@ export interface CurrentUserDto {
   /** Null when `fullName` is blank. */
   firstName: string | null;
   fullName: string | null;
-  role?: string;
+  role: string;
+  mustChangePassword: boolean;
+  /** Roll no / employee ID for C_STUDENT and C_PROFESSOR; null otherwise. */
+  loginId: string | null;
+  /** For C_ADMIN, C_PROFESSOR and C_STUDENT; null otherwise. */
+  college: { id: string; code: string; name: string } | null;
   /** ISO-8601 UTC, possibly with fractional seconds: parse with `new Date()`, never a fixed format. */
-  createdAt?: string;
+  createdAt: string;
 }
 
-/** Also called by the session bootstrap (`src/api/auth.ts`), which doesn't check the feature flag. */
+/** Allowed even while the password must be changed (contract §1.6). `no-store` on the server. */
 export function getCurrentUser() {
-  return apiClient.get<CurrentUserDto>('/users/me');
-}
-
-// ---------- Practice stats ----------
-
-export interface PracticeStatsDto {
-  attempted: number;
-  uniqueQuestionsAttempted: number;
-  correct: number;
-  wrong: number;
-  /** 0–100, up to one decimal place. */
-  accuracy: number;
-}
-
-export interface PracticeSummary {
-  attempted: number;
-  uniqueQuestionsAttempted: number;
-  correct: number;
-  wrong: number;
-  /** Whole-number percentage for display. */
-  accuracyPercent: number;
+  return apiClient.get<CurrentUserDto>('/users/me', { cache: 'no-store' });
 }
 
 function count(value: unknown): number {
   return typeof value === 'number' && Number.isFinite(value) && value > 0 ? Math.floor(value) : 0;
-}
-
-export function toPracticeSummary(dto: PracticeStatsDto): PracticeSummary {
-  const attempted = count(dto.attempted);
-  const correct = Math.min(count(dto.correct), attempted);
-  const accuracy = attempted === 0 ? 0 : (correct / attempted) * 100;
-  return {
-    attempted,
-    uniqueQuestionsAttempted: count(dto.uniqueQuestionsAttempted),
-    correct,
-    wrong: attempted - correct,
-    accuracyPercent: Math.round(accuracy),
-  };
-}
-
-export async function getPracticeSummary(): Promise<PracticeSummary> {
-  return toPracticeSummary(await apiClient.get<PracticeStatsDto>('/users/me/practice-stats'));
 }
 
 // ---------- Bare act progress ----------

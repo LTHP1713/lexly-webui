@@ -1,12 +1,16 @@
-import { useOutletContext } from 'react-router-dom';
+import { useAuth } from '@/auth/AuthContext';
 
-/** What `AppLayout` passes to the pages it renders. */
+/** What pages rendered inside `AppLayout` can rely on. */
 export interface AppLayoutContext {
-  /** Null when neither `GET /users/me` nor the login response supplies a name. */
+  /** Null when `GET /users/me` has no name for the user. */
   firstName: string | null;
 }
 
-/** For pages rendered inside `AppLayout` (e.g. the Home greeting), so `/users/me` is fetched once. */
+/**
+ * For pages inside `AppLayout` (e.g. the Home greeting). Read from the session, which holds the
+ * `/users/me` user, rather than from outlet context, which nested guard routes would not forward.
+ */
 export function useAppLayout(): AppLayoutContext {
-  return useOutletContext<AppLayoutContext>();
+  const { user } = useAuth();
+  return { firstName: user?.firstName ?? null };
 }

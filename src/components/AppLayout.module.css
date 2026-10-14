@@ -1,5 +1,5 @@
-/* Mobile-first: bottom tab bar below 768px. The header never carries section links — the
-   Dashboard is the navigation hub. */
+/* Mobile-first: the role's nav (src/auth/roles.ts) is a bottom tab bar below 768px and sits in
+   the header from 768px. */
 
 .shell {
   /* The Lexly palette is light-only (the auth screens opt in the same way in AuthLayout). */
@@ -123,6 +123,73 @@
   border-color: var(--lx-gold);
 }
 
+/* Role nav in the header: hidden on phones, where the bottom tab bar carries it. */
+.headerNav {
+  display: none;
+  min-width: 0;
+}
+
+.headerNavList {
+  display: flex;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.headerNavLink {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 0.7rem;
+  border-radius: 0.5rem;
+  color: var(--lx-muted);
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.headerNavLink:hover {
+  color: var(--lx-navy);
+}
+
+.headerNavLink[aria-current='page'] {
+  color: var(--lx-navy);
+}
+
+.headerNavLink[aria-current='page']::after {
+  content: '';
+  position: absolute;
+  left: 0.7rem;
+  right: 0.7rem;
+  bottom: 0.35rem;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--lx-gold);
+}
+
+/* Forced password change: the header's only action. */
+.logout {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  padding: 0 0.9rem;
+  border: 1px solid var(--lx-border);
+  border-radius: 0.5rem;
+  background: #fff;
+  color: var(--lx-navy);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.logout:hover {
+  border-color: var(--lx-navy);
+}
+
 /* ---------- Main ---------- */
 
 .main {
@@ -140,6 +207,11 @@
   outline: none;
 }
 
+/* No bottom tab bar to clear. */
+.mainNoTabs {
+  padding-bottom: 2rem;
+}
+
 /* ---------- Bottom tab bar (mobile) ---------- */
 
 .bottomNav {
@@ -154,9 +226,9 @@
   box-shadow: 0 -2px 12px rgb(19 41 75 / 0.06);
 }
 
+/* Column count is set inline from the role's item count. */
 .bottomNavList {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -213,8 +285,9 @@
     font-size: 0.98rem;
   }
 
+  /* The header nav needs the room until 1024px. */
   .greetingName {
-    max-width: 18rem;
+    max-width: 8rem;
   }
 
   .main {
@@ -227,5 +300,15 @@
 
   .bottomNav {
     display: none;
+  }
+
+  .headerNav {
+    display: block;
+  }
+}
+
+@media (min-width: 1024px) {
+  .greetingName {
+    max-width: 18rem;
   }
 }

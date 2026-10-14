@@ -1,9 +1,9 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/auth/AuthContext';
-import { LogOutIcon, UserIcon } from '@/components/icons/Icons';
+import { LockIcon, LogOutIcon, UserIcon } from '@/components/icons/Icons';
 import styles from './SimplePage.module.css';
 
-/** Shows only what the session actually knows (the login email) — no invented profile fields. */
+/** Shows only what the session actually knows — no invented profile fields. */
 export function ProfilePage() {
   const { user, logout } = useAuth();
 
@@ -18,16 +18,16 @@ export function ProfilePage() {
           <dt>Email</dt>
           <dd>{user?.email ?? '—'}</dd>
         </dl>
-        {/* The admin area stays out of the student navigation; admins reach it from here. */}
-        {user?.role === 'ADMIN' && (
-          <Link to="/admin/caselaws" className={styles.secondaryButton}>
-            Admin: manage case laws
+        <div className={styles.actions}>
+          <Link to="/change-password" className={styles.secondaryButton}>
+            <LockIcon size={18} />
+            Change password
           </Link>
-        )}
-        <button type="button" className={styles.secondaryButton} onClick={() => void logout()}>
-          <LogOutIcon size={18} />
-          Log Out
-        </button>
+          <button type="button" className={styles.secondaryButton} onClick={() => void logout()}>
+            <LogOutIcon size={18} />
+            Log Out
+          </button>
+        </div>
       </section>
     </>
   );
