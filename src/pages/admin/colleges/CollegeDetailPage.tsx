@@ -8,6 +8,8 @@ import { RowMenu } from '@/components/RowMenu';
 import { StatusBadge } from '@/components/StatusBadge';
 import { useToast } from '@/components/Toast';
 import { useApiQuery } from '@/hooks/useApiQuery';
+import { useCachedQuery } from '@/hooks/useCachedQuery';
+import { queryKeys } from '@/lib/queryClient';
 import { formatCount, formatDate } from '@/lib/format';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { AddAdminDialog, EditCollegeNameDialog, ResetPasswordDialog } from './collegeDialogs';
@@ -197,7 +199,7 @@ function AdminsTab({
   onChanged: () => void;
   showToast: (message: string) => void;
 }) {
-  const admins = useApiQuery(`college-admins:${college.id}`, () => listCollegeAdmins(college.id));
+  const admins = useCachedQuery(queryKeys.colleges.admins(college.id), () => listCollegeAdmins(college.id));
   const [adding, setAdding] = useState(false);
   const [resetting, setResetting] = useState<UserSummary | null>(null);
   const [removing, setRemoving] = useState<UserSummary | null>(null);

@@ -12,6 +12,7 @@ import {
   DocumentIcon,
   HomeIcon,
   UserIcon,
+  UsersIcon,
 } from '@/components/icons/Icons';
 
 export const ROLES = ['SUPERADMIN', 'C_ADMIN', 'C_PROFESSOR', 'C_STUDENT', 'S_STUDENT'] as const;
@@ -36,7 +37,7 @@ export const CHANGE_PASSWORD_PATH = '/change-password';
 /** Shared read-only content every role may open. Also the home of a user with an unknown role. */
 export const LIBRARY_HOME = '/acts';
 
-/** Each role's home (UI spec §0.7, F1.4). The college homes are placeholders until F2/F3/F6. */
+/** Each role's home (UI spec §0.7, F1.4). The professor and student homes are placeholders until F3. */
 const HOMES: Record<Role, string> = {
   SUPERADMIN: '/admin',
   C_ADMIN: '/college',
@@ -97,7 +98,12 @@ const NAV: Record<Role, NavItem[]> = {
     { to: '/admin/audit', label: 'Audit', icon: ClockIcon, matches: ['/admin/audit'] },
     LIBRARY,
   ],
-  C_ADMIN: [{ to: '/college/audit', label: 'Audit', icon: ClockIcon, matches: ['/college/audit'] }, LIBRARY],
+  C_ADMIN: [
+    { to: '/college/users', label: 'Users', icon: UsersIcon, matches: ['/college/users'] },
+    { to: '/college/subjects', label: 'Subjects', icon: DocumentIcon, matches: ['/college/subjects'] },
+    { to: '/college/audit', label: 'Audit', icon: ClockIcon, matches: ['/college/audit'] },
+    LIBRARY,
+  ],
   C_PROFESSOR: [LIBRARY],
   C_STUDENT: [LIBRARY],
   S_STUDENT: [

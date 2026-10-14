@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import type { ImportResult, ImportRow } from '@/api/bulkImport';
 import { TABLE_QUERY, useMediaQuery } from '@/hooks/useMediaQuery';
@@ -29,14 +29,22 @@ function statusLabel(status: string) {
 /**
  * Row-by-row outcome of a bulk import (UI spec F1.9; reused by the F2 user imports, which add
  * `CONVERTED`). Status chips filter the rows; by default only the rows that need attention are
- * shown when there are any. `linkFor` gives a created row's link (or null).
+ * shown when there are any. `linkFor` gives a created row's link (or null). `rowNumber` turns a
+ * row's `index` into the number shown (content imports: the 1-based position; user imports send
+ * the spreadsheet row number, shown as it is), and `rowNote` adds a sentence to a row's details.
  */
 export function ImportResultTable({
   result,
   linkFor,
+  rowNumber = (row) => row.index + 1,
+  keyLabel = 'Key',
+  rowNote,
 }: {
   result: ImportResult;
   linkFor: (row: ImportRow) => string | null;
+  rowNumber?: (row: ImportRow) => number;
+  keyLabel?: string;
+  rowNote?: (row: ImportRow) => ReactNode;
 }) {
   const needsAttention = result.rows.some((row) => row.status === 'REJECTED' || row.status === 'FAILED');
   const [selected, setSelected] = useState<Set<string>>(() =>
@@ -65,12 +73,21 @@ export function ImportResultTable({
   const details = (row: ImportRow) => {
     if (row.status === 'CREATED' || row.status === 'CONVERTED') {
       const to = row.id ? linkFor(row) : null;
-      return to ? (
-        <Link to={to} aria-label={`Open ${row.key ?? `row ${row.index + 1}`}`}>
+      const link = to ? (
+        <Link to={to} aria-label={`Open ${row.key ?? `row ${rowNumber(row)}`}`}>
           Open
         </Link>
       ) : (
         '—'
+      );
+      const note = rowNote?.(row);
+      return note ? (
+        <>
+          {link}
+          <p className={styles.hint}>{note}</p>
+        </>
+      ) : (
+        link
       );
     }
     if (row.errors.length === 0) return '—';
@@ -113,7 +130,7 @@ export function ImportResultTable({
                 <th scope="col" className={styles.numeric}>
                   Row
                 </th>
-                <th scope="col">Key</th>
+                <th scope="col">{keyLabel}</th>
                 <th scope="col">Result</th>
                 <th scope="col">Details</th>
               </tr>
@@ -121,7 +138,7 @@ export function ImportResultTable({
             <tbody>
               {rows.map((row) => (
                 <tr key={row.index}>
-                  <td className={styles.numeric}>{row.index + 1}</td>
+                  <td className={styles.numeric}>{rowNumber(row)}</td>
                   <td className={styles.mono}>{row.key ?? '—'}</td>
                   <td>
                     <StatusBadge tone={STATUS_TONES[row.status] ?? 'neutral'}>{statusLabel(row.status)}</StatusBadge>
@@ -138,7 +155,7 @@ export function ImportResultTable({
             <li key={row.index} className={styles.card}>
               <div className={styles.cardHead}>
                 <span className={styles.cellTitle}>
-                  Row {row.index + 1}
+                  Row {rowNumber(row)}
                   {row.key && <span className={`${styles.cellSub} ${styles.mono}`}>{row.key}</span>}
                 </span>
                 <StatusBadge tone={STATUS_TONES[row.status] ?? 'neutral'}>{statusLabel(row.status)}</StatusBadge>

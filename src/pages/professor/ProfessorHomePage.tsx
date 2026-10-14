@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom';
 import { ChecklistIcon } from '@/components/icons/Icons';
+import { SubjectCards } from '@/components/SubjectCards';
 import styles from '@/pages/SimplePage.module.css';
 
-/** `/professor`: the C_PROFESSOR home, a placeholder until assessments ship (F3). */
+/** `/professor`: the C_PROFESSOR home, a placeholder until assessments ship (F3), plus "My subjects" (F2.8). */
 export function ProfessorHomePage() {
   return (
     <>
@@ -18,6 +19,11 @@ export function ProfessorHomePage() {
           </Link>
         </div>
       </section>
+      <SubjectCards
+        title="My subjects"
+        emptyText="You haven't been assigned any subjects yet. Your college admin assigns them."
+        showProfessors
+      />
     </>
   );
 }

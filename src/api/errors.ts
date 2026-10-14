@@ -18,6 +18,10 @@ export const ErrorCode = {
   SHORT_CODE_ALREADY_EXISTS: 'SHORT_CODE_ALREADY_EXISTS',
   SECTION_NUMBER_ALREADY_EXISTS: 'SECTION_NUMBER_ALREADY_EXISTS',
   COLLEGE_CODE_ALREADY_EXISTS: 'COLLEGE_CODE_ALREADY_EXISTS',
+  LOGIN_ID_ALREADY_EXISTS: 'LOGIN_ID_ALREADY_EXISTS',
+  SUBJECT_CODE_ALREADY_EXISTS: 'SUBJECT_CODE_ALREADY_EXISTS',
+  IMPORT_FILE_INVALID: 'IMPORT_FILE_INVALID',
+  SUBJECT_IN_USE: 'SUBJECT_IN_USE',
   /** Client-side: the request never reached the server. */
   NETWORK_ERROR: 'NETWORK_ERROR',
   /** Client-side: an upload or download was cancelled through its `AbortSignal`. */
@@ -38,6 +42,8 @@ const MESSAGES: Partial<Record<string, string>> = {
   SHORT_CODE_ALREADY_EXISTS: 'Another act already uses this short code.',
   SECTION_NUMBER_ALREADY_EXISTS: 'This act already has a section with this number.',
   COLLEGE_CODE_ALREADY_EXISTS: 'Another college already uses this code.',
+  LOGIN_ID_ALREADY_EXISTS: 'Another student or professor at your college already uses this ID.',
+  SUBJECT_CODE_ALREADY_EXISTS: 'Another subject at your college already uses this code.',
   ABORTED: 'Cancelled.',
 };
 
@@ -59,6 +65,8 @@ const CONFLICT_FIELDS: Partial<Record<string, string>> = {
   SHORT_CODE_ALREADY_EXISTS: 'shortCode',
   SECTION_NUMBER_ALREADY_EXISTS: 'sectionNumber',
   COLLEGE_CODE_ALREADY_EXISTS: 'code',
+  LOGIN_ID_ALREADY_EXISTS: 'loginId',
+  SUBJECT_CODE_ALREADY_EXISTS: 'code',
 };
 
 /** `{ field: message }` for a `*_ALREADY_EXISTS` error, else `null`. */

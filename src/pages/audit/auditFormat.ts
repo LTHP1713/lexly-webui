@@ -79,7 +79,8 @@ export function auditSummary(event: AuditEvent): string {
     }
     case 'PASSWORD_RESET': {
       const role = roleLabel(d.role);
-      return role ? `${role} account` : DASH;
+      const shown = [role ? `${role} account` : null, text(d.loginId)].filter((p): p is string => p !== null);
+      return shown.length > 0 ? shown.join(' · ') : DASH;
     }
     case 'PASSWORD_CHANGED':
       return event.actor?.fullName ? `By ${event.actor.fullName}` : DASH;
@@ -93,11 +94,15 @@ export function auditSummary(event: AuditEvent): string {
     case 'USER_CREATED':
     case 'USER_UPDATED':
     case 'USER_REMOVED': {
-      const shown = [text(d.email), roleLabel(d.role)].filter((p): p is string => p !== null);
+      // C_ADMIN accounts are recorded by email; students and professors by login ID (since P2).
+      const shown = [text(d.email) ?? text(d.loginId), roleLabel(d.role)].filter((p): p is string => p !== null);
       return shown.length > 0 ? shown.join(' · ') : DASH;
     }
-    case 'USER_IMPORT':
-      return counts(d, ['created', 'converted', 'rejected', 'failed']);
+    case 'USER_IMPORT': {
+      const kind = text(d.kind);
+      const summary = counts(d, ['created', 'converted', 'rejected', 'failed']);
+      return kind ? `${humaniseCode(kind)}: ${summary}` : summary;
+    }
     case 'CONTENT_IMPORT': {
       const kind = text(d.kind);
       const summary = counts(d, ['created', 'rejected', 'failed']);
@@ -106,8 +111,15 @@ export function auditSummary(event: AuditEvent): string {
     case 'SUBJECT_CREATED':
     case 'SUBJECT_UPDATED':
     case 'SUBJECT_DELETED':
-    case 'SUBJECT_PROFESSORS_CHANGED':
-      return text(d.code) ?? text(d.subjectCode) ?? DASH;
+    case 'SUBJECT_PROFESSORS_CHANGED': {
+      const shown = [text(d.code) ?? text(d.subjectCode), text(d.name)];
+      if (event.action === 'SUBJECT_PROFESSORS_CHANGED' && Array.isArray(d.professorIds)) {
+        const n = d.professorIds.length;
+        shown.push(`${n} ${n === 1 ? 'professor' : 'professors'}`);
+      }
+      const parts = shown.filter((p): p is string => p !== null);
+      return parts.length > 0 ? parts.join(' · ') : DASH;
+    }
     case 'ASSESSMENT_PUBLISHED':
     case 'ASSESSMENT_REMOVED':
       return text(d.title) ?? DASH;
