@@ -665,7 +665,85 @@ while anonymous redirects back to `/login`. No console errors in any of it.
 
 ## In Progress
 
-_Nothing in flight._
+### 2026-10-14 — F1 Identity, roles, SUPERADMIN & content admin (F1.1–F1.11)
+
+**Status:** Built and exercised against the live backend; waiting on the §10 gate (backend
+`feature/phase1` merged to `main`) before it is Done. Branch `feature/f1-identity`, stacked on
+`feature/f0-cleanup` (F0 isn't on `master` yet). Lint (one pre-existing warning), `tsc -b`, the
+build and 113 unit tests pass.
+
+What changed:
+- **F1.1 Login:** Email and College tabs (`role="tablist"`, arrow keys). College mode upper-cases
+  the code as typed and trims the ID; exactly one request shape is sent. 401 copy per tab,
+  `COLLEGE_INACTIVE` banner, `RATE_LIMITED` copy. Only the tab name is kept in `localStorage`
+  (`lexly.loginTab`). The login screen now also shows why a session ended ("Your session has
+  ended…" / college inactive), once; `describeAuthError` branches on codes, not HTTP statuses.
+- **F1.4 Role homes:** `/admin` hub (Colleges, Content, Audit log cards); `/college`,
+  `/professor`, `/student` placeholders. Nav: SUPERADMIN Colleges · Content · Audit · Library;
+  C_ADMIN Audit · Library. Content goes to `/admin/acts`.
+- **F1.5 Profile:** fresh `GET /users/me`: name, email, role label, college, and roll no. /
+  employee ID by role. The error state keeps the session's email.
+- **F1.6 Colleges:** `/admin/colleges` (debounced search, status, sort and page in the URL; table
+  from 768px, cards below; "None" admins in the warning colour). Add college dialog → detail.
+  Detail: code chip, status, stat tiles, rename, (de)activate with the spec's confirm copy, an
+  audit-log link, and the Admins tab: add admin, reset password (both with **Generate** and a
+  one-time share step with Copy details), remove (with the only-admin warning).
+- **F1.7 Acts & sections:** `/admin/acts` (client filter, row menu, add/edit dialog that loads
+  `GET /admin/acts/{id}`, typed-confirm delete), `/admin/acts/:actId` (server-ordered sections, add
+  section → editor), `/admin/sections/:sectionId` (every reader field, nested exception
+  illustrations, sticky "On this form" index with error counts, error summary, one full-replace
+  `PUT` with `displayOrder` = position, unsaved-changes guard, reader-cache refresh after saves).
+- **F1.8 Linking:** the Linked sections card on the case-law form with a picker dialog (act →
+  filter → Link); Unlink at once with a toast.
+- **F1.9 Import:** `/admin/import` (kind in the URL, paste or 1 MB `.json` file, an "Insert an
+  example" button, client envelope checks), `ImportResultTable` (status chips, Rejected + Failed
+  first, links for created rows), "Download rejected rows", unknown-act note, 400 banner.
+- **F1.10 Audit:** one page for `/admin/audit` (college filter) and `/college/audit` (no
+  `collegeId` sent). Action and date filters (last 7 days by default; `to` sent as the start of
+  the next local day). Table from 1024px, cards below; rows expand to `details` as text.
+- **F1.11 Tests:** unit tests for import parsing and the rejected-rows file, the section editor
+  round trip (load → save unchanged → identical body) and nested error paths, audit summaries,
+  college mapping and the password generator; route tests for both login modes, end-reason
+  banners, role guards and the import page. E2E: `f1-identity.spec.ts` (desktop golden path) and
+  `f1-phone.spec.ts` (work areas at 390 px).
+- **Shared:** `Dialog`, `TypedConfirmDialog`, `RowMenu`, `StatusBadge`, `Pagination`,
+  `EmptyState`, `ImportResultTable`, `useMediaQuery` (one DOM copy: table or cards),
+  `lib/format.ts` (UI spec §0.4), `ContentSubNav` on every content page. `remapListErrors` now
+  works for nested lists.
+- **Accessibility fix:** axe flagged the gold `.eyebrow` text (about 2.9:1). Added
+  `--lx-gold-ink` (about 5.6:1) and used it there.
+
+**Verified against the live backend** (`lexly-backend` `feature/phase1` at `ddac579`):
+`npm run test:e2e` → 24 passed, 10 skipped by design (the golden path runs on desktop only, the
+phone pass on phone only, and the desktop forced-change check skips after the phone run has done
+the change). The golden path covers the plan's "Done when": the seeded SUPERADMIN is forced to
+change its password; adds a college (a duplicate code → `COLLEGE_CODE_ALREADY_EXISTS` on the
+field) and a C_ADMIN, whose temporary password is shown once; the C_ADMIN is forced to change
+theirs, lands on `/college`, sees their college's audit entries and can't open `/admin`; a bad
+college login gets the generic message; the SUPERADMIN adds an act and a section, edits it
+(client validation first, then save; a reload loads what was saved), and the reader shows the
+edit; a sections batch with 3 bad rows gives "2 created · 3 rejected · 0 failed, out of 5", and
+the downloaded file holds exactly those 3 rows; a section is linked to and unlinked from a case
+law; the audit log shows `COLLEGE_CREATED` and `CONTENT_IMPORT` with details; deactivating the
+college blocks its admin's sign-in with the inactive banner. axe runs on every screen, with no
+sideways scroll at 390 px.
+
+**Notes:**
+- **The F1 e2e changes the seeded SUPERADMIN's password** (to `SUPERADMIN.newPassword` in
+  `e2e/support.ts`). After this run I restored the local dev DB to the documented seed
+  (`superadmin@lexly.local` / `lexly-superadmin-dev`, `must_change_password = true`, its refresh
+  tokens deleted) with an `UPDATE` in the Docker Postgres, using the hash from the backend `.env`.
+  Do the same before re-running if the forced-change checks should run again.
+- Each e2e run leaves an `E2E…` college (deactivated), an act, a case law and a few accounts in
+  the dev DB.
+- Deviations from the UI spec: the audit College filter is a native `<select>` (browser
+  type-ahead, the first 100 colleges by name), not a custom searchable select. Deleting an act
+  that has no short code uses a plain confirm (there is nothing to type). The import page has an
+  extra "Insert an example" button.
+- Follow-up: other small gold text (`--lx-gold`) in the Library pages (`Browse.module.css`,
+  `SectionDetail.module.css`, `CaseLawDetail.module.css`) wasn't checked here; it probably has the
+  same contrast issue.
+- `CLAUDE.md` (untracked) still describes the pre-F0 state under "Current state".
 
 ## Blocked
 
@@ -685,8 +763,8 @@ on `feature/phase1`.
 
 1. ~~**F0 on `feature/f0-cleanup`**~~ — done 2026-10-14 (entry above). Push the branch and open
    its PR so CI runs.
-2. **F1 on `feature/f1-identity`:** F1.1 two-mode login, F1.4 role homes, F1.5 Profile, F1.6
-   colleges + C_ADMINs, F1.10 audit log, then F1.7 acts & sections admin, F1.8 case-law linking,
-   F1.9 bulk import (per-row shape), F1.11 tests. Ship after `feature/phase1` merges.
+2. **F1 on `feature/f1-identity`:** built and checked live 2026-10-14 (In Progress above). Mark it
+   Done once backend `feature/phase1` is merged to `main`; re-run `npm run test:e2e` against
+   `main` then.
 3. Write the F2 UI spec before Phase 2 starts.
 4. Later (D4): choose an app-wide dark-mode approach.
