@@ -4,7 +4,15 @@
  * here are only a convenience for routing; the server enforces access on every call.
  */
 import type { ComponentType } from 'react';
-import { BookIcon, ChecklistIcon, DocumentIcon, HomeIcon, UserIcon } from '@/components/icons/Icons';
+import {
+  BookIcon,
+  ChecklistIcon,
+  ClockIcon,
+  CourthouseIcon,
+  DocumentIcon,
+  HomeIcon,
+  UserIcon,
+} from '@/components/icons/Icons';
 
 export const ROLES = ['SUPERADMIN', 'C_ADMIN', 'C_PROFESSOR', 'C_STUDENT', 'S_STUDENT'] as const;
 export type Role = (typeof ROLES)[number];
@@ -28,12 +36,12 @@ export const CHANGE_PASSWORD_PATH = '/change-password';
 /** Shared read-only content every role may open. Also the home of a user with an unknown role. */
 export const LIBRARY_HOME = '/acts';
 
-/** College roles use the Library as home until F1.4 gives them their own. `/admin` redirects for now. */
+/** Each role's home (UI spec §0.7, F1.4). The college homes are placeholders until F2/F3/F6. */
 const HOMES: Record<Role, string> = {
   SUPERADMIN: '/admin',
-  C_ADMIN: LIBRARY_HOME,
-  C_PROFESSOR: LIBRARY_HOME,
-  C_STUDENT: LIBRARY_HOME,
+  C_ADMIN: '/college',
+  C_PROFESSOR: '/professor',
+  C_STUDENT: '/student',
   S_STUDENT: '/dashboard',
 };
 
@@ -79,15 +87,17 @@ const LIBRARY: NavItem = {
 /** A nav item is only listed once its screens exist (UI spec F0.3). At most 5 per role. */
 const NAV: Record<Role, NavItem[]> = {
   SUPERADMIN: [
+    { to: '/admin/colleges', label: 'Colleges', icon: CourthouseIcon, matches: ['/admin/colleges'] },
     {
-      to: '/admin/caselaws',
+      to: '/admin/acts',
       label: 'Content',
       icon: DocumentIcon,
       matches: ['/admin/acts', '/admin/sections', '/admin/caselaws', '/admin/import'],
     },
+    { to: '/admin/audit', label: 'Audit', icon: ClockIcon, matches: ['/admin/audit'] },
     LIBRARY,
   ],
-  C_ADMIN: [LIBRARY],
+  C_ADMIN: [{ to: '/college/audit', label: 'Audit', icon: ClockIcon, matches: ['/college/audit'] }, LIBRARY],
   C_PROFESSOR: [LIBRARY],
   C_STUDENT: [LIBRARY],
   S_STUDENT: [

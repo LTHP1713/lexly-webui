@@ -13,6 +13,9 @@ describe('homeFor', () => {
     expect(homeFor(null)).toBe(LIBRARY_HOME);
     expect(homeFor('S_STUDENT')).toBe('/dashboard');
     expect(homeFor('SUPERADMIN')).toBe('/admin');
+    expect(homeFor('C_ADMIN')).toBe('/college');
+    expect(homeFor('C_PROFESSOR')).toBe('/professor');
+    expect(homeFor('C_STUDENT')).toBe('/student');
   });
 
   it('gives every role a home it may open', () => {

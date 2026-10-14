@@ -1,5 +1,5 @@
 import { lazy } from 'react';
-import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
+import { Outlet, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from '@/auth/AuthContext';
 import { RedirectIfAuthenticated, RootRedirect } from '@/auth/RedirectIfAuthenticated';
 import { RequireAuth } from '@/auth/RequireAuth';
@@ -19,7 +19,20 @@ import { NotFoundFrame, NotFoundPage } from '@/pages/NotFoundPage';
 import { PracticePage } from '@/pages/PracticePage';
 import { ProfilePage } from '@/pages/ProfilePage';
 
-// One chunk per role area (plan §3.1), so other roles never download it.
+// Role areas load lazily (plan §3.1), so other roles never download them.
+const AdminHomePage = lazy(() => import('@/pages/admin/AdminHomePage').then((m) => ({ default: m.AdminHomePage })));
+const CollegesPage = lazy(() => import('@/pages/admin/colleges/CollegesPage').then((m) => ({ default: m.CollegesPage })));
+const CollegeDetailPage = lazy(() =>
+  import('@/pages/admin/colleges/CollegeDetailPage').then((m) => ({ default: m.CollegeDetailPage })),
+);
+const AdminActsPage = lazy(() => import('@/pages/admin/acts/AdminActsPage').then((m) => ({ default: m.AdminActsPage })));
+const AdminActDetailPage = lazy(() =>
+  import('@/pages/admin/acts/AdminActDetailPage').then((m) => ({ default: m.AdminActDetailPage })),
+);
+const AdminSectionPage = lazy(() =>
+  import('@/pages/admin/acts/AdminSectionPage').then((m) => ({ default: m.AdminSectionPage })),
+);
+const ImportPage = lazy(() => import('@/pages/admin/ImportPage').then((m) => ({ default: m.ImportPage })));
 const AdminCaseLawsPage = lazy(() => import('@/pages/admin/AdminCaseLawsPage').then((m) => ({ default: m.AdminCaseLawsPage })));
 const AdminCaseLawFormPage = lazy(() =>
   import('@/pages/admin/AdminCaseLawFormPage').then((m) => ({ default: m.AdminCaseLawFormPage })),
@@ -27,6 +40,12 @@ const AdminCaseLawFormPage = lazy(() =>
 const AdminCaseLawContentPage = lazy(() =>
   import('@/pages/admin/AdminCaseLawContentPage').then((m) => ({ default: m.AdminCaseLawContentPage })),
 );
+const AuditLogPage = lazy(() => import('@/pages/audit/AuditLogPage').then((m) => ({ default: m.AuditLogPage })));
+const CollegeHomePage = lazy(() => import('@/pages/college/CollegeHomePage').then((m) => ({ default: m.CollegeHomePage })));
+const ProfessorHomePage = lazy(() =>
+  import('@/pages/professor/ProfessorHomePage').then((m) => ({ default: m.ProfessorHomePage })),
+);
+const StudentHomePage = lazy(() => import('@/pages/student/StudentHomePage').then((m) => ({ default: m.StudentHomePage })));
 
 function App() {
   return (
@@ -87,11 +106,52 @@ function App() {
               </RequireRole>
             }
           >
-            <Route path="/admin" element={<Navigate to="/admin/caselaws" replace />} />
+            <Route path="/admin" element={<AdminHomePage />} />
+            <Route path="/admin/colleges" element={<CollegesPage />} />
+            <Route path="/admin/colleges/:collegeId" element={<CollegeDetailPage />} />
+            <Route path="/admin/acts" element={<AdminActsPage />} />
+            <Route path="/admin/acts/:actId" element={<AdminActDetailPage />} />
+            <Route path="/admin/sections/:sectionId" element={<AdminSectionPage />} />
+            <Route path="/admin/import" element={<ImportPage />} />
             <Route path="/admin/caselaws" element={<AdminCaseLawsPage />} />
             <Route path="/admin/caselaws/new" element={<AdminCaseLawFormPage />} />
             <Route path="/admin/caselaws/:caseLawId" element={<AdminCaseLawFormPage />} />
             <Route path="/admin/caselaws/:caseLawId/content" element={<AdminCaseLawContentPage />} />
+            <Route path="/admin/audit" element={<AuditLogPage scope="all" />} />
+          </Route>
+
+          {/* C_ADMIN */}
+          <Route
+            element={
+              <RequireRole roles={['C_ADMIN']}>
+                <Outlet />
+              </RequireRole>
+            }
+          >
+            <Route path="/college" element={<CollegeHomePage />} />
+            <Route path="/college/audit" element={<AuditLogPage scope="college" />} />
+          </Route>
+
+          {/* C_PROFESSOR */}
+          <Route
+            element={
+              <RequireRole roles={['C_PROFESSOR']}>
+                <Outlet />
+              </RequireRole>
+            }
+          >
+            <Route path="/professor" element={<ProfessorHomePage />} />
+          </Route>
+
+          {/* C_STUDENT */}
+          <Route
+            element={
+              <RequireRole roles={['C_STUDENT']}>
+                <Outlet />
+              </RequireRole>
+            }
+          >
+            <Route path="/student" element={<StudentHomePage />} />
           </Route>
         </Route>
         <Route element={<NotFoundFrame />}>

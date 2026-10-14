@@ -64,3 +64,26 @@
   color: #9c1c1c;
   cursor: pointer;
 }
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1.25rem;
+  border: 1px dashed var(--lx-border);
+  border-radius: var(--lx-radius);
+  background: var(--lx-card);
+}
+
+.emptyMessage {
+  margin: 0;
+  color: var(--lx-muted);
+  line-height: 1.5;
+}
+
+.emptyActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
