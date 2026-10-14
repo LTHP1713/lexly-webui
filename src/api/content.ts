@@ -1,4 +1,4 @@
-import { apiClient } from '@/api/client';
+import { apiClient, type RequestOptions } from '@/api/client';
 
 export interface ActSummary {
   id: string;
@@ -115,8 +115,8 @@ export interface Page<T> {
   totalPages: number;
 }
 
-export function listActs() {
-  return apiClient.get<ActSummary[]>('/acts');
+export function listActs(init?: RequestOptions) {
+  return apiClient.get<ActSummary[]>('/acts', init);
 }
 
 const sectionNumberOrder = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
@@ -132,13 +132,13 @@ export function compareSectionNumbers(a: string, b: string): number {
 }
 
 /** The backend returns natural order; the sort is kept as a safety net and must agree with it. */
-export async function listSections(actId: string): Promise<SectionSummary[]> {
-  const sections = await apiClient.get<SectionSummary[]>(`/acts/${encodeURIComponent(actId)}/sections`);
+export async function listSections(actId: string, init?: RequestOptions): Promise<SectionSummary[]> {
+  const sections = await apiClient.get<SectionSummary[]>(`/acts/${encodeURIComponent(actId)}/sections`, init);
   return [...sections].sort((a, b) => compareSectionNumbers(a.sectionNumber, b.sectionNumber));
 }
 
-export async function getSection(sectionId: string): Promise<SectionDetail> {
-  const dto = await apiClient.get<SectionDetailDto>(`/sections/${encodeURIComponent(sectionId)}`);
+export async function getSection(sectionId: string, init?: RequestOptions): Promise<SectionDetail> {
+  const dto = await apiClient.get<SectionDetailDto>(`/sections/${encodeURIComponent(sectionId)}`, init);
   return toSectionDetail(dto, sectionId);
 }
 

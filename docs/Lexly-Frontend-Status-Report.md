@@ -5,23 +5,24 @@
 **Compared against:** `Lexly-Frontend-Implementation-Plan.md` (revised 2026-10-13) and `Lexly-API-Contract.md` (identical to the backend repo's copy on 2026-10-13).
 **Method:** I checked each plan task against the code, `package.json` and `docs/progress/frontend_progress.md`. I did not run the app or the backend for this report.
 **Update, same day (backend P0 + P1):** backend Phase 0 is merged to `lexly-backend` `main` (`0545ab9`) and Phase 1 is committed on `feature/phase1` (`ddac579`, not yet merged). `docs/Lexly-API-Contract.md` was re-copied from that commit, and §1, §3 and §5 below were updated. F0 and all of F1 are now unblocked.
-**Update, same day:** the doc findings in §4 have been applied. The plan and `Lexly-UI-Spec.md` now agree, and the stale references to the deleted Home contract in the code comments and `.env.example` are fixed. The progress file was restored and its Next Up rewritten from this plan; see §4.4.
+**Update, 2026-10-14 (F0 and F1 built):** F0 is done on `feature/f0-cleanup`, and all of F1 is built on `feature/f1-identity` (stacked on F0). Both were exercised against the live backend (`feature/phase1`, `ddac579`): `npm run test:e2e` 24 passed, 10 skipped by design. Backend `feature/phase1` was then merged to `main` (`ca7c842`) and the e2e suite re-run against it: 24 passed, 10 skipped by design, 0 failed, so F1 is Done (plan §10 gate). PRs: #2 (F0) and #3 (F1, stacked on #2). §1–§3 below are updated; the progress file has the details.
+**Update, 2026-10-13:** the doc findings in §4 have been applied. The plan and `Lexly-UI-Spec.md` now agree, and the stale references to the deleted Home contract in the code comments and `.env.example` are fixed. The progress file was restored and its Next Up rewritten from this plan; see §4.4.
 
 ---
 
 ## 1. Summary
 
 - **Done:** everything the plan lists as "built and working" (§1.1). That covers the reading app (Bare Acts, Case Laws, search, Home), email login and register with the cookie session, the case-law admin, and the free/Pro removal. The code matches the plan's description.
-- **Not started:** every plan task, F0.1 through F8.7. F0 (clean-up and foundations) has no backend dependency and can start now.
-- **Unblocked by the backend:** F0 and F1. Contract §1 (both login modes, change password, the `PASSWORD_CHANGE_REQUIRED` gate), §2.1 (`/users/me` with `college`, `loginId`, `mustChangePassword`), §5 (content admin incl. `GET /admin/acts/{id}` and `GET /admin/sections/{id}`, per-row bulk import), §6 (colleges, C_ADMINs) and §7 (audit) are LIVE.
+- **F0 done (2026-10-14):** F0.1–F0.7 on `feature/f0-cleanup`, with F1.2 pulled in. The cookie-session checks pass against the live backend.
+- **F1 done (2026-10-14):** F1.1–F1.11 on `feature/f1-identity` (PR #3). Backend Phase 1 is merged to `main` (`ca7c842`), and the e2e suite passes against it.
 - **Blocked on the backend:** F2–F8 (Phases 2–8 still PROPOSED).
-- **The current UI breaks against a P1 backend.** Roles are now `SUPERADMIN` / `S_STUDENT` / …, so `RequireAdmin` and the Profile admin link (both check `'ADMIN'`) shut admins out. And any account with `mustChangePassword` (the seeded SUPERADMIN, every reset account) gets `403 PASSWORD_CHANGE_REQUIRED` on every call except `/users/me`, with no screen to fix it. F0.2, F0.3 and F1.2 are therefore the first things to build.
+- **Fixed:** the UI no longer breaks against a P1 backend. Roles come from `/users/me`, `RequireRole` replaced `RequireAdmin`, and gated accounts are sent to `/change-password`.
 - **Docs:** the UI spec, the plan and the contract are now in sync (§4). The UI spec covers F0 and F1, including F1.7 and F1.8. The progress file was restored and its Next Up rewritten (§4.4).
 
 | Phase | Tasks | Done | Can start now | Blocked by backend |
 |---|---|---|---|---|
-| F0 Clean-up & foundations | 7 | 0 | 7 | — |
-| F1 Identity, roles, SUPERADMIN, content admin | 11 | 0 | 11 (P0 merged, P1 on `feature/phase1`) | — (ships after P1 merges) |
+| F0 Clean-up & foundations | 7 | 7 | — | — |
+| F1 Identity, roles, SUPERADMIN, content admin | 11 | 11 | — | — |
 | F2 College administration | 9 | 0 | — | Phase 2 |
 | F3 Assessments & answering | 10 | 0 | — | Phase 3 |
 | F4 Manual grading & results | 7 | 0 | — | Phase 4 |
@@ -50,9 +51,7 @@ These match the plan's §1.1. The progress file has the full entries and how eac
 | Home: greeting, universal search, quick actions | `src/pages/home/` | 2026-10-05 |
 | Shell: header, bottom tab bar, wide layout | `AppLayout` | 2026-10-06 |
 
-**Still open from that work:**
-- The 2026-10-09 cookie checks were run against a mock, not the live backend. This is F0.7.
-- G10: navigating away while `/auth/refresh` is in flight can sign the user out. Also F0.7.
+**Closed by F0.7 (2026-10-14):** the 2026-10-09 cookie checks now run against the live backend as `e2e/f0-cookie-session.spec.ts`, and G10 (navigating away mid-refresh) passes with the `keepalive` fix.
 
 ---
 
@@ -64,29 +63,29 @@ These match the plan's §1.1. The progress file has the full entries and how eac
 
 | # | Task | Status | What the code shows today |
 |---|---|---|---|
-| F0.1 | Remove MCQ practice | Not started · Ready | `PracticeProgress`, the `practiceStats` flag, its DTOs in `users.ts` and its mocks all still exist; 15 files under `src/` still mention practice (the auth screens' "practice" copy can stay, since solo practice is coming). The doc part is done: `HOME_DASHBOARD_API_CONTRACT.md` is deleted, its references are repointed, and Next Up is rewritten (§4.4) |
-| F0.2 | Role from `/users/me` | Not started · Ready | `AuthContext` still sets `role` from `roleFromAccessToken()` after login and register |
-| F0.3 | Role skeleton | Not started · Ready | No `roles.ts` or `RequireRole`; no `React.lazy`; `*` redirects to `/login` (no NotFound page); `RedirectIfAuthenticated` always goes to `/dashboard` |
-| F0.4 | Shared components to `src/components/` | Not started · Ready | They are all still in `src/pages/admin/` |
-| F0.5 | Client extensions | Not started · Ready | `client.ts` sets `Content-Type: application/json` on every body. No `patch`, `upload`, `download` or `AbortSignal`. No `src/api/errors.ts` |
-| F0.6 | Tests & CI | Not started · Ready | No Vitest, Testing Library, MSW, Playwright or axe in `package.json`; no `test` script; no `e2e/`; no `.github/workflows` |
-| F0.7 | Session edge cases | Not started · Ready | Listed in Next Up; G10 not fixed |
+| F0.1 | Remove MCQ practice | Done (`831bc7c`) | No MCQ code left; `/practice` is the Solo practice placeholder; the Progress and Continue Learning cards are hidden (D3) |
+| F0.2 | Role from `/users/me` | Done (`2c60601`) | `roleFromAccessToken` is gone |
+| F0.3 | Role skeleton | Done (`2c60601`) | `roles.ts`, `RequireRole`, role nav, NotFound, lazy areas, Library and Content sub-navs |
+| F0.4 | Shared components to `src/components/` | Done (`e5af6e3`) | |
+| F0.5 | Client extensions | Done (`6e0f896`) | `FormData`, `patch`, `upload`, `download`, `AbortSignal`, `errors.ts` |
+| F0.6 | Tests & CI | Done (`f63ff60`) | Vitest + MSW, Playwright + axe, CI workflow (passes on PRs #2 and #3) |
+| F0.7 | Session edge cases | Done (`4e688f4`) | Cookie checks live; G10 fixed |
 
 ### F1 — Identity, roles, SUPERADMIN & content admin (backend Phase 1)
 
 | # | Task | Status | Notes |
 |---|---|---|---|
-| F1.1 | Two-mode login | Not started · Ready | Login is email-only today. Contract §1.2 LIVE |
-| F1.2 | Forced password change | Not started · Ready · **urgent** | `POST /auth/change-password` (§1.5) and the gate (§1.6) LIVE. Without this screen, a gated account can't use the app |
-| F1.3 | Registration | Nothing to do | The backend makes the role `S_STUDENT`; the response now also has `role` and `mustChangePassword` |
-| F1.4 | Role areas live | Not started · Ready | Needs F0.3 first |
-| F1.5 | Profile | Partial · Ready | Shows email and log out. The P1 `/users/me` fields are LIVE |
-| F1.6 | Colleges + C_ADMIN accounts | Not started · Ready | Contract §6 LIVE (paths under `/superadmin/…`) |
-| F1.7 | Acts & sections admin | Not started · Ready | All endpoints LIVE, including `GET /admin/acts/{id}` and `GET /admin/sections/{id}` |
-| F1.8 | Case-law ↔ section linking | Partial · Ready | The form shows linked sections read-only (`AdminCaseLawFormPage.tsx:293`). The link/unlink endpoints are LIVE (§5.4) |
-| F1.9 | Bulk JSON import | Not started · Ready | Per-row `BulkImportResult` LIVE since P0 (§5.5) |
-| F1.10 | Audit log | Not started · Ready | Contract §7 LIVE |
-| F1.11 | Tests | Blocked | Needs F0.6 |
+| F1.1 | Two-mode login | Done | Email and College tabs; tab name remembered |
+| F1.2 | Forced password change | Done | Pulled into F0 (`2c60601`) |
+| F1.3 | Registration | Nothing to do | Always `S_STUDENT` |
+| F1.4 | Role areas live | Done | `/admin` hub; `/college`, `/professor`, `/student` placeholders |
+| F1.5 | Profile | Done | Name, email, role, college, roll no. / employee ID |
+| F1.6 | Colleges + C_ADMIN accounts | Done | List, add, detail with Admins tab, rename, (de)activate, add / reset / remove admin with a one-time share step |
+| F1.7 | Acts & sections admin | Done | Acts list, act detail, full section editor (one `PUT`) |
+| F1.8 | Case-law ↔ section linking | Done | Picker dialog; link / unlink at once |
+| F1.9 | Bulk JSON import | Done | `ImportResultTable`, download rejected rows |
+| F1.10 | Audit log | Done | `/admin/audit` and `/college/audit` |
+| F1.11 | Tests | Done | 113 unit tests; e2e golden path + phone pass |
 
 ### F2–F8
 
@@ -106,12 +105,13 @@ None of these have code. Each waits for its backend phase.
 
 | Component | Status | First needed |
 |---|---|---|
-| `ConfirmDialog`, `Toast`, `Field`, `RepeatableList`, `useUnsavedChangesGuard` | Exist; move in F0.4 | — |
-| `StudyPanel`, `LoadingState`, `ErrorState` | Exist | — |
-| `RequireRole`, role nav config, `NotFound` | Missing | F0 |
-| `DataTable`, `Pagination`, `ImportResultTable` | Missing | F1 |
+| `ConfirmDialog`, `Toast`, `Field`, `RepeatableList`, `useUnsavedChangesGuard` | Exist in `src/components/` (F0.4) | — |
+| `StudyPanel`, `LoadingState`, `ErrorState`, `EmptyState` | Exist | — |
+| `RequireRole`, role nav config, `NotFound` | Exist (F0.3) | F0 |
+| `Pagination`, `ImportResultTable`, `StatusBadge`, `Dialog`, `TypedConfirmDialog`, `RowMenu`, `useMediaQuery` | Exist (F1) | F1 |
+| `DataTable` | Not built as a component: F1 lists use the shared table/card styles in `ui.module.css` and `useMediaQuery`. Extract one in F2 if the user lists repeat the pattern | F2 |
 | `FileDropzone` | Missing | F2 |
-| `StatusBadge`, `DateTimeField`, countdown, `MarksInput`, `PdfViewer` | Missing | F3 |
+| `DateTimeField`, countdown, `MarksInput`, `PdfViewer` | Missing | F3 |
 | `AiSuggestion`, `AiFlagChips` | Missing | F5 |
 | `RankingTable`, `StatTile` | Missing | F6 |
 | `UsageMeter`, `PlanGate` | Missing | F7 |

@@ -63,7 +63,7 @@ describe('forced password change', () => {
     await user.click(screen.getByRole('button', { name: 'Save password' }));
 
     expect(await screen.findByText('Password updated.')).toBeInTheDocument();
-    await waitFor(() => expect(router.state.location.pathname).toBe('/admin/caselaws'));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/admin'));
     expect(screen.getAllByRole('navigation', { name: 'Primary' }).length).toBeGreaterThan(0);
   });
 
@@ -84,11 +84,31 @@ describe('role areas', () => {
     expect(router.state.location.pathname).toBe('/dashboard');
   });
 
-  it('gives the super admin a Content and Library nav', async () => {
+  it('gives the super admin Colleges, Content, Audit and Library', async () => {
     signedInAs({ role: 'SUPERADMIN' });
     await renderAt('/');
     const nav = (await screen.findAllByRole('navigation', { name: 'Primary' }))[0];
-    expect(within(nav).getAllByRole('link').map((l) => l.textContent)).toEqual(['Content', 'Library']);
+    expect(within(nav).getAllByRole('link').map((l) => l.textContent)).toEqual(['Colleges', 'Content', 'Audit', 'Library']);
+  });
+
+  it.each([
+    ['C_ADMIN', '/admin/colleges', '/college'],
+    ['SUPERADMIN', '/college/audit', '/admin'],
+    ['C_STUDENT', '/professor', '/student'],
+    ['C_PROFESSOR', '/student', '/professor'],
+    ['S_STUDENT', '/college', '/dashboard'],
+  ])('%s opening %s goes to their home %s', async (role, path, home) => {
+    signedInAs({ role, college: role.startsWith('C_') ? { id: 'c', code: 'NLSIU', name: 'NLS' } : null });
+    const router = await renderAt(path);
+    await waitFor(() => expect(router.state.location.pathname).toBe(home));
+  });
+
+  it('gives the college admin Audit and Library, and a home naming the college', async () => {
+    signedInAs({ role: 'C_ADMIN', college: { id: 'c', code: 'NLSIU', name: 'National Law School' } });
+    await renderAt('/');
+    expect(await screen.findByRole('heading', { level: 1, name: 'National Law School (NLSIU)' })).toBeInTheDocument();
+    const nav = screen.getAllByRole('navigation', { name: 'Primary' })[0];
+    expect(within(nav).getAllByRole('link').map((l) => l.textContent)).toEqual(['Audit', 'Library']);
   });
 
   it('shows the Library sub-nav to college roles only', async () => {
@@ -110,7 +130,7 @@ describe('not found', () => {
     signedInAs({ role: 'C_STUDENT' });
     await renderAt('/no-such-page');
     expect(await screen.findByRole('heading', { name: 'Page not found' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Go to my home' })).toHaveAttribute('href', '/acts');
+    expect(screen.getByRole('link', { name: 'Go to my home' })).toHaveAttribute('href', '/student');
   });
 
   it('a protected URL while signed out goes to /login', async () => {

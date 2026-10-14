@@ -20,6 +20,7 @@ import {
 } from './contentForm';
 import { TextAreaField, TextField } from '@/components/Field';
 import { RepeatableList } from '@/components/RepeatableList';
+import { ContentSubNav } from '@/components/SubNav';
 import { useToast } from '@/components/Toast';
 import { useUnsavedChangesGuard } from '@/components/useUnsavedChangesGuard';
 import styles from '@/components/ui.module.css';
@@ -204,6 +205,7 @@ function ContentEditor({ initial, flash }: { initial: CaseLawDetail; flash?: str
           </Link>
         </div>
       </div>
+      <ContentSubNav />
       <p className={styles.notice}>
         Saving replaces all of this case's content with what is on this page. List order is the order shown to
         students; issue numbers follow it.

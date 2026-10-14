@@ -7,6 +7,8 @@ interface AuthContextValue extends SessionSnapshot {
   login: (input: authApi.LoginInput) => Promise<void>;
   changePassword: (input: authApi.ChangePasswordInput) => Promise<void>;
   logout: () => Promise<void>;
+  /** The login screen has shown why the last session ended; don't show it again. */
+  acknowledgeEndReason: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -27,6 +29,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login: authApi.login,
         changePassword: authApi.changePassword,
         logout: authApi.logout,
+        acknowledgeEndReason: sessionStore.acknowledgeEndReason,
       }}
     >
       {children}

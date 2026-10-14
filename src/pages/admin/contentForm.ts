@@ -174,17 +174,14 @@ function sentence(value: string): string {
 
 /**
  * Errors keep pointing at the right row when rows move: the server/validation paths use indexes,
- * so after a reorder the errors for that list are remapped from old to new positions.
+ * so after a reorder the errors for that list are remapped from old to new positions. `list` is
+ * the list's path, so nested lists work too (`exceptions[2].illustrations`).
  */
-export function remapListErrors(errors: ContentErrors, list: ListName, order: number[]): ContentErrors {
+export function remapListErrors(errors: ContentErrors, list: ListName | (string & {}), order: number[]): ContentErrors {
   const prefix = `${list}[`;
   const next: ContentErrors = {};
   for (const [path, message] of Object.entries(errors)) {
-    if (!path.startsWith(prefix)) {
-      next[path] = message;
-      continue;
-    }
-    const match = /^[^[]+\[(\d+)\](.*)$/.exec(path);
+    const match = path.startsWith(prefix) ? /^(\d+)\](.*)$/.exec(path.slice(prefix.length)) : null;
     if (!match) {
       next[path] = message;
       continue;
