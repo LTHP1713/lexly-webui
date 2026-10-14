@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/auth/AuthContext';
 import { hasLibrarySubNav } from '@/auth/roles';
 import styles from './SubNav.module.css';
@@ -20,6 +20,39 @@ export function SubNav({ label, items }: { label: string; items: SubNavItem[] })
             <NavLink to={item.to} end={item.end} className={styles.link}>
               {item.label}
             </NavLink>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+}
+
+const CONTENT_ITEMS: { to: string; label: string; matches: string[] }[] = [
+  { to: '/admin/acts', label: 'Acts', matches: ['/admin/acts', '/admin/sections'] },
+  { to: '/admin/caselaws', label: 'Case laws', matches: ['/admin/caselaws'] },
+  { to: '/admin/import', label: 'Import', matches: ['/admin/import'] },
+];
+
+/**
+ * Acts · Case laws · Import on the SUPERADMIN content pages (UI spec F0.3). The section editor
+ * belongs to Acts, so Acts is also current under `/admin/sections/*`.
+ */
+export function ContentSubNav() {
+  const { pathname } = useLocation();
+  return (
+    <nav aria-label="Content" className={styles.subNav}>
+      <ul className={styles.list}>
+        {CONTENT_ITEMS.map((item) => (
+          <li key={item.to}>
+            <Link
+              to={item.to}
+              className={styles.link}
+              aria-current={
+                item.matches.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)) ? 'page' : undefined
+              }
+            >
+              {item.label}
+            </Link>
           </li>
         ))}
       </ul>

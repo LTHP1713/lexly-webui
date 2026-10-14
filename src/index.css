@@ -13,6 +13,8 @@
   --lx-border: #e4ddcd;
   --lx-gold: #b8924a;
   --lx-gold-soft: #f3ead6;
+  /* Gold for small text: --lx-gold is ~2.9:1 on ivory, below WCAG AA; this is ~5.6:1. */
+  --lx-gold-ink: #7a5c1f;
   --lx-wrong: #b5543c;
   --lx-serif: 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif;
   --lx-radius: 14px;

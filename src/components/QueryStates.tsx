@@ -1,5 +1,19 @@
+import type { ReactNode } from 'react';
 import type { ApiError } from '@/api/client';
 import styles from './QueryStates.module.css';
+
+/**
+ * "Nothing here yet" (UI spec §0.3): one sentence on what belongs here and, when the user can
+ * act, the primary action. Also used for "no matches" with a Clear filters action.
+ */
+export function EmptyState({ children, actions }: { children: ReactNode; actions?: ReactNode }) {
+  return (
+    <div className={styles.empty}>
+      <p className={styles.emptyMessage}>{children}</p>
+      {actions && <div className={styles.emptyActions}>{actions}</div>}
+    </div>
+  );
+}
 
 /** Skeleton placeholder shown while a request is in flight; announced once to screen readers. */
 export function LoadingState({ label, lines = 4 }: { label: string; lines?: number }) {

@@ -55,8 +55,9 @@ function FieldShell({
 
 export function TextField({
   type = 'text',
+  inputClassName,
   ...props
-}: BaseProps & { type?: 'text' | 'url' | 'date'; list?: string }) {
+}: BaseProps & { type?: 'text' | 'email' | 'url' | 'date'; list?: string; inputClassName?: string }) {
   const { id, value, onChange, error, required, maxLength, list } = props;
   return (
     <FieldShell {...props} length={value.length}>
@@ -64,7 +65,7 @@ export function TextField({
         <input
           id={id}
           type={type}
-          className={styles.input}
+          className={inputClassName ? `${styles.input} ${inputClassName}` : styles.input}
           value={value}
           onChange={(event) => onChange(event.target.value)}
           maxLength={maxLength}
@@ -78,14 +79,20 @@ export function TextField({
   );
 }
 
-export function TextAreaField({ rows = 3, ...props }: BaseProps & { rows?: number }) {
+export function TextAreaField({
+  rows = 3,
+  inputClassName,
+  readOnly,
+  ...props
+}: BaseProps & { rows?: number; inputClassName?: string; readOnly?: boolean }) {
   const { id, value, onChange, error, required, maxLength } = props;
   return (
     <FieldShell {...props} length={value.length}>
       {(describedBy) => (
         <textarea
           id={id}
-          className={styles.textarea}
+          className={inputClassName ? `${styles.textarea} ${inputClassName}` : styles.textarea}
+          readOnly={readOnly}
           rows={rows}
           value={value}
           onChange={(event) => onChange(event.target.value)}

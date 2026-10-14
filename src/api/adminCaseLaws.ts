@@ -1,5 +1,5 @@
 /**
- * `/admin/caselaws/**` — ADMIN only (403 `FORBIDDEN` otherwise). There is no admin read
+ * `/admin/caselaws/**` — SUPERADMIN only (403 `FORBIDDEN` otherwise). There is no admin read
  * endpoint: admins load a case law (metadata and content) through `GET /caselaws/{id}`.
  */
 import { apiClient } from '@/api/client';
@@ -88,6 +88,15 @@ export function updateCaseLaw(caseLawId: string, body: CaseLawMetadataRequest) {
 /** Cascades to the case law's structured content and section links. */
 export function deleteCaseLaw(caseLawId: string) {
   return apiClient.delete<void>(path(caseLawId));
+}
+
+/** Idempotent. Returns the case law's linked sections after the change (contract §5.4). */
+export function linkSection(caseLawId: string, sectionId: string) {
+  return apiClient.post<RelatedSection[]>(`${path(caseLawId)}/sections/${encodeURIComponent(sectionId)}`);
+}
+
+export function unlinkSection(caseLawId: string, sectionId: string) {
+  return apiClient.delete<RelatedSection[]>(`${path(caseLawId)}/sections/${encodeURIComponent(sectionId)}`);
 }
 
 /** Returns the full read-side detail, used to refresh the editor after a save. */
