@@ -1,6 +1,6 @@
 # Lexly — UI Spec (web)
 
-**Status:** Draft, revised 2026-10-13. F0 and F1 written and synced with backend Phase 0 and Phase 1 (contract §1, §2, §5–§7 LIVE); F2–F8 not yet written.
+**Status:** Draft, revised 2026-10-14. F0, F1 and F2 written and synced with backend Phases 0–2 (contract §1, §2, §5–§8 LIVE); F3–F8 not yet written.
 **Audience:** frontend developers on `lexly-webui`, plus backend and design reviewers.
 **Companion docs:**
 - [`Lexly-Frontend-Implementation-Plan.md`](Lexly-Frontend-Implementation-Plan.md) says **which** screens each phase builds. Task IDs (F1.6 …) come from there.
@@ -33,7 +33,8 @@ No Figma file or reference designs exist yet. When they do, link them here and f
 - [Phase index](#phase-index)
 - [F0 — Clean-up & foundations](#f0--clean-up--foundations)
 - [F1 — Identity, roles, SUPERADMIN & content admin](#f1--identity-roles-superadmin--content-admin)
-- [F2–F8 (not yet written)](#f2f8-not-yet-written)
+- [F2 — College administration](#f2--college-administration)
+- [F3–F8 (not yet written)](#f3f8-not-yet-written)
 - [Open questions](#open-questions)
 - [Changelog](#changelog)
 
@@ -119,7 +120,10 @@ This expands the plan's §3.6 catalogue with copy. Clients switch on `error`, ne
 | `SHORT_CODE_ALREADY_EXISTS` | Field `shortCode` | Another act already uses this short code. |
 | `SECTION_NUMBER_ALREADY_EXISTS` | Field `sectionNumber` | This act already has a section with this number. |
 | `COLLEGE_CODE_ALREADY_EXISTS` | Field `code` | Another college already uses this code. |
-| `LOGIN_ID_ALREADY_EXISTS`, `SUBJECT_CODE_ALREADY_EXISTS` | Field | Written in F2 |
+| `LOGIN_ID_ALREADY_EXISTS` | Field `loginId` | Another student or professor at your college already uses this ID. |
+| `SUBJECT_CODE_ALREADY_EXISTS` | Field `code` | Another subject at your college already uses this code. |
+| `IMPORT_FILE_INVALID` | Under the file input | This file can't be imported: {server message} |
+| `SUBJECT_IN_USE` | Delete dialog | See F2.7 |
 | `INTERNAL_ERROR`, other 5xx | Banner or `ErrorState` | Lexly is having trouble right now. Please try again in a moment. |
 | Anything else | Banner | Something went wrong. Please try again. |
 
@@ -151,7 +155,7 @@ These are the only roles. Backend P1 remapped the old `ADMIN` to `SUPERADMIN` an
 |---|---|---|---|
 | F0 | Clean-up & foundations | **Written** | Solo practice placeholder (F0.1), Home (F0.1), Navigation and NotFound (F0.3) |
 | F1 | Identity, roles, SUPERADMIN & content admin | **Written** | Login (F1.1), Change password (F1.2), Role areas (F1.4), Profile (F1.5), Colleges (F1.6), Acts & sections admin (F1.7), Case-law linking (F1.8), Bulk import (F1.9), Audit log (F1.10) |
-| F2 | College administration | Not yet | — |
+| F2 | College administration | **Written** | Users list and detail (F2.2), Add/edit user (F2.3), Reset password (F2.4), Remove user (F2.5), Import users (F2.6), Subjects (F2.7), Read-only subjects (F2.8) |
 | F3 | Assessments & answering | Not yet | — |
 | F4 | Manual grading & student results | Not yet | — |
 | F5 | AI evaluation UI | Not yet | — |
@@ -159,7 +163,7 @@ These are the only roles. Backend P1 remapped the old `ADMIN` to `SUPERADMIN` an
 | F7 | Solo AI practice | Not yet | — |
 | F8 | Payments & hardening | Not yet | — |
 
-F0.2, F0.4–F0.7, F1.3 and F1.11 have no screens of their own.
+F0.2, F0.4–F0.7, F1.3, F1.11, F2.1 and F2.9 have no screens of their own.
 
 ---
 
@@ -592,11 +596,183 @@ Unknown actions show the raw code in monospace, so a new backend action never br
 
 ---
 
-## F2–F8 (not yet written)
+## F2 — College administration
+
+Contract: §0.4, §0.8, §5.5 (`BulkImportResult`), §7, §8. Everything here is scoped to the signed-in C_ADMIN's college by the server; no screen sends a college id.
+
+### F2 shell changes
+
+| Item | Behaviour |
+|---|---|
+| C_ADMIN nav | **Users** (`/college/users`, active on `/college/users/**`) · **Subjects** (`/college/subjects`, active on `/college/subjects/**`) · **Audit** · **Library** |
+| `/college` home | Replaces the F1 placeholder with a hub like `/admin`: eyebrow "College admin", H1 `college.name`, code chip, then link cards **Users** ("Students and professors, one at a time or from a file"), **Subjects** ("What your college teaches, and who teaches it"), **Audit log** ("Who did what, last 30 days"). F6.3 adds the overview |
+| Users sub-nav | On `/college/users` and `/college/users/import`: **People · Import** |
+| Data refresh (F2.1) | Lists use React Query. A save invalidates every view it changes: a user create, edit, reset, remove or import refreshes the user lists, that user's detail and the subject list (professor names); a subject save refreshes the subject list and that subject. Signing out clears the whole query cache |
+
+### F2.2 Users list — `/college/users`
+
+**Purpose:** find a student or professor and manage their account. Data: `GET /college/users?role=&q=&page=&size=20&sort=` (contract §8.1). Template: List, wide.
+
+**Tabs** (`role="tablist"`, URL `?role=professors`; default students): **Students** (`C_STUDENT`) · **Professors** (`C_PROFESSOR`). Switching tabs keeps the search and resets the page.
+
+**Filter bar:** search (`q`, debounced 300 ms; placeholder "Search by name, email or roll no" / "… or employee ID") · Sort: Name (A–Z) / Roll no (Employee ID) / Newest (`fullName,asc` / `loginId,asc` / `createdAt,desc`).
+
+| Column | Field | Notes |
+|---|---|---|
+| Name | `fullName`, `email` below in muted text | Links to the user's detail |
+| Roll no / Employee ID | `loginId` | Monospace |
+| Sign-in | `mustChangePassword` | Badge "Must change password" (warning) or "Active" (success) |
+| Added | `createdAt` | Date only |
+| (menu) | | ⋯ **Edit** · **Reset password** · **Remove** |
+
+**Phone cards:** name + badge; email; "{Roll no} · Added {date}"; menu.
+
+**Title row actions:** **Add student** / **Add professor** (primary, follows the tab) and **Import** (secondary link → `/college/users/import?kind={tab}`).
+
+| State | Copy |
+|---|---|
+| Empty | "No students yet. Add them one at a time, or import a CSV or Excel file." (professors likewise) + **Add student** + **Import students** |
+| No matches | "No students match these filters." + **Clear filters** |
+| Count line | "{n} students" / "{n} professors" (`aria-live="polite"`) |
+
+### F2.3 Add / edit user (dialog)
+
+| Field | Label | Details |
+|---|---|---|
+| `fullName` | Full name | Required, ≤ 255 |
+| `email` | Email | Required, valid, ≤ 255 |
+| `loginId` | Roll no / Employee ID | Required, ≤ 50, monospace. Add hint: "They sign in with {college code} and this ID. Their first password is this ID, and they must change it when they first sign in." Edit hint: "Changing it doesn't change their password." |
+
+`role` comes from the tab (add) and is never editable. Buttons **Cancel** · **Add student** ("Adding…") / **Save changes** ("Saving…").
+
+| Error | Where | Copy |
+|---|---|---|
+| `LOGIN_ID_ALREADY_EXISTS` | Field `loginId` | Another student or professor at your college already uses this ID. |
+| `EMAIL_ALREADY_EXISTS` | Field `email` | §0.6 copy. Add student only, one more sentence: "If it's their personal Lexly account, import them from a file to convert it." |
+| `VALIDATION_ERROR` paths `fullName`, `email`, `loginId` | Field | Server reason |
+| `NOT_FOUND` (edit) | Banner | §0.6 "This item no longer exists…"; the list reloads |
+
+Success: add → toast "{fullName} added. Their first password is their roll no." (or "employee ID"); edit → toast "Changes saved."
+
+### F2.4 Reset password (confirm)
+
+- Title: Reset password for {fullName}?
+- Body: "The password becomes their roll no ({loginId}), and they must change it at next sign-in. They'll be signed out everywhere." (employee ID for professors)
+- Buttons: **Cancel** · **Reset password** ("Resetting…"). Toast "Password reset for {fullName}."
+
+### F2.5 Remove user (typed confirm)
+
+A hard delete (TDD §4.7), so the user types the **login ID** (`loginId`) to enable the button.
+
+- Title: Remove {fullName}?
+- Student body: "Their account is deleted for good, together with all their answers, grades and ranking entries. This can't be undone."
+- Professor body: "Their account is deleted for good, and they're taken off every subject. Assessments they created stay, shown as "Former professor", and their ungraded answers can no longer be graded. This can't be undone."
+- Field: "Type **{loginId}** to confirm". Buttons **Cancel** · **Remove student** / **Remove professor** ("Removing…"). Toast "{fullName} removed."
+
+### F2.2 User detail — `/college/users/:id`
+
+Data: `GET /college/users/{id}`. A `404` (another college's id, a C_ADMIN's id, or a removed user) shows `NotFound`.
+
+Breadcrumb "Users / {loginId}"; H1 `fullName`; facts: role label, login ID chip, Sign-in badge, "Added {date}". Details list: Email, Roll no / Employee ID. Actions: **Edit** · **Reset password** · **Remove** (the dialogs above). After removal → the list for that role, with the toast.
+
+Professors only: a **Subjects** card listing the subjects they're assigned to (from `GET /college/subjects`, filtered to those whose `professors` include this id), each linking to the subject. Empty: "Not assigned to any subject yet."
+
+### F2.6 Import users — `/college/users/import`
+
+**Purpose:** create many students or professors from a spreadsheet and see each row's outcome. Data: `POST /college/users/import/{students|professors}` (multipart `file`, contract §8.3). Reading column.
+
+1. H1 "Import users"; Users sub-nav.
+2. **Kind** segmented control: Students · Professors (URL `?kind=professors`; default students).
+3. **Template**: "Start from a template: **CSV** · **Excel**" (static files `/templates/students.csv|xlsx`, `/templates/professors.csv|xlsx`, copied from the backend's `docs/templates/`). Rules under it: "Row 1 must be the header full_name, email, roll_no (any order). Up to 2,000 rows and 5 MB. Each student's first password is their roll no." (employee_id / employee ID for professors).
+4. **`FileDropzone`**: a drop area that is also a button ("Choose a CSV or Excel file, or drop it here"), `accept=".csv,.xlsx"`. Keyboard: Enter/Space opens the picker. Client checks before upload: extension `.csv`/`.xlsx` ("Choose a .csv or .xlsx file."), not empty ("This file is empty."), ≤ 5 MB ("This file is larger than 5 MB. Split it into smaller files."). The chosen file shows its name and size with **Remove**.
+5. **Import** (primary). While sending: a progress bar (`<progress>`, labelled) "Uploading… {n}%", then "Checking rows…" once the upload is complete; kind and file are locked.
+
+**Results** (`ImportResultTable`)
+- Summary: "{created} created · {converted} converted · {rejected} rejected · {failed} failed, out of {total}." Converted appears for students only.
+- **Row** shows the spreadsheet row number (`index` as returned; the header is row 1). **Key** is headed "Roll no" / "Employee ID" (`key`, "—" when blank).
+- `CREATED` and `CONVERTED` rows link to the user's detail. A `CONVERTED` row also says: "Their personal Lexly account was converted to a student account here. Their solo practice data was deleted, and their password is now their roll no."
+- When rejected + failed > 0: "Fix these rows in your file and import it again. Rows already created this time will come back as rejected (ID already used); that's expected."
+- All created or converted: summary in the success colour, toast "{n} users imported."
+
+| Error | Where | Copy |
+|---|---|---|
+| `IMPORT_FILE_INVALID` | Under the dropzone (whole-file) | "This file can't be imported: {server message}" |
+| `VALIDATION_ERROR` on `file` (> 5 MB on the server) | Under the dropzone | This file is larger than 5 MB. Split it into smaller files. |
+| `NETWORK_ERROR`, 5xx | Banner | §0.6 |
+
+### F2.7 Subjects — `/college/subjects`
+
+Data: `GET /college/subjects?q=` (plain array, by name; contract §8.4). Template: List.
+
+**Filter bar:** search (`q`, "Search by code or name", debounced 300 ms, in the URL).
+
+| Column | Field | Notes |
+|---|---|---|
+| Subject | `name`, `code` below in muted monospace | Links to the detail |
+| Professors | `professors[].fullName`, comma-separated | "None" in the warning colour when empty |
+| Assessments | `assessmentCount` | |
+
+**Phone cards:** name; code; professors line. Action: **Add subject** (primary).
+
+| State | Copy |
+|---|---|
+| Empty | "No subjects yet. Add the subjects your college teaches, then assign professors to them." + **Add subject** |
+| No matches | "No subjects match this search." + **Clear search** |
+
+**Add / edit subject (dialog)**
+
+| Field | Label | Details |
+|---|---|---|
+| `code` | Subject code | Required, ≤ 30, upper-cased as typed, monospace. Hint: "A short code such as CON-101." |
+| `name` | Subject name | Required, ≤ 255 |
+| `description` | Description | Optional, ≤ 2,000, textarea |
+
+`SUBJECT_CODE_ALREADY_EXISTS` → field `code`: "Another subject at your college already uses this code." Add success → the subject's detail, toast "Subject added. Next, assign its professors." Edit success → toast "Subject updated."
+
+#### Subject detail — `/college/subjects/:id`
+
+Data: `GET /college/subjects/{id}`; `404` → `NotFound`. Breadcrumb "Subjects / {code}"; H1 `name`; code chip; "{assessmentCount} assessments"; "Updated {updatedAt}". Description as plain text (line breaks kept). Actions: **Edit** · **Delete**.
+
+**Professors card:** each mapped professor's name (→ their user detail); **Manage professors**. Empty: "No professors yet. Only the professors assigned here can create assessments for this subject." + **Assign professors**.
+
+**Manage professors (dialog):** a searchable multi-select.
+- Search box ("Search professors"), querying `GET /college/users?role=C_PROFESSOR&q=&size=50` (debounced 300 ms).
+- A checkbox list of results (name, employee ID). Selected professors also show as removable chips above the list ("Remove {name}"), so a selection survives a new search.
+- "{n} selected". Buttons **Cancel** · **Save** ("Saving…") → `PUT /college/subjects/{id}/professors` with every selected id. Toast "Professors updated."
+- No professors in the college: "Your college has no professors yet." + link **Add professors** → `/college/users?role=professors`.
+- `VALIDATION_ERROR` on `professorIds[i]` (a professor removed meanwhile): banner "Some of these professors are no longer at your college. Check the list and save again." and the search reloads.
+
+**Delete (confirm)**
+- When `assessmentCount` > 0, or on `409 SUBJECT_IN_USE`: title "{name} can't be deleted"; body "It has assessments, and they keep their subject. If it's no longer taught under this name, rename it instead."; buttons **Close** · **Rename** (opens Edit).
+- Otherwise: title "Delete {name}?"; body "Its professor assignments are removed too. This can't be undone."; **Cancel** · **Delete subject** (destructive). Success → `/college/subjects`, toast "{name} deleted."
+
+### F2.8 Read-only subjects
+
+No new routes; the role homes show them until F3 turns the subjects into assessment filters.
+
+| Role | Where | Look |
+|---|---|---|
+| `C_PROFESSOR` | `/professor`, section **My subjects** under the F1 placeholder | Cards: name, code, description (2 lines), "With {other professors}" when shared. Empty: "You haven't been assigned any subjects yet. Your college admin assigns them." |
+| `C_STUDENT` | `/student`, section **Subjects at your college** | Same cards without professors. Empty: "Your college hasn't added any subjects yet." |
+
+Data: `GET /college/subjects` (professors see only their mapped subjects). Loading, error and empty states as §0.3.
+
+### F2 audit summaries
+
+Since P2 the backend records the college actions. Summaries (F1.10 table) become:
+
+| `action` | Summary |
+|---|---|
+| `USER_CREATED` / `USER_UPDATED` / `USER_REMOVED` | `details.email` (C_ADMIN accounts) or `details.loginId` (students, professors), then the role label |
+| `PASSWORD_RESET` | Role label + "account", then `details.loginId` when present |
+| `USER_IMPORT` | `details.kind` ("Students" / "Professors"), then "{created} created, {converted} converted, {rejected} rejected, {failed} failed of {total}" |
+| `SUBJECT_*` | `details.code`, then `details.name` when present; `SUBJECT_PROFESSORS_CHANGED` adds "{n} professors" from `details.professorIds` |
+
+---
+
+## F3–F8 (not yet written)
 
 Each stub lists what the section must cover. Task IDs are the plan's.
-
-**F2 — College administration** (contract §8): F2.2 user list (Students / Professors tabs) · F2.3 create/edit user · F2.4 reset password confirm · F2.5 remove user (typed confirmation, per-role consequences) · F2.6 bulk import (template download, `FileDropzone`, `ImportResultTable` with `CONVERTED`, `IMPORT_FILE_INVALID`) · F2.7 subjects and professor mapping, `SUBJECT_IN_USE` · F2.8 read-only subject lists.
 
 **F3 — Assessments & answering** (contract §9): F3.1 professor list · F3.2 draft editor · F3.3 publish checklist and confirm · F3.4 delete/remove · F3.5 student list by state · **F3.6 student assessment with per-question answer cards** (every `answer.status` × assessment state; countdown corrected with `serverTime`; `INVALID_FILE`, `ANSWER_LOCKED`, `ASSESSMENT_CLOSED`) · F3.7 upload with progress · F3.8 submissions grid · F3.9 SUPERADMIN read-only tab.
 
@@ -630,3 +806,4 @@ Each stub lists what the section must cover. Task IDs are the plan's.
 | 2026-10-13 | First version: shared conventions, Phase 0 and Phase 1 |
 | 2026-10-13 | Aligned with `Lexly-Frontend-Implementation-Plan.md`: plan task IDs; plan routes (`/admin/**`, `/student`, `/admin/audit`, `/college/audit`); role nav with Library; `/practice` kept as a placeholder; Home cards hidden, not deleted; bulk import moved to F1.9; college detail tabs; error copy from plan §3.6. Added F0.3 navigation and NotFound, F1.7 acts and sections admin, F1.8 case-law linking |
 | 2026-10-13 | Synced with backend Phase 0 and Phase 1: no legacy role mapping; P1 endpoints marked LIVE (Edit act and the section editor load the admin GETs); change-password server messages; bulk-import `400` cases and the unknown-act case; audit summaries match the recorded `details`; `RATE_LIMITED` raised only from P8; U3 and U4 closed |
+| 2026-10-14 | F2 written against backend Phase 2 (contract §8 LIVE): C_ADMIN nav and hub, users list/detail and dialogs, user import with `FileDropzone` and `CONVERTED`, subjects and professor mapping, read-only subjects on the professor and student homes, F2 error copy in §0.6, audit summaries for the P2 `details` |
