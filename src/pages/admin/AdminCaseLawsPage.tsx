@@ -7,6 +7,7 @@ import { ErrorState, LoadingState } from '@/components/QueryStates';
 import { useApiQuery } from '@/hooks/useApiQuery';
 import { ImportanceBadge } from '@/pages/content/ImportanceBadge';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { ContentSubNav } from '@/components/SubNav';
 import { useToast } from '@/components/Toast';
 import styles from '@/components/ui.module.css';
 
@@ -76,6 +77,7 @@ export function AdminCaseLawsPage() {
           + New case law
         </Link>
       </div>
+      <ContentSubNav />
 
       <form role="search" className={styles.searchRow} onSubmit={handleSearch}>
         <label htmlFor="admin-caselaw-search" className={styles.label}>

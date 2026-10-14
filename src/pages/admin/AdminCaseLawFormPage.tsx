@@ -12,7 +12,8 @@ import { ApiError } from '@/api/client';
 import { ErrorState, LoadingState } from '@/components/QueryStates';
 import { useApiQuery } from '@/hooks/useApiQuery';
 import { caseTypeLabel, KNOWN_CASE_TYPES } from '@/pages/content/caseLawLabels';
-import { sectionLabel } from '@/pages/content/navigation';
+import { ContentSubNav } from '@/components/SubNav';
+import { LinkedSections } from './LinkedSections';
 import { loadCaseLawForAdmin, refreshCachedCaseLaw, type ContentEditorHandoff } from './adminCaseLaw';
 import { TextField } from '@/components/Field';
 import { useToast } from '@/components/Toast';
@@ -135,7 +136,6 @@ function MetadataEditor({ initial }: { initial: CaseLawDetail | null }) {
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [created, setCreated] = useState<CaseLawAdmin | null>(null);
-  const [linkedSections, setLinkedSections] = useState(initial?.relatedSections ?? []);
 
   const dirty = JSON.stringify(requestFromForm(form)) !== JSON.stringify(requestFromForm(baseline));
   const guard = useUnsavedChangesGuard(dirty && !saving);
@@ -168,7 +168,6 @@ function MetadataEditor({ initial }: { initial: CaseLawDetail | null }) {
       const next = formFromSource(saved);
       setBaseline(next);
       setForm(next);
-      setLinkedSections(saved.linkedSections ?? []);
       if (initial) {
         refreshCachedCaseLaw(saved.id);
         toast.show('Details saved.');
@@ -216,6 +215,7 @@ function MetadataEditor({ initial }: { initial: CaseLawDetail | null }) {
           </div>
         )}
       </div>
+      <ContentSubNav />
 
       <form noValidate onSubmit={(event) => void handleSubmit(event)} className={styles.form}>
         {formError && (
@@ -285,20 +285,14 @@ function MetadataEditor({ initial }: { initial: CaseLawDetail | null }) {
         </div>
       </form>
 
-      {initial && (
+      {initial ? (
+        <LinkedSections caseLawId={initial.id} initial={initial.relatedSections} showToast={toast.show} />
+      ) : (
         <section className={styles.editorSection} aria-labelledby={fieldId('linked')}>
           <h2 id={fieldId('linked')} className={styles.editorSectionTitle}>
             Linked sections
           </h2>
-          {linkedSections.length === 0 ? (
-            <p className={styles.emptyList}>No sections are linked to this case law.</p>
-          ) : (
-            <ul className={styles.plainList}>
-              {linkedSections.map((section) => (
-                <li key={section.id}>{sectionLabel(section.sectionNumber, section.title)}</li>
-              ))}
-            </ul>
-          )}
+          <p className={styles.emptyList}>Save the case law first, then link the sections it interprets.</p>
         </section>
       )}
 

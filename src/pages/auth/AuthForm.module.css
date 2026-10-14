@@ -251,3 +251,38 @@
 .switchLink:hover {
   text-decoration-color: var(--lx-navy);
 }
+
+/* ---------- Login mode tabs (F1.1) ---------- */
+
+.tabs {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.25rem;
+  margin: 0 0 1.25rem;
+  padding: 0.25rem;
+  border: 1px solid var(--lx-border);
+  border-radius: 12px;
+  background: var(--lx-ivory);
+}
+
+.tab {
+  min-height: 44px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--lx-muted);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tab[aria-selected="true"] {
+  background: #fff;
+  color: var(--lx-navy);
+  box-shadow: 0 1px 3px rgb(19 41 75 / 0.15);
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--lx-navy);
+  outline-offset: 2px;
+}

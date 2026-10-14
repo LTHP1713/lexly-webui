@@ -42,6 +42,15 @@ export function validateLogin(values: { email: string; password: string }): Fiel
   return errors;
 }
 
+/** College mode (contract §1.2): the server upper-cases the code and trims the ID, but both are required. */
+export function validateCollegeLogin(values: { collegeCode: string; loginId: string; password: string }): FieldErrors {
+  const errors: FieldErrors = {};
+  if (!values.collegeCode.trim()) errors.collegeCode = 'College code is required.';
+  if (!values.loginId.trim()) errors.loginId = 'Roll no. or employee ID is required.';
+  if (!values.password) errors.password = 'Password is required.';
+  return errors;
+}
+
 /**
  * Maps a backend VALIDATION_ERROR message like "email: must be a well-formed email address"
  * onto the matching field. Falls back to a top-level banner when the shape doesn't match.
@@ -50,7 +59,7 @@ export function mapServerFieldError(message: string): FieldErrors | undefined {
   const match = /^(\w+):\s*(.+)$/.exec(message);
   if (!match) return undefined;
   const [, field, reason] = match;
-  const knownFields = ['email', 'password', 'fullName'];
+  const knownFields = ['email', 'password', 'fullName', 'collegeCode', 'loginId'];
   if (!knownFields.includes(field)) return undefined;
   return { [field]: reason };
 }
