@@ -6,6 +6,7 @@
 **Method:** I checked each plan task against the code, `package.json` and `docs/progress/frontend_progress.md`. I did not run the app or the backend for this report.
 **Update, same day (backend P0 + P1):** backend Phase 0 is merged to `lexly-backend` `main` (`0545ab9`) and Phase 1 is committed on `feature/phase1` (`ddac579`, not yet merged). `docs/Lexly-API-Contract.md` was re-copied from that commit, and §1, §3 and §5 below were updated. F0 and all of F1 are now unblocked.
 **Update, 2026-10-14 (F0 and F1 built):** F0 is done on `feature/f0-cleanup`, and all of F1 is built on `feature/f1-identity` (stacked on F0). Both were exercised against the live backend (`feature/phase1`, `ddac579`): `npm run test:e2e` 24 passed, 10 skipped by design. Backend `feature/phase1` was then merged to `main` (`ca7c842`) and the e2e suite re-run against it: 24 passed, 10 skipped by design, 0 failed, so F1 is Done (plan §10 gate). PRs: #2 (F0) and #3 (F1, stacked on #2). §1–§3 below are updated; the progress file has the details.
+**Update, 2026-10-14 (F2 built):** backend Phase 2 is on `feature/phase2` (`389d70e`, not merged yet) and the contract §8 is LIVE. All of F2 is built on `feature/f2-college-admin` and verified against that branch: `e2e/f2-college.spec.ts` 8 passed, and the full suite 31 passed, 19 skipped by design, 0 failed. Backend `feature/phase2` was then merged to `main` (`676ea65`, same code) and the suite re-run: 31 passed, 19 skipped, 0 failed, so F2 is Done and merged into `master`.
 **Update, 2026-10-13:** the doc findings in §4 have been applied. The plan and `Lexly-UI-Spec.md` now agree, and the stale references to the deleted Home contract in the code comments and `.env.example` are fixed. The progress file was restored and its Next Up rewritten from this plan; see §4.4.
 
 ---
@@ -15,7 +16,8 @@
 - **Done:** everything the plan lists as "built and working" (§1.1). That covers the reading app (Bare Acts, Case Laws, search, Home), email login and register with the cookie session, the case-law admin, and the free/Pro removal. The code matches the plan's description.
 - **F0 done (2026-10-14):** F0.1–F0.7 on `feature/f0-cleanup`, with F1.2 pulled in. The cookie-session checks pass against the live backend.
 - **F1 done (2026-10-14):** F1.1–F1.11 on `feature/f1-identity` (PR #3). Backend Phase 1 is merged to `main` (`ca7c842`), and the e2e suite passes against it.
-- **Blocked on the backend:** F2–F8 (Phases 2–8 still PROPOSED).
+- **F2 done (2026-10-14):** F2.1–F2.9 on `feature/f2-college-admin`, merged into `master`. Backend Phase 2 is merged to `main` (`676ea65`), and the e2e suite passes against it.
+- **Blocked on the backend:** F3–F8 (Phases 3–8 still PROPOSED).
 - **Fixed:** the UI no longer breaks against a P1 backend. Roles come from `/users/me`, `RequireRole` replaced `RequireAdmin`, and gated accounts are sent to `/change-password`.
 - **Docs:** the UI spec, the plan and the contract are now in sync (§4). The UI spec covers F0 and F1, including F1.7 and F1.8. The progress file was restored and its Next Up rewritten (§4.4).
 
@@ -23,7 +25,7 @@
 |---|---|---|---|---|
 | F0 Clean-up & foundations | 7 | 7 | — | — |
 | F1 Identity, roles, SUPERADMIN, content admin | 11 | 11 | — | — |
-| F2 College administration | 9 | 0 | — | Phase 2 |
+| F2 College administration | 9 | 9 | — | — |
 | F3 Assessments & answering | 10 | 0 | — | Phase 3 |
 | F4 Manual grading & results | 7 | 0 | — | Phase 4 |
 | F5 AI evaluation UI | 6 | 0 | — | Phase 5 |
@@ -87,13 +89,16 @@ These match the plan's §1.1. The progress file has the full entries and how eac
 | F1.10 | Audit log | Done | `/admin/audit` and `/college/audit` |
 | F1.11 | Tests | Done | 113 unit tests; e2e golden path + phone pass |
 
-### F2–F8
+### F2 — College administration (backend Phase 2)
+
+All nine tasks are Done (2026-10-14), verified against backend `main` (`676ea65`); see the progress file.
+
+### F3–F8
 
 None of these have code. Each waits for its backend phase.
 
 | Phase | Tasks | Backend dependency | Contract |
 |---|---|---|---|
-| F2 | F2.1 React Query · F2.2 user list · F2.3 create/edit user · F2.4 reset password · F2.5 remove user · F2.6 bulk import · F2.7 subjects · F2.8 read-only subjects · F2.9 tests | Phase 2 | §8 |
 | F3 | F3.1 professor list · F3.2 draft editor · F3.3 publish · F3.4 delete/remove · F3.5 student list · F3.6 student assessment (answer cards) · F3.7 upload · F3.8 submissions grid · F3.9 SUPERADMIN read-only · F3.10 tests | Phase 3 | §9 |
 | F4 | F4.1 answer review · F4.2 grade panel · F4.3 grading flow · F4.4 history · F4.5 counts refresh · F4.6 student results · F4.7 tests | Phase 4 | §10 |
 | F5 | F5.1 AI Evaluate button · F5.2 polling · F5.3 AI suggestion · F5.4 failure · F5.5 grid & AI usage · F5.6 tests | Phase 5 | §11 |
@@ -109,8 +114,8 @@ None of these have code. Each waits for its backend phase.
 | `StudyPanel`, `LoadingState`, `ErrorState`, `EmptyState` | Exist | — |
 | `RequireRole`, role nav config, `NotFound` | Exist (F0.3) | F0 |
 | `Pagination`, `ImportResultTable`, `StatusBadge`, `Dialog`, `TypedConfirmDialog`, `RowMenu`, `useMediaQuery` | Exist (F1) | F1 |
-| `DataTable` | Not built as a component: F1 lists use the shared table/card styles in `ui.module.css` and `useMediaQuery`. Extract one in F2 if the user lists repeat the pattern | F2 |
-| `FileDropzone` | Missing | F2 |
+| `DataTable` | Not built as a component: the F1 and F2 lists share the table/card styles in `ui.module.css` and `useMediaQuery`. Revisit in F3 for the submissions grid | F3 |
+| `FileDropzone`, `SubjectCards`, `DialogButtons`/`Banner` | Exist (F2) | F2 |
 | `DateTimeField`, countdown, `MarksInput`, `PdfViewer` | Missing | F3 |
 | `AiSuggestion`, `AiFlagChips` | Missing | F5 |
 | `RankingTable`, `StatTile` | Missing | F6 |
@@ -203,7 +208,7 @@ Order and dependencies, starting from today. Each frontend phase ships only afte
 ### F2 — College administration (backend Phase 2)
 
 - **Order:** F2.1 React Query (migrate the F1 lists) → F2.2/F2.3 users → F2.4/F2.5 reset and remove → F2.6 bulk import (adds `FileDropzone`; reuses `ImportResultTable` with `CONVERTED`) → F2.7/F2.8 subjects → F2.9 tests.
-- **Decision needed first:** D7, the CSV/XLSX templates.
+- **Built 2026-10-14** in that order. D1 (TanStack Query) and D7 (templates copied from the backend) are settled.
 
 ### F3 — Assessments & answering (backend Phase 3)
 

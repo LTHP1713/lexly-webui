@@ -2,7 +2,7 @@
 
 **Status:** Draft for review, revised 2026-10-13 (synced with backend Phase 0 and Phase 1)
 **Frontend repo:** https://github.com/LTHP1713/lexly-webui (reviewed at commit `fab9df4` "bare act & case laws")
-**Backend state:** Phase 0 merged to `lexly-backend` `main` (`0545ab9`, PR #2). Phase 1 committed on `feature/phase1` (`ddac579`), not yet merged. The contract copy in this repo matches that commit.
+**Backend state (2026-10-14):** Phases 0, 1 and 2 are merged to `lexly-backend` `main` (Phase 2: `676ea65`, PR #3). The contract copy in this repo matches it. Frontend F0, F1 and F2 are Done.
 **Based on:** `Lexly-TDD.md` v2 (frozen 2026-10-12) and `Lexly-Implementation-Plan.md`. Request/response shapes: `Lexly-API-Contract.md`. Section references like §7.3 point to the TDD; "Phase 3" points to the backend plan.
 **Companion docs:** `Lexly-UI-Spec.md` (layout, states and copy per screen, written per phase) and `Lexly-Frontend-Status-Report.md` (what is built).
 **Supersedes:** `Lexly-Frontend-Development-Master-Doc.md` §3. Its prompts target the old subscription / MCQ-practice design. Its §4 (security) and §5 (progress SOP) still apply and are summarised in §9 and §10 below.
