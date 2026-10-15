@@ -1,8 +1,8 @@
 # Lexly — Frontend Implementation Plan (lexly-webui)
 
-**Status:** Draft for review, revised 2026-10-15 (synced with backend Phases 0–3)
+**Status:** Draft for review, revised 2026-10-16 (synced with backend Phases 0–3)
 **Frontend repo:** https://github.com/LTHP1713/lexly-webui (reviewed at commit `fab9df4` "bare act & case laws")
-**Backend state (2026-10-15):** Phases 0–3 are merged to `lexly-backend` `main` (Phase 3: `75a7c08`, PR #4). The contract copy in this repo matches it. Frontend F0, F1 and F2 are Done; F3 is in progress.
+**Backend state (2026-10-15):** Phases 0–3 are merged to `lexly-backend` `main` (Phase 3: `75a7c08`, PR #4). The contract copy in this repo matches it. Frontend F0–F3 are Done (F3 verified against backend `main` on 2026-10-16).
 **Based on:** `Lexly-TDD.md` v2 (frozen 2026-10-12) and `Lexly-Implementation-Plan.md`. Request/response shapes: `Lexly-API-Contract.md`. Section references like §7.3 point to the TDD; "Phase 3" points to the backend plan.
 **Companion docs:** `Lexly-UI-Spec.md` (layout, states and copy per screen, written per phase) and `Lexly-Frontend-Status-Report.md` (what is built).
 **Supersedes:** `Lexly-Frontend-Development-Master-Doc.md` §3. Its prompts target the old subscription / MCQ-practice design. Its §4 (security) and §5 (progress SOP) still apply and are summarised in §9 and §10 below.
@@ -223,8 +223,8 @@ Frontend phases mirror the backend phases. **F*n* starts once backend Phase *n*'
 |---|---|---|---|---|
 | F0 | Clean-up & foundations | current backend + Phase 0 | S | most groundwork done in `fab9df4`; backend P0 merged |
 | F1 | Identity, roles, SUPERADMIN & content admin | Phase 1 | L | case-law admin done; backend P1 committed (`feature/phase1`), contract §1, §2, §5–§7 LIVE |
-| F2 | College administration | Phase 2 | M | — |
-| F3 | Assessments & answering | Phase 3 | L | backend P3 merged (`75a7c08`), contract §9 LIVE |
+| F2 | College administration | Phase 2 | M | **Done** 2026-10-14 |
+| F3 | Assessments & answering | Phase 3 | L | **Done** 2026-10-16 against backend `main` (`75a7c08`); F3.9 dropped |
 | F4 | Manual grading & student results | Phase 4 | M | — |
 | F5 | AI evaluation UI | Phase 5 | S | — |
 | F6 | Rankings & statistics | Phase 6 | M | — |
@@ -412,8 +412,8 @@ F6 can run alongside F5, as on the backend.
 | `RequireRole`, role nav config, `NotFound` | new | F0 |
 | `DataTable` + `Pagination` (URL filters) | new | F1 |
 | `ImportResultTable` | new | F1 |
-| `FileDropzone` + upload progress | new | F2 |
-| `StatusBadge`, `DateTimeField`, countdown, `MarksInput`, `PdfViewer` | new | F3 |
+| `FileDropzone` + upload progress | ✅ (F2, F3) | F2 |
+| `StatusBadge`, `DateTimeField`, `Deadline` countdown, `NumberField` (MarksInput), `PdfViewer` | ✅ (F1, F3) | F3 |
 | `AiSuggestion`, `AiFlagChips` | new | F5 |
 | `RankingTable`, `StatTile` | new | F6 |
 | `UsageMeter`, `PlanGate` | new | F7 |

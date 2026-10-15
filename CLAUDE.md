@@ -17,7 +17,7 @@ npm run lint            # oxlint (.oxlintrc.json)
 npm run preview
 ```
 
-- There are no automated tests yet. Vitest + Testing Library + MSW + Playwright are planned (plan F0.6). Until then, verify against a running backend.
+- Tests: `npm test` (Vitest + Testing Library + MSW; route tests render the real `App` via `src/test/renderApp.tsx`, and any unmocked request fails the test). `npm run test:e2e` runs the Playwright golden paths in `e2e/` against a running backend (see Current state for the Chromium path).
 - To run the backend locally: in `lexly-backend`, `docker compose up -d`, then `./mvnw spring-boot:run "-Dspring-boot.run.jvmArguments=-Duser.timezone=UTC"`. The dev SUPERADMIN is `superadmin@lexly.local` / `lexly-superadmin-dev` and must change its password on first login.
 - No formatter is configured. Match the surrounding code (single quotes, semicolons and 2-space indent; only the Vite template files `main.tsx` and `vite.config.ts` omit semicolons).
 
@@ -30,13 +30,14 @@ npm run preview
 - `docs/progress/frontend_progress.md`: every task gets an entry (date, status, what changed, how it was verified against the live backend, notes). At session start, read it and continue from In Progress / Blocked.
 - The design (TDD v2) was frozen on 2026-10-12 in the backend repo (`docs/Lexly-TDD.md`, `docs/Lexly-Implementation-Plan.md`). Don't reopen settled decisions. Open decisions D1–D9 are in plan §7; ask the user before deciding one.
 - Frontend phase F*n* mirrors backend Phase *n*. It starts once that phase's contract is agreed and is Done only after the backend phase is merged and the task has been exercised against the live backend.
-- **Current state (2026-10-13):** backend Phases 0 and 1 are done (five roles, colleges, both login modes, `POST /auth/change-password`, the `PASSWORD_CHANGE_REQUIRED` gate, audit log). The frontend has not caught up: it still knows only the legacy roles `STUDENT` / `LAWYER` / `ADMIN`, `RequireAdmin` checks `role === 'ADMIN'`, login is email-only, and the role is decoded from the JWT (`roleFromAccessToken`). F0 and F1 address this. Some contract sections still say PROPOSED for Phase 1 endpoints that are now live.
+- **Current state (2026-10-16):** backend Phases 0–3 are merged to `lexly-backend` `main`, and frontend F0–F3 are Done (F3: professor assessments, draft editor and publish, submissions grid; student assessments with per-question PDF upload and submit). Next is F4, once backend Phase 4 is agreed. The backend you test against must be running `main`: an older running build answers `No endpoint GET …` for newer routes.
+- **E2E:** `npm run test:e2e` needs the backend running and `PW_CHROMIUM_PATH` pointing at the installed `chromium_headless_shell-1243` (`…/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-win64/chrome-headless-shell.exe`). `e2e/f3-assessments.spec.ts` waits for a real due date and the close job, so it takes about 4 minutes.
 
 ## Architecture
 
 `@/` maps to `src/` (in both `vite.config.ts` and `tsconfig.app.json`).
 
-- `src/api/`: one module per backend area (`auth`, `users`, `content`, `caselaws`, `search`, `adminCaseLaws`). Each defines the UI model types and `to<Model>()` mappers that normalise DTOs (blank → `null`, missing list → `[]`), so components never see raw backend quirks. Keep the backend's list order (`display_order`); don't re-sort.
+- `src/api/`: one module per backend area (e.g. `auth`, `users`, `content`, `caselaws`, `colleges`, `collegeUsers`, `subjects`, `audit`, `professor`, `student`; `assessments` holds what the last two share). Each defines the UI model types and `to<Model>()` mappers that normalise DTOs (blank → `null`, missing list → `[]`), so components never see raw backend quirks. Keep the backend's list order (`display_order`); don't re-sort.
 - `src/api/client.ts`: `apiClient.get/post/put/delete`, the only way to call the backend.
   - Attaches `Authorization: Bearer` from the session store, and sets JSON `Content-Type` when there is a body.
   - Non-2xx responses become `ApiError { code, message, status }` from the backend's `{ error, message }` body. A failed fetch becomes `NETWORK_ERROR`. **Branch on `code`, never on `message` or HTTP status.**
@@ -46,11 +47,11 @@ npm run preview
 - `src/auth/`:
   - `session-store.ts` holds the session in module memory. It is not React state and not Web Storage, so `client.ts` can use it outside React.
   - `AuthContext` mirrors the store via `useSyncExternalStore`. The status starts as `loading`, then `bootstrapSession()` calls `/auth/refresh` + `GET /users/me`, and `SessionPending` shows meanwhile.
-  - Guards: `RequireAuth`, `RedirectIfAuthenticated` (signed-in users → `/dashboard`) and `RequireAdmin`. UI role checks are only a convenience; the server enforces access.
-- Routing: `main.tsx` uses a data router (`createBrowserRouter` with one `*` route rendering `App`) so `useBlocker` works. The actual routes live in `App.tsx` `<Routes>`. Authenticated pages render inside `AppLayout`, which has a header, a bottom tab bar below 768 px, and a wide 72 rem layout for `/sections/*`, `/caselaws/*` and `/admin/*`.
-- Data fetching: `hooks/useApiQuery(key, fetcher)` runs the fetch when `key` changes (`null` means don't fetch), exposes `idle/loading(staleData)/success/error` + `retry`, and drops superseded responses. `fetcher` must be fully determined by `key`. TanStack Query is the recommended addition from F2 (D1). Don't add it earlier without asking.
+  - Guards: `RequireAuth`, `RedirectIfAuthenticated` (signed-in users → their role home) and `RequireRole` (role list per route group in `App.tsx`; homes and nav in `auth/roles.ts`). UI role checks are only a convenience; the server enforces access.
+- Routing: `main.tsx` uses a data router (`createBrowserRouter` with one `*` route rendering `App`) so `useBlocker` works. The actual routes live in `App.tsx` `<Routes>`. Authenticated pages render inside `AppLayout`, which has a header, a bottom tab bar below 768 px, and a wide 72 rem layout for the work areas (`isWidePath`: `/sections/*`, `/caselaws/*`, `/admin/**`, `/college/**`, `/professor/**`, …).
+- Data fetching: `hooks/useApiQuery(key, fetcher)` runs the fetch when `key` changes (`null` means don't fetch), exposes `idle/loading(staleData)/success/error` + `retry`, and drops superseded responses. `fetcher` must be fully determined by `key`. Lists and anything mutations must refresh use `hooks/useCachedQuery` (TanStack Query, same result shape) with keys from `lib/queryClient.ts` `queryKeys`; the cache is cleared when the signed-in user changes.
 - `config/features.ts`: `VITE_API_*` flags gate Home cards for endpoints that aren't in TDD v2. Keep them `false` (D3). `VITE_HOME_MOCKS` (dev only) renders sample Home states from `dev/homeMocks.ts`.
-- Pages are under `src/pages/<area>/`: `auth`, `content` (Library: acts, sections, case laws, search, study panel), `home`, `admin` (case-law admin and its reusable form parts). The plan's target is one folder and one lazily loaded route chunk per role area, with `roles.ts` + `RequireRole` replacing `RequireAdmin` (plan §3.1–3.2).
+- Pages are under `src/pages/<area>/`: `auth`, `content` (Library), `home` (S_STUDENT), `admin` (SUPERADMIN), `college` (C_ADMIN), `professor`, `student`, `audit`. Each role area is a lazily loaded route chunk (plan §3.1–3.2).
 
 ## Conventions
 

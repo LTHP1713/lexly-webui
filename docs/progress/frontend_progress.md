@@ -2,6 +2,62 @@
 
 ## Completed
 
+### 2026-10-16 — F3 Assessments & answering (F3.1–F3.8, F3.10; F3.9 dropped)
+
+**Status:** Done 2026-10-16. Backend Phase 3 is merged to `main` (`75a7c08`, PR #4); the
+contract copy here is identical to the backend's. Branch `feature/f3-assessments`. Lint (one
+pre-existing warning), `tsc -b`, the build and 176 unit tests pass.
+
+**Verified against the live backend** (`lexly-backend` `main` at `75a7c08`). The backend that
+was running was a pre-Phase-3 build (`No endpoint GET /api/v1/professor/assessments`, which is
+why the professor home showed an error), so I restarted it from `main`; Flyway applied V19.
+`e2e/f3-assessments.spec.ts` (5 tests, desktop) passes and covers the plan's "Done when": a
+10-question assessment is published (after the checklist blocked an incomplete one); a student
+uploads 8 answers, replaces one, views it, and submits 7; at the due date the page turns
+read-only by itself and shows 3 "Not attempted"; after the close job the professor sees
+"7 of 20" submitted, 13 not attempted, and Asha's grid row with 7 Submitted and 3 Not attempted;
+the student screens pass a phone check. The full suite: 36 passed, 24 skipped by design, 0 failed.
+
+What changed:
+- **API:** `api/assessments.ts` (shared types, mappers), `api/professor.ts` (§9.2, §9.5 grid),
+  `api/student.ts` (§9.3–9.4, upload via `apiClient.upload` with progress, `checkAnswerFile`:
+  PDF type/name, empty, `maxFileMb`, `%PDF-`). Four P3 error codes in `errors.ts`.
+- **Shared:** `AssessmentStatusBadge`, `StudentStateBadge`, `CellStatusLabel`
+  (`assessmentLabels.ts` holds the label maps), `Deadline` + `lib/deadline.ts` (`timeLeft`,
+  `clockOffset`, `useNow`: 30 s ticks, 1 s in the last minute, paused while hidden),
+  `NumberField` / `DateTimeField` (`lib/dateTimeLocal.ts`), `PdfViewer` (blob URL, revoked on
+  close), `formatMarks`.
+- **Professor:** `/professor` list (F3.1), `/professor/assessments/new` and `/:id/edit` editor
+  with the live "Before you publish" checklist, save-then-confirm publish, delete (F3.2–F3.4),
+  `/professor/assessments/:id` detail with stat tiles, questions, Remove, and the submissions
+  grid (sticky header/column, icon + text cells, question/status/page in the URL, search in
+  state only; cards on phones) (F3.8). Wide layout for `/professor/**`.
+- **Student:** `/student` grouped list (To do / Submitted / Closed, subject + page in the URL)
+  (F3.5); `/student/assessments/:id` answer cards with the §6.2 states, upload with progress +
+  Cancel, Replace, Submit confirm, View, each card error from the spec table, and the
+  server-corrected clock that turns the page read-only at the due date and refetches (F3.6–F3.7).
+- **Removed:** the F2.8 placeholder homes and `SubjectCards` (the spec replaces them with the
+  list filters), and their two unit tests; `e2e/f2-college.spec.ts` now checks the filters.
+- **Audit:** `ASSESSMENT_PUBLISHED` / `ASSESSMENT_REMOVED` summaries per the spec.
+- **Tests (F3.10):** `deadline.test.ts` (countdown boundaries, clock offset),
+  `assessmentForm.test.ts` (draft checks, checklist, body), `professor.test.tsx` (list, blocked
+  publish, save → confirm → publish, publish `VALIDATION_ERROR` on fields, `/edit` of a published
+  one, `ASSESSMENT_NOT_EDITABLE`, Not Found, grid + question filter, remove),
+  `student.test.tsx` (grouping, not uploaded → uploaded → submitted, non-PDF refused,
+  `INVALID_FILE`, `ANSWER_LOCKED`, `ASSESSMENT_CLOSED`, submit without upload, closed view,
+  server clock, Not Found), audit summaries. `e2e/f3-assessments.spec.ts` runs the plan's "Done
+  when" (10 questions, 7 submitted + 1 uploaded-only, 3 Not attempted, the grid after the close
+  job) plus a phone pass.
+
+Notes:
+- jsdom's XHR drops multipart filenames before MSW sees them, so the unit test checks the part's
+  bytes; `uploadAnswer` passes the filename to `FormData.append` explicitly.
+- Found while testing, not changed: `ErrorState` shows the server's `message` (e.g. "No endpoint
+  GET …"), as it has since F0. CLAUDE.md says to map codes to friendly text.
+- E2E fixes found on the live run: the student test needs a 6-minute timeout (it waits for
+  the due date), and grid cells are counted by their "✓Submitted" text (icon and text share one
+  element).
+
 ### 2026-10-14 — F2 College administration (F2.1–F2.9)
 
 **Status:** Done 2026-10-14. Backend `feature/phase2` was merged to `main` (`676ea65`, PR #3, same
@@ -851,5 +907,6 @@ on `feature/phase1`.
 1. ~~**F0 on `feature/f0-cleanup`**~~ — done 2026-10-14 (entry above). PR #2; CI passed.
 2. ~~**F1 on `feature/f1-identity`**~~ — done 2026-10-14 (entry above). Merge PR #2, then #3.
 3. ~~**F2 on `feature/f2-college-admin`**~~ — done 2026-10-14 (entry above), merged into `master`.
-4. Write the F3 UI spec (student answer cards, submissions grid) before Phase 3 starts.
-5. Later (D4): choose an app-wide dark-mode approach.
+4. ~~**F3 on `feature/f3-assessments`**~~ — done 2026-10-16 (entry above). Commit, then merge into `master`.
+5. F4 (manual grading & results) once backend Phase 4 is agreed: write the UI spec F4 section first.
+6. Later (D4): choose an app-wide dark-mode approach.
