@@ -43,3 +43,8 @@ export function count(value: unknown): number {
 export function blankToNull(value: string | null | undefined): string | null {
   return value?.trim() ? value : null;
 }
+
+/** A string field of a loosely typed DTO, or null. */
+export function stringField(dto: Record<string, unknown>, key: string): string | null {
+  return typeof dto[key] === 'string' ? (dto[key] as string) : null;
+}

@@ -90,6 +90,7 @@ export const queryKeys = {
   },
   studentAssessments: {
     all: ['student', 'assessments'] as const,
+    lists: ['student', 'assessments', 'list'] as const,
     list: (filters: object) => ['student', 'assessments', 'list', filters] as const,
     detail: (id: string) => ['student', 'assessments', 'detail', id] as const,
   },

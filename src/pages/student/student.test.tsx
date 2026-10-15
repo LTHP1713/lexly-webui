@@ -187,7 +187,7 @@ describe('student assessment (F3.6, F3.7)', () => {
     await renderApp('/student/assessments/a1');
     const first = await card(1);
     await userEvent.setup().upload(first.querySelector<HTMLInputElement>('input[type=file]')!, pdf());
-    expect(await within(first).findByText("This PDF can't be used: Must have at most 10 pages.")).toBeInTheDocument();
+    expect(await within(first).findByText("This PDF can't be used: it must have at most 10 pages.")).toBeInTheDocument();
     expect(within(first).getByText('Not uploaded')).toBeInTheDocument();
   });
 

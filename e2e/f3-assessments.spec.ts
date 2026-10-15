@@ -146,7 +146,7 @@ test('professor writes a 10-question draft, sees the checklist, and publishes it
 
   // Publishing with gaps is blocked by the checklist, with no request.
   await page.getByRole('button', { name: 'Publish…' }).click()
-  await expect(page.getByRole('link', { name: 'Due date: The due date is set and in the future.' })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Due date: Set a due date.' })).toBeVisible()
   await expect(page.getByRole('dialog')).toHaveCount(0)
 
   // Save a half-written draft: the URL moves to /edit.

@@ -11,6 +11,7 @@ import {
   blankToNull,
   count,
   oneOf,
+  stringField,
   toNumber,
   toSubjectRef,
   type AnswerStatus,
@@ -77,17 +78,16 @@ type Dto = Record<string, unknown> & {
   questions?: (Partial<Omit<StudentQuestion, 'answer'>> & { answer?: Partial<Answer> | null })[] | null;
 };
 
-const str = (dto: Record<string, unknown>, key: string) => (typeof dto[key] === 'string' ? (dto[key] as string) : null);
 
 function toBase(dto: Dto) {
   return {
-    id: str(dto, 'id') ?? '',
+    id: stringField(dto, 'id') ?? '',
     subject: toSubjectRef(dto.subject),
-    title: str(dto, 'title') ?? '',
-    professorName: blankToNull(str(dto, 'professorName')),
+    title: stringField(dto, 'title') ?? '',
+    professorName: blankToNull(stringField(dto, 'professorName')),
     status: oneOf(ASSESSMENT_STATUSES, dto.status),
     state: oneOf(STUDENT_STATES, dto.state),
-    dueAt: str(dto, 'dueAt'),
+    dueAt: stringField(dto, 'dueAt'),
     totalMarks: count(dto.totalMarks),
   };
 }
@@ -120,8 +120,8 @@ export function toStudentAssessmentDetail(dto: Dto): StudentAssessmentDetail {
   const limits = dto.uploadLimits;
   return {
     ...toBase(dto),
-    instructions: blankToNull(str(dto, 'instructions')),
-    serverTime: str(dto, 'serverTime'),
+    instructions: blankToNull(stringField(dto, 'instructions')),
+    serverTime: stringField(dto, 'serverTime'),
     uploadLimits: {
       maxFileMb: toNumber(limits?.maxFileMb) ?? DEFAULT_UPLOAD_LIMITS.maxFileMb,
       maxPages: toNumber(limits?.maxPages) ?? DEFAULT_UPLOAD_LIMITS.maxPages,

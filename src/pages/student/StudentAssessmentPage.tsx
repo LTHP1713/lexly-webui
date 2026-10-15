@@ -77,7 +77,7 @@ export function StudentAssessmentPage() {
   );
 }
 
-/** Patches one question's answer into the cached detail, and refreshes the list and the detail. */
+/** Patches one question's answer into the cached detail (no refetch needed) and refreshes the lists; `refetch` reloads both. */
 function useAnswerCache(assessmentId: string) {
   const client = useQueryClient();
   return useMemo(
@@ -87,7 +87,7 @@ function useAnswerCache(assessmentId: string) {
           queryKeys.studentAssessments.detail(assessmentId),
           (old) => old && { ...old, questions: old.questions.map((q) => (q.id === questionId ? { ...q, answer } : q)) },
         );
-        void client.invalidateQueries({ queryKey: queryKeys.studentAssessments.all });
+        void client.invalidateQueries({ queryKey: queryKeys.studentAssessments.lists });
       },
       refetch() {
         void client.invalidateQueries({ queryKey: queryKeys.studentAssessments.all });
@@ -202,8 +202,7 @@ function AnswerCard({
   function showError(err: unknown) {
     if (hasCode(err, 'ABORTED')) return;
     if (hasCode(err, 'INVALID_FILE')) {
-      const reason = parseServerErrors(err.message).file ?? err.message;
-      setFileError(`This PDF can't be used: ${reason}`);
+      setFileError(invalidFileMessage(err.message));
       return;
     }
     if (err instanceof ApiError && err.code === 'VALIDATION_ERROR') {
@@ -285,7 +284,7 @@ function AnswerCard({
       <p className={localStyles.questionText}>{question.text}</p>
 
       <div className={localStyles.answerArea} aria-busy={busy || undefined}>
-        {!open && answer?.status !== 'SUBMITTED' ? (
+        {!open && answer?.status !== 'SUBMITTED' && !upload ? (
           <p className={localStyles.muted}>
             {answer
               ? "This answer was uploaded but not submitted before the due date, so it doesn't count."
@@ -394,6 +393,17 @@ function AnswerCard({
       )}
     </article>
   );
+}
+
+/**
+ * The server names the §0.6 check that failed (`file: must have at most 10 pages`). Its reason is
+ * kept in its own words after "it"; anything else gets a generic line, never raw server text.
+ */
+function invalidFileMessage(message: string): string {
+  const match = /^file: (must .+|is .+)$/.exec(message.trim());
+  return match
+    ? `This PDF can't be used: it ${match[1].replace(/\.$/, '')}.`
+    : "This PDF can't be used. Check it opens, then choose it again.";
 }
 
 function AnswerBadge({ answer, open }: { answer: Answer | null; open: boolean }) {

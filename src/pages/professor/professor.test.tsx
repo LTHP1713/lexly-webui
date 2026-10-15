@@ -91,7 +91,7 @@ describe('draft editor and publish (F3.2, F3.3)', () => {
     await ui.click(screen.getByRole('button', { name: 'Publish…' }));
 
     expect(screen.getByText(/Fix these \d things first:/)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Due date: The due date is set and in the future.' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Due date: Set a due date.' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Question 1 · Question: Question 1 needs its text, max marks and a word limit.' })).toBeInTheDocument();
     expect(calls).toBe(0);
   });
@@ -174,6 +174,41 @@ describe('draft editor and publish (F3.2, F3.3)', () => {
     await userEvent.setup().click(screen.getByRole('button', { name: 'Save draft' }));
     expect(await screen.findByText(/has been published or removed, so it can.t be edited any more/)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Open assessment' })).toHaveAttribute('href', '/professor/assessments/a1');
+  });
+});
+
+describe('failed background refreshes (review fixes)', () => {
+  it('keeps the editor and what was typed when the refresh after a save fails', async () => {
+    let subjectCalls = 0;
+    server.use(
+      http.get(`${API}/college/subjects`, () => {
+        subjectCalls += 1;
+        return subjectCalls === 1 ? json([subjectDto]) : apiError(500, 'INTERNAL_ERROR');
+      }),
+      http.get(`${API}/professor/assessments/a1`, () => json(assessment({ status: 'DRAFT' }))),
+      http.put(`${API}/professor/assessments/a1`, () => json(assessment({ status: 'DRAFT' }))),
+      http.get(`${API}/professor/assessments`, () => json(page([]))),
+    );
+    await renderApp('/professor/assessments/a1/edit');
+    await screen.findByRole('heading', { level: 1, name: 'Edit draft' });
+    const ui = userEvent.setup();
+    await ui.click(screen.getByRole('button', { name: 'Save draft' }));
+    expect(await screen.findByText('Draft saved.')).toBeInTheDocument();
+    await ui.type(screen.getByLabelText(/^Title/), ' (v2)');
+    await waitFor(() => expect(subjectCalls).toBeGreaterThan(1));
+    expect(screen.getByRole('heading', { level: 1, name: 'Edit draft' })).toBeInTheDocument();
+    expect(screen.getByLabelText(/^Title/)).toHaveValue('Moot problem (v2)');
+  });
+
+  it('says so when the subject filter cannot load, with Try again', async () => {
+    server.use(
+      http.get(`${API}/college/subjects`, () => apiError(500, 'INTERNAL_ERROR')),
+      http.get(`${API}/professor/assessments`, () => json(page([assessment()]))),
+    );
+    await renderApp('/professor');
+    expect(await screen.findByText(/Subjects couldn.t be loaded\./)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Moot problem' })).toBeInTheDocument();
   });
 });
 

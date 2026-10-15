@@ -1240,3 +1240,20 @@ ul.chips {
 .dateTimeInput {
   max-width: 16rem;
 }
+
+/* A button that reads as a link inside a sentence (e.g. "Try again" after an inline error). */
+.linkButton {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--lx-navy);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.linkButton:focus-visible {
+  outline: 3px solid var(--lx-navy);
+  outline-offset: 2px;
+}

@@ -110,6 +110,14 @@ export function ProfessorAssessmentsPage() {
                 </option>
               ))}
           </select>
+          {subjects.status === 'error' && (
+            <span className={styles.fieldError} role="alert">
+              Subjects couldn&rsquo;t be loaded.{' '}
+              <button type="button" className={styles.linkButton} onClick={subjects.retry}>
+                Try again
+              </button>
+            </span>
+          )}
         </div>
         <div className={styles.field}>
           <label htmlFor="assessment-status" className={styles.label}>

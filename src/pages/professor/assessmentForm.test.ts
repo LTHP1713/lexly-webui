@@ -83,15 +83,15 @@ describe('publishChecklist', () => {
     const errors = publishErrors(publishChecklist(complete({ subjectId: 's9', title: '', dueAt: PAST }), NOW, ['s1']));
     expect(errors).toEqual({
       subjectId: 'Choose a subject you teach.',
-      title: 'The title is filled in.',
+      title: 'Add a title.',
       dueAt: 'The due date must be in the future.',
     });
   });
 
   it('fails a missing due date and an empty question list', () => {
     const errors = publishErrors(publishChecklist(complete({ dueAt: '', questions: [] }), NOW, ['s1']));
-    expect(errors.dueAt).toBe('The due date is set and in the future.');
-    expect(errors.questions).toBe('There are 1–50 questions.');
+    expect(errors.dueAt).toBe('Set a due date.');
+    expect(errors.questions).toBe('Add at least one question.');
   });
 
   it('has one line per incomplete question, linked to its first missing field', () => {
@@ -111,7 +111,7 @@ describe('publishChecklist', () => {
 
   it('fails more than 50 questions', () => {
     const questions = Array.from({ length: 51 }, () => complete().questions[0]);
-    expect(publishErrors(publishChecklist(complete({ questions }), NOW, ['s1'])).questions).toBe('There are 1–50 questions.');
+    expect(publishErrors(publishChecklist(complete({ questions }), NOW, ['s1'])).questions).toBe('Remove questions: at most 50.');
   });
 });
 

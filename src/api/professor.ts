@@ -12,6 +12,7 @@ import {
   blankToNull,
   count,
   oneOf,
+  stringField,
   toNumber,
   toSubjectRef,
   type AssessmentStatus,
@@ -105,7 +106,7 @@ function toQuestion(dto: Partial<AssessmentQuestion>, index: number): Assessment
 }
 
 export function toAssessmentSummary(dto: Dto): AssessmentSummary {
-  const str = (key: string) => (typeof dto[key] === 'string' ? (dto[key] as string) : null);
+  const str = (key: string) => stringField(dto, key);
   const questions = Array.isArray(dto.questions) ? dto.questions : null;
   return {
     id: str('id') ?? '',
@@ -128,7 +129,7 @@ export function toAssessmentSummary(dto: Dto): AssessmentSummary {
 export function toAssessmentDetail(dto: Dto): AssessmentDetail {
   return {
     ...toAssessmentSummary(dto),
-    instructions: blankToNull(typeof dto.instructions === 'string' ? dto.instructions : null),
+    instructions: blankToNull(stringField(dto, 'instructions')),
     questions: (dto.questions ?? []).map(toQuestion),
   };
 }

@@ -147,24 +147,28 @@ function joinList(items: string[]): string {
 /** The "Before you publish" lines (UI spec F3.3). `subjectIds` are the professor's subjects. */
 export function publishChecklist(form: AssessmentForm, now: number, subjectIds: readonly string[]): CheckItem[] {
   const due = fromDateTimeLocal(form.dueAt);
+  const subjectOk = Boolean(form.subjectId) && subjectIds.includes(form.subjectId);
+  const dueOk = due !== null && new Date(due).getTime() > now;
+  const count = form.questions.length;
+  // A passing line says what is done; a failing one says what to do.
   const items: CheckItem[] = [
     {
       id: 'subject',
-      ok: Boolean(form.subjectId) && subjectIds.includes(form.subjectId),
-      text: form.subjectId && !subjectIds.includes(form.subjectId) ? 'Choose a subject you teach.' : 'A subject you teach is chosen.',
+      ok: subjectOk,
+      text: subjectOk ? 'A subject you teach is chosen.' : form.subjectId ? 'Choose a subject you teach.' : 'Choose a subject.',
       path: 'subjectId',
     },
-    { id: 'title', ok: Boolean(form.title.trim()), text: 'The title is filled in.', path: 'title' },
+    { id: 'title', ok: Boolean(form.title.trim()), text: form.title.trim() ? 'The title is filled in.' : 'Add a title.', path: 'title' },
     {
       id: 'due',
-      ok: due !== null && new Date(due).getTime() > now,
-      text: due !== null && new Date(due).getTime() <= now ? 'The due date must be in the future.' : 'The due date is set and in the future.',
+      ok: dueOk,
+      text: dueOk ? 'The due date is set and in the future.' : due === null ? 'Set a due date.' : 'The due date must be in the future.',
       path: 'dueAt',
     },
     {
       id: 'count',
-      ok: form.questions.length >= 1 && form.questions.length <= ASSESSMENT_LIMITS.questions,
-      text: 'There are 1–50 questions.',
+      ok: count >= 1 && count <= ASSESSMENT_LIMITS.questions,
+      text: count < 1 ? 'Add at least one question.' : count > ASSESSMENT_LIMITS.questions ? 'Remove questions: at most 50.' : 'There are 1–50 questions.',
       path: 'questions',
     },
   ];

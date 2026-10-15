@@ -63,12 +63,12 @@ export function ProfessorAssessmentDetailPage() {
           <ErrorState error={query.error} onRetry={query.retry} />
         </>
       )}
-      {assessment && <AssessmentDetailView assessment={assessment} onReload={query.retry} />}
+      {assessment && <AssessmentDetailView assessment={assessment} />}
     </>
   );
 }
 
-function AssessmentDetailView({ assessment, onReload }: { assessment: AssessmentDetail; onReload: () => void }) {
+function AssessmentDetailView({ assessment }: { assessment: AssessmentDetail }) {
   const navigate = useNavigate();
   const refresh = useRefreshAssessments();
   const now = useNow(0, assessment.dueAt);
@@ -83,7 +83,6 @@ function AssessmentDetailView({ assessment, onReload }: { assessment: Assessment
     if (hasCode(err, 'ASSESSMENT_NOT_EDITABLE')) {
       setBanner('This assessment changed in the meantime. It has been reloaded.');
       refresh();
-      onReload();
     } else {
       setBanner(errorMessage(err));
     }
