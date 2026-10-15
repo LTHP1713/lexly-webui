@@ -1,6 +1,6 @@
 # Lexly — UI Spec (web)
 
-**Status:** Draft, revised 2026-10-14. F0, F1 and F2 written and synced with backend Phases 0–2 (contract §1, §2, §5–§8 LIVE); F3–F8 not yet written.
+**Status:** Draft, revised 2026-10-15. F0–F3 written and synced with backend Phases 0–3 (contract §1, §2, §5–§9 LIVE); F4–F8 not yet written.
 **Audience:** frontend developers on `lexly-webui`, plus backend and design reviewers.
 **Companion docs:**
 - [`Lexly-Frontend-Implementation-Plan.md`](Lexly-Frontend-Implementation-Plan.md) says **which** screens each phase builds. Task IDs (F1.6 …) come from there.
@@ -22,7 +22,7 @@ No Figma file or reference designs exist yet. When they do, link them here and f
 | Area | Link | Notes |
 |---|---|---|
 | Visual language (palette, type, cards) | Built screens: `/dashboard`, `/sections/:id`, `/caselaws/:id`, `/admin/caselaws/:id/content` | Tokens in `src/index.css` (`--lx-*`) |
-| Student assessment and answer cards (F3.6) | — | Needed before F3 |
+| Student assessment and answer cards (F3.6) | — | None made; F3.6 below is the reference until a design exists |
 | Professor answer review (F4.1, F4.2) | — | Needed before F4 |
 
 ---
@@ -34,7 +34,8 @@ No Figma file or reference designs exist yet. When they do, link them here and f
 - [F0 — Clean-up & foundations](#f0--clean-up--foundations)
 - [F1 — Identity, roles, SUPERADMIN & content admin](#f1--identity-roles-superadmin--content-admin)
 - [F2 — College administration](#f2--college-administration)
-- [F3–F8 (not yet written)](#f3f8-not-yet-written)
+- [F3 — Assessments & answering](#f3--assessments--answering)
+- [F4–F8 (not yet written)](#f4f8-not-yet-written)
 - [Open questions](#open-questions)
 - [Changelog](#changelog)
 
@@ -124,6 +125,10 @@ This expands the plan's §3.6 catalogue with copy. Clients switch on `error`, ne
 | `SUBJECT_CODE_ALREADY_EXISTS` | Field `code` | Another subject at your college already uses this code. |
 | `IMPORT_FILE_INVALID` | Under the file input | This file can't be imported: {server message} |
 | `SUBJECT_IN_USE` | Delete dialog | See F2.7 |
+| `ASSESSMENT_NOT_EDITABLE` | Banner on the editor or detail, then reload | See F3.2, F3.4 |
+| `ASSESSMENT_CLOSED` | Answer card, after a refetch | The due date has passed, so this answer can't be changed. |
+| `ANSWER_LOCKED` | Answer card, after a refetch | This answer was already submitted. |
+| `INVALID_FILE` | Under the answer card's file input | This PDF can't be used: {server reason} |
 | `INTERNAL_ERROR`, other 5xx | Banner or `ErrorState` | Lexly is having trouble right now. Please try again in a moment. |
 | Anything else | Banner | Something went wrong. Please try again. |
 
@@ -156,14 +161,14 @@ These are the only roles. Backend P1 remapped the old `ADMIN` to `SUPERADMIN` an
 | F0 | Clean-up & foundations | **Written** | Solo practice placeholder (F0.1), Home (F0.1), Navigation and NotFound (F0.3) |
 | F1 | Identity, roles, SUPERADMIN & content admin | **Written** | Login (F1.1), Change password (F1.2), Role areas (F1.4), Profile (F1.5), Colleges (F1.6), Acts & sections admin (F1.7), Case-law linking (F1.8), Bulk import (F1.9), Audit log (F1.10) |
 | F2 | College administration | **Written** | Users list and detail (F2.2), Add/edit user (F2.3), Reset password (F2.4), Remove user (F2.5), Import users (F2.6), Subjects (F2.7), Read-only subjects (F2.8) |
-| F3 | Assessments & answering | Not yet | — |
+| F3 | Assessments & answering | **Written** | Professor list (F3.1), Draft editor (F3.2), Publish (F3.3), Delete/remove (F3.4), Student list (F3.5), Student assessment (F3.6), Upload (F3.7), Assessment detail and submissions grid (F3.8). F3.9 dropped (A9) |
 | F4 | Manual grading & student results | Not yet | — |
 | F5 | AI evaluation UI | Not yet | — |
 | F6 | Rankings & statistics | Not yet | — |
 | F7 | Solo AI practice | Not yet | — |
 | F8 | Payments & hardening | Not yet | — |
 
-F0.2, F0.4–F0.7, F1.3, F1.11, F2.1 and F2.9 have no screens of their own.
+F0.2, F0.4–F0.7, F1.3, F1.11, F2.1, F2.9 and F3.10 have no screens of their own.
 
 ---
 
@@ -385,7 +390,7 @@ Data: `GET /superadmin/colleges/{id}`. Template: Detail with tabs.
 
 When inactive, a notice under the header: "This college is inactive. Its users can't sign in."
 
-**Tabs** (URL `?tab=`): **Admins** (F1) · **Assessments** (F3.9) · **AI usage** (F5.5). Only tabs whose phase has shipped are shown. A link "Audit log for this college" → `/admin/audit?collegeId={id}`.
+**Tabs** (URL `?tab=`): **Admins** (F1) · **AI usage** (F5.5). (The Assessments tab, F3.9, was dropped on 2026-10-15: SUPERADMIN has no view of college assessments.) Only tabs whose phase has shipped are shown. A link "Audit log for this college" → `/admin/audit?collegeId={id}`.
 
 **Edit name (dialog):** one field, College name. Under the title: "Code {code} stays the same." Toast "College name updated."
 
@@ -748,7 +753,7 @@ Data: `GET /college/subjects/{id}`; `404` → `NotFound`. Breadcrumb "Subjects /
 
 ### F2.8 Read-only subjects
 
-No new routes; the role homes show them until F3 turns the subjects into assessment filters.
+No new routes; the role homes show them until F3 turns the subjects into assessment filters. **Replaced in F3:** the cards are gone and the subjects are the filter on `/professor` and `/student`.
 
 | Role | Where | Look |
 |---|---|---|
@@ -770,11 +775,210 @@ Since P2 the backend records the college actions. Summaries (F1.10 table) become
 
 ---
 
-## F3–F8 (not yet written)
+## F3 — Assessments & answering
+
+Contract: §0.6 (files), §0.8, §9. Professors see only their own assessments and students only their college's published and closed ones; anything else is a `404` and shows `NotFound` (contract §0.1). SUPERADMIN has no view of assessments or answers (A9 changed 2026-10-15), so F3.9 has no screen.
+
+### F3 shell changes
+
+| Item | Behaviour |
+|---|---|
+| C_PROFESSOR nav | **Assessments** (`/professor`, active on `/professor/**`) · **Library**. F6 adds Rankings |
+| C_STUDENT nav | **Assessments** (`/student`, active on `/student/**`) · **Library** |
+| Homes | `/professor` and `/student` become the assessment lists below. The F2.8 subject cards are replaced by the subject filter on those lists |
+| Layout | Wide for `/professor/**` (lists, grid). Reading column for every `/student/**` screen and for the draft editor's form column |
+| Data refresh | React Query. Any professor save, publish, delete or remove refreshes the assessment list and that assessment (detail, grid). A student upload or submit refreshes that assessment and the student list. Sign-out clears the cache |
+
+### Shared F3 components
+
+| Component | Behaviour |
+|---|---|
+| `AssessmentStatusBadge` | `DRAFT` "Draft" (neutral) · `PUBLISHED` "Published" (info) · `CLOSED` "Closed" (neutral) · `REMOVED` "Removed" (danger) |
+| `StudentStateBadge` | `OPEN` "Open" (info) · `PARTIALLY_SUBMITTED` "In progress" (warning) · `SUBMITTED` "All submitted" (success) · `CLOSED` "Closed" (neutral) · `RESULTS_AVAILABLE` "Results available" (success) |
+| `Deadline` | §0.4 deadline: "{instant} · in 3 days". The relative part uses the server-corrected clock (below): "in 3 days", "in 5 h 12 min" under 24 h, "in 12 min" under an hour, "in less than a minute". Under 24 h it uses the warning colour **and** says "Due soon" before it. After the due date: "{instant} · closed". No due date (drafts): "No due date yet" |
+| Server clock | `offset = serverTime − device time` when the student detail arrives; countdowns use `Date.now() + offset`. Lists without `serverTime` use the device clock. The countdown re-renders every 30 s (every second in the last minute) and stops when the tab is hidden |
+| `DateTimeField` | `<input type="datetime-local">` in the viewer's local time, hint "Your time zone: {IANA name} (GMT+5:30)". Sends ISO-8601 UTC; blank sends `null` |
+| `MarksInput` | Number input, `step="0.5"`, `min="0.5"`, `max="100"`, `inputmode="decimal"`. Client check: > 0, ≤ 100, a multiple of 0.5 ("Use whole or half marks, such as 7.5.") |
+| `PdfViewer` | A wide dialog ("{originalFilename}") with the PDF in an `<iframe>` on a blob object URL, loaded with `apiClient.download` (`no-store`). Under the frame: "If the PDF doesn't show, **download it**." (an `<a download>` on the same URL). The URL is revoked when the dialog closes. Loading: "Opening the PDF…"; failure: §0.6 copy + **Try again**; `404`: "This file is no longer available." |
+
+### F3.1 Professor assessments — `/professor`
+
+**Purpose:** find an assessment, see how far answering has got, start a new one. Data: `GET /professor/assessments?subjectId=&status=&page=&size=20` (default sort `dueAt,desc`, drafts without a due date first) and `GET /college/subjects` for the filter. Template: List, wide.
+
+Title row: eyebrow "Professor", H1 "Assessments", **New assessment** (primary → `/professor/assessments/new`; disabled with the hint "You need a subject first. Your college admin assigns them." when the professor has no subjects).
+
+**Filter bar** (URL `?subject=&status=&page=`): Subject (All subjects + "{code} · {name}" of the professor's subjects) · Status (All · Draft · Published · Closed · Removed).
+
+| Column | Field | Notes |
+|---|---|---|
+| Assessment | `title`, `subject.code` + `subject.name` below (muted) | Links to the detail (drafts link to the editor) |
+| Due | `dueAt` | `Deadline`; "No due date yet" for a draft without one |
+| Status | `status` | `AssessmentStatusBadge` |
+| Questions | `questionCount`, "{totalMarks} marks" below | |
+| Submitted | `counts.submitted` of `counts.answerSlots` | "—" for drafts. Header has a hint: "Answers submitted, out of students × questions" |
+| Not attempted | `counts.notAttempted` | Shown once `CLOSED` or `REMOVED`, else "—" |
+
+The grading counts (pending evaluation, AI evaluated, published) are `0` until backend P4; F4/F5 add their columns.
+
+**Phone cards:** title + status badge; "{code} · {name}"; deadline; "{submitted} of {slots} submitted" (not for drafts).
+
+| State | Copy |
+|---|---|
+| Empty | "No assessments yet. Create one for a subject you teach; students see it once you publish it." + **New assessment** |
+| Empty, no subjects | "You haven't been assigned any subjects yet. Your college admin assigns them, and then you can create assessments." |
+| No matches | "No assessments match these filters." + **Clear filters** |
+| Count line | "{n} assessments" (`aria-live="polite"`) |
+
+### F3.2 Draft editor — `/professor/assessments/new` and `/professor/assessments/:id/edit`
+
+**Purpose:** write an assessment, save it as a draft as often as needed, then publish it. Data: `GET /professor/assessments/{id}` (edit), `POST /professor/assessments` (first save), `PUT /professor/assessments/{id}` (full replace), `GET /college/subjects` (the professor's subjects). Template: Form with a side checklist from 1024 px (below it, above the save bar, on smaller screens).
+
+Opening `/edit` for an assessment that isn't a `DRAFT` goes to its detail. `404` → `NotFound`.
+
+Breadcrumb "Assessments / {title or "New assessment"}"; H1 "New assessment" or "Edit draft"; status badge "Draft" once saved; "Last saved {updatedAt}" (relative).
+
+**Details group**
+
+| Field | Label | Details |
+|---|---|---|
+| `subjectId` | Subject | Required. `<select>` of the professor's subjects ("{code} · {name}"). A draft whose subject is no longer mapped shows it as "{code} · {name} (no longer yours)" and the checklist fails |
+| `title` | Title | Required, ≤ 255, counter |
+| `instructions` | Instructions for students | Optional, ≤ 10,000, counter, textarea (6 rows). Hint "Shown above the questions. Line breaks are kept." |
+| `dueAt` | Due date and time | `DateTimeField`. Hint adds: "Students can upload and submit until then. It can't be changed after publishing." Optional for a draft |
+
+**Questions** (`RepeatableList`, item label "Question", max 50; a new assessment starts with one empty question). Each row:
+
+| Field | Label | Details |
+|---|---|---|
+| `text` | Question | Textarea (4 rows), ≤ 10,000, counter |
+| `maxMarks` | Max marks | `MarksInput` |
+| `wordLimit` | Word limit | Number, whole, 1–10,000 ("Enter a whole number from 1 to 10,000.") |
+
+Row ids from the server are sent back with each row (`id`), so a save keeps them; new rows send `id: null`. Under the list: **Total: {sum} marks** (`aria-live="polite"`; questions without marks are left out of the sum).
+
+**Save bar** (sticky on phones): **Save draft** (secondary, "Saving…") · **Publish…** (primary). Draft save runs only the shape checks above (required title and subject, lengths, marks/word-limit ranges), so a half-written draft can be saved. The first save of a new assessment replaces the URL with `/professor/assessments/{id}/edit` and toasts "Draft saved."; later saves toast "Draft saved." Unsaved-changes guard on.
+
+**Errors on save**
+
+| Error | Where | Copy |
+|---|---|---|
+| Client checks / `VALIDATION_ERROR` paths (`title`, `subjectId`, `dueAt`, `instructions`, `questions`, `questions[i].text`, `questions[i].maxMarks`, `questions[i].wordLimit`) | Field or row, plus the error summary | Server reason; client copy as above, "{Label} is required." |
+| `NOT_FOUND` on `subjectId` (subject not mapped) | Field `subjectId` | This subject is no longer one of yours. Choose another. |
+| `ASSESSMENT_NOT_EDITABLE` | Banner, with **Open assessment** | This assessment has been published or removed, so it can't be edited any more. |
+| `NOT_FOUND` (assessment gone) | Banner | §0.6 "This item no longer exists." |
+
+### F3.3 Publish (checklist and confirm)
+
+**Checklist** card "Before you publish", live while editing. Each line is a ✓ / ✗ icon **and** text; failing lines link to their field:
+
+1. A subject you teach is chosen.
+2. The title is filled in.
+3. The due date is set and in the future.
+4. There are 1–50 questions.
+5. Every question has its text, max marks and word limit (failing: "Question 3 needs max marks and a word limit.", one line per question).
+
+**Publish…** with any line failing: no request; the error summary lists the failing lines (each linking to its field) and focus moves to it. All passing: the form is saved first if it is dirty (or new), then the confirm opens:
+
+- Title: Publish "{title}"?
+- Body: "Students at your college can see it and upload answers until {dueAt, §0.4}. Once published, nothing can be edited and the due date can't be extended." + "{n} questions · {totalMarks} marks."
+- Buttons: **Cancel** · **Publish** ("Publishing…"). Success → the detail, toast "Assessment published."
+- `VALIDATION_ERROR` from publish (e.g. the due date passed while the dialog was open, a subject unmapped meanwhile): the dialog closes and the paths go onto the fields and the summary as on save. `ASSESSMENT_NOT_EDITABLE`: banner as on save.
+
+### F3.4 Delete a draft / remove an assessment
+
+| Action | Shown when | Dialog | Success |
+|---|---|---|---|
+| **Delete draft** | `DRAFT` (editor and detail) | Title "Delete this draft?"; body ""{title}" and its questions are deleted. This can't be undone."; **Cancel** · **Delete draft** (destructive, "Deleting…") | → `/professor`, toast "Draft deleted." |
+| **Remove** | `PUBLISHED`, `CLOSED` (detail) | Title "Remove "{title}"?"; body "Students won't see it any more, and it is left out of rankings. Answers that were uploaded but not submitted are deleted; submitted answers are kept. This can't be undone."; **Cancel** · **Remove assessment** (destructive, "Removing…") | Stays on the detail (now `REMOVED`), toast "Assessment removed." |
+
+`ASSESSMENT_NOT_EDITABLE` on either: banner "This assessment changed in the meantime. It has been reloaded." and the detail refetches.
+
+### F3.8 Assessment detail and submissions grid — `/professor/assessments/:id`
+
+**Purpose:** see the assessment as published and who has answered what. Data: `GET /professor/assessments/{id}`, `GET /professor/assessments/{id}/answers?questionId=&status=&q=&page=&size=50` (not for drafts). Template: Detail, wide.
+
+Breadcrumb "Assessments / {title}". Header: H1 `title`; facts: `AssessmentStatusBadge`, subject chip "{code}" + name, `Deadline`, "{n} questions · {totalMarks} marks", "By {createdBy.fullName}" ("Former professor" when `null`). Actions: `DRAFT` **Edit draft** · **Delete draft**; `PUBLISHED`/`CLOSED` **Remove**; `REMOVED` none, and a notice "Removed {removedAt}. Students no longer see this assessment."
+
+**Stat tiles** (not for drafts): Students (`counts.students`) · Submitted ("{submitted} of {answerSlots}") · Not attempted (`counts.notAttempted`, "—" while `PUBLISHED`).
+
+**Questions** card: an ordered list, each "Question {position} · {maxMarks} marks · up to {wordLimit} words" then the text (line breaks kept). Drafts show the same with "Not set" for missing values, and an empty draft says "No questions yet." Instructions, when present, sit above it.
+
+**Submissions** (not for drafts):
+- Filters: Question (All questions · Question 1 … n) · Status (Any · Submitted · Uploaded, not submitted · Not uploaded · Not attempted; `NOT_ATTEMPTED` only once closed or removed) · search "Search by student name or roll no" (debounced 300 ms). Question, status and page are in the URL (`?question=&status=&page=`); the search text is **not** (it can hold a student's name or roll no, §9 rule 3) and lives in component state.
+- **Grid** (from 768 px): caption "Submissions"; sticky header row and sticky first column (student name, roll no below in monospace); one column per question ("Q{position}"), or only the filtered one. Each cell is an icon + text: ✓ "Submitted" (success, with `submittedAt` in the `title`), ◐ "Uploaded" (warning; the student hasn't submitted it), ○ "Not uploaded" (muted), ✕ "Not attempted" (danger). The grid scrolls sideways inside its wrapper. In F4 a submitted cell becomes a link to the answer review.
+- **Phones:** one card per student: name, roll no, then "Q1 Submitted · Q2 Uploaded · …" as a wrapped list of icon + text chips.
+- Pagination by student (50 per page); count line "{n} students" (`aria-live="polite"`).
+- Empty: "No students at your college yet." No matches: "No students match these filters." + **Clear filters**.
+
+### F3.5 Student assessments — `/student`
+
+**Purpose:** see what is due and what is done. Data: `GET /student/assessments?subjectId=&page=&size=50` (server order: open ones by due date ascending, then the rest by due date descending) and `GET /college/subjects` for the filter. Template: List, reading column, phone-first.
+
+H1 "Assessments" (eyebrow: college name). Filter: Subject (All subjects + the college's subjects; URL `?subject=`).
+
+The page's items are shown in three groups, keeping the server order inside each (a group with no items is left out):
+
+| Group heading | States |
+|---|---|
+| To do | `OPEN`, `PARTIALLY_SUBMITTED` |
+| Submitted | `SUBMITTED` |
+| Closed | `CLOSED`, `RESULTS_AVAILABLE` |
+
+**Card** (a link to the detail): subject "{code} · {name}"; title; `StudentStateBadge`; `Deadline` (warning style under 24 h); progress "{submitted} of {questionCount} submitted" plus "· {uploaded} uploaded, not submitted" when > 0; "{totalMarks} marks"; professor name ("Former professor" when `null`).
+
+| State | Copy |
+|---|---|
+| Empty | "No assessments yet. When your professors publish one, it appears here." |
+| No matches | "No assessments for this subject yet." + **Show all subjects** |
+
+### F3.6 Student assessment — `/student/assessments/:id`
+
+**Purpose:** read the questions and upload and submit one PDF answer per question. Data: `GET /student/assessments/{id}`. Template: Detail, reading column, phone-first. `404` → `NotFound`.
+
+Breadcrumb "Assessments / {title}". Header: subject "{code} · {name}"; H1 `title`; `StudentStateBadge`; `Deadline` with the corrected clock; "{n} questions · {totalMarks} marks"; professor; progress line "{submitted} of {n} answers submitted" (`aria-live="polite"`).
+
+Instructions (line breaks kept) under the heading "Instructions", when present. Then a notice while the assessment is open: "Upload one PDF per question: at most {maxFileMb} MB and {maxPages} pages. You can replace an upload until you submit it. Submitted answers can't be changed." (from `uploadLimits`).
+
+**Open** means `status = PUBLISHED` and corrected now < `dueAt`. When the countdown reaches the due date, the page switches to closed at once and refetches.
+
+**Answer card** per question, in `position` order: heading "Question {position}"; "{maxMarks} marks · up to {wordLimit} words"; the question text (line breaks kept); then the answer area:
+
+| `answer` | Open | Closed (due date passed, or `CLOSED`) |
+|---|---|---|
+| `null` | Badge "Not uploaded" (neutral). `FileDropzone` (`accept="application/pdf,.pdf"`, prompt "Choose a PDF, or drop it here") | Badge "Not attempted" (danger). "Nothing was submitted for this question before the due date." |
+| `UPLOADED` | Badge "Uploaded, not submitted" (warning). File line: "{originalFilename} · {size} · {pageCount} pages · uploaded {uploadedAt}". **View** · **Replace** · **Submit answer** (primary) | Badge "Not attempted" (danger). "This answer was uploaded but not submitted before the due date, so it doesn't count." No actions |
+| `SUBMITTED` | Badge "Submitted" (success). File line with "submitted {submittedAt}". **View**. "Submitted answers can't be changed." | Same as open |
+
+- **Upload** (F3.7): choosing a file (dropzone or **Replace**) checks it first: a PDF by type or `.pdf` name ("Choose a PDF file."), not empty ("This file is empty."), ≤ `maxFileMb` ("This file is larger than {maxFileMb} MB. Scan fewer pages or at a lower resolution."), starts with `%PDF-` ("This file isn't a readable PDF."). The page count is checked only by the server. Then it uploads at once with `PUT …/answer` via `apiClient.upload`: a labelled `<progress>` "Uploading {name}… {n}%" and **Cancel** (aborts; nothing changes). Other cards stay usable. Success → the card shows the new upload, toast "Answer uploaded. Submit it when you're ready."
+- **Submit answer**: confirm. Title "Submit your answer to question {position}?"; body "You can't change this answer after submitting." + the file line; **Cancel** · **Submit answer** ("Submitting…"). Success → toast "Answer submitted." When this was the last one: "All answers submitted."
+- **View**: `PdfViewer` on `GET /student/questions/{qid}/answer/file`.
+- `resultPublished` is unused until F4.
+
+**Errors on a card** (shown in the card, `role="alert"`, next to its controls)
+
+| Error | Behaviour and copy |
+|---|---|
+| `INVALID_FILE` | Under the dropzone: the server's reason for `file` (e.g. "Must have at most 10 pages.") after "This PDF can't be used: " |
+| `VALIDATION_ERROR` on `file` (over the 10 MB multipart ceiling) | "This file is larger than {maxFileMb} MB. Scan fewer pages or at a lower resolution." |
+| `ASSESSMENT_CLOSED` | Refetch; the page is now closed. Card message: "The due date has passed, so this answer can't be changed." |
+| `ANSWER_LOCKED` | Refetch; the card shows Submitted. Message: "This answer was already submitted." |
+| `VALIDATION_ERROR` on `answer` (submit with nothing uploaded) | Refetch. Message: "Upload a PDF before submitting." |
+| `NOT_FOUND` | Refetch; the assessment was removed, so the page becomes `NotFound` |
+| `ABORTED` | No message |
+| `NETWORK_ERROR`, 5xx, `RATE_LIMITED` | §0.6 copy in the card; the file can be chosen again |
+
+### F3 audit summaries
+
+| `action` | Summary |
+|---|---|
+| `ASSESSMENT_PUBLISHED` | `details.subjectCode` · `details.title`, then "{questionCount} questions, due {dueAt}" |
+| `ASSESSMENT_REMOVED` | `details.subjectCode` · `details.title` |
+
+---
+
+## F4–F8 (not yet written)
 
 Each stub lists what the section must cover. Task IDs are the plan's.
-
-**F3 — Assessments & answering** (contract §9): F3.1 professor list · F3.2 draft editor · F3.3 publish checklist and confirm · F3.4 delete/remove · F3.5 student list by state · **F3.6 student assessment with per-question answer cards** (every `answer.status` × assessment state; countdown corrected with `serverTime`; `INVALID_FILE`, `ANSWER_LOCKED`, `ASSESSMENT_CLOSED`) · F3.7 upload with progress · F3.8 submissions grid · F3.9 SUPERADMIN read-only tab.
 
 **F4 — Manual grading & results** (contract §10): **F4.1/F4.2 professor answer review and grade panel** (PDF, marks, feedback, save draft, approve & publish, `INVALID_MARKS`, `GRADE_PUBLISHED`) · F4.3 previous / next / next ungraded · F4.4 grade history (always returned) · F4.6 student results per `outcome`.
 
@@ -807,3 +1011,4 @@ Each stub lists what the section must cover. Task IDs are the plan's.
 | 2026-10-13 | Aligned with `Lexly-Frontend-Implementation-Plan.md`: plan task IDs; plan routes (`/admin/**`, `/student`, `/admin/audit`, `/college/audit`); role nav with Library; `/practice` kept as a placeholder; Home cards hidden, not deleted; bulk import moved to F1.9; college detail tabs; error copy from plan §3.6. Added F0.3 navigation and NotFound, F1.7 acts and sections admin, F1.8 case-law linking |
 | 2026-10-13 | Synced with backend Phase 0 and Phase 1: no legacy role mapping; P1 endpoints marked LIVE (Edit act and the section editor load the admin GETs); change-password server messages; bulk-import `400` cases and the unknown-act case; audit summaries match the recorded `details`; `RATE_LIMITED` raised only from P8; U3 and U4 closed |
 | 2026-10-14 | F2 written against backend Phase 2 (contract §8 LIVE): C_ADMIN nav and hub, users list/detail and dialogs, user import with `FileDropzone` and `CONVERTED`, subjects and professor mapping, read-only subjects on the professor and student homes, F2 error copy in §0.6, audit summaries for the P2 `details` |
+| 2026-10-15 | F3 written against backend Phase 3 (contract §9 LIVE): professor list, draft editor with the publish checklist, delete/remove, assessment detail and submissions grid, student list and the answer cards with upload, submit and `PdfViewer`; F3 error copy in §0.6; F2.8 cards replaced by subject filters. F3.9 and the college Assessments tab dropped (A9 changed) |
