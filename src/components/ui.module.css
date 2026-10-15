@@ -992,6 +992,11 @@ a.cellTitle:hover {
   margin: 0 0 0.75rem;
 }
 
+ul.chips {
+  padding: 0;
+  list-style: none;
+}
+
 .chip {
   min-height: 2.25rem;
   padding: 0.2rem 0.8rem;
@@ -1216,4 +1221,39 @@ a.cellTitle:hover {
   margin: 0;
   color: #1f5136;
   font-weight: 700;
+}
+
+/* Plain text from the backend with its line breaks kept (descriptions) */
+
+.preLine {
+  margin: 0;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+/* F3: number and date-time inputs keep a sensible width */
+
+.numberInput {
+  max-width: 10rem;
+}
+
+.dateTimeInput {
+  max-width: 16rem;
+}
+
+/* A button that reads as a link inside a sentence (e.g. "Try again" after an inline error). */
+.linkButton {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--lx-navy);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.linkButton:focus-visible {
+  outline: 3px solid var(--lx-navy);
+  outline-offset: 2px;
 }

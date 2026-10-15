@@ -36,6 +36,41 @@ describe('auditSummary (UI spec F1.10)', () => {
     ).toBe('Sections: 2 created, 3 rejected, 0 failed of 5');
   });
 
+  it('summarises what P2 records for college users and subjects', () => {
+    expect(auditSummary(event({ action: 'USER_CREATED', details: { loginId: '21BAL042', role: 'C_STUDENT' } }))).toBe(
+      '21BAL042 · Student',
+    );
+    expect(auditSummary(event({ action: 'USER_REMOVED', details: { loginId: 'EMP7', role: 'C_PROFESSOR' } }))).toBe(
+      'EMP7 · Professor',
+    );
+    expect(auditSummary(event({ action: 'PASSWORD_RESET', details: { role: 'C_PROFESSOR', loginId: 'EMP7' } }))).toBe(
+      'Professor account · EMP7',
+    );
+    expect(
+      auditSummary(
+        event({
+          action: 'USER_IMPORT',
+          details: { kind: 'STUDENTS', total: 5, created: 2, converted: 1, rejected: 1, failed: 1 },
+        }),
+      ),
+    ).toBe('Students: 2 created, 1 converted, 1 rejected, 1 failed of 5');
+    expect(auditSummary(event({ action: 'SUBJECT_CREATED', details: { code: 'CON-101', name: 'Constitutional Law I' } }))).toBe(
+      'CON-101 · Constitutional Law I',
+    );
+    expect(
+      auditSummary(event({ action: 'SUBJECT_PROFESSORS_CHANGED', details: { code: 'CON-101', professorIds: ['a', 'b'] } })),
+    ).toBe('CON-101 · 2 professors');
+  });
+
+  it('summarises F3 assessment events', () => {
+    const details = { subjectCode: 'CON-101', title: 'Moot problem', questionCount: 10, dueAt: '2026-11-02T12:00:00Z' };
+    expect(auditSummary(event({ action: 'ASSESSMENT_PUBLISHED', details }))).toMatch(
+      /^CON-101 · Moot problem · 10 questions, due \d+ Nov 2026/,
+    );
+    expect(auditSummary(event({ action: 'ASSESSMENT_REMOVED', details }))).toBe('CON-101 · Moot problem');
+    expect(auditSummary(event({ action: 'ASSESSMENT_REMOVED', details: {} }))).toBe('—');
+  });
+
   it('shows a dash for missing fields and unknown actions', () => {
     expect(auditSummary(event({ action: 'PASSWORD_RESET' }))).toBe('—');
     expect(auditSummary(event({ action: 'SOMETHING_NEW' }))).toBe('—');

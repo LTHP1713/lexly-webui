@@ -69,3 +69,16 @@ export function startOfLocalDay(value: string, addDays = 0): string | null {
   const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]) + addDays);
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
 }
+
+/** `845 B`, `12.4 KB`, `3.2 MB` (file sizes, base 1024). */
+export function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  const kb = bytes / 1024;
+  if (kb < 1024) return `${kb.toFixed(1).replace(/\.0$/, '')} KB`;
+  return `${(kb / 1024).toFixed(1).replace(/\.0$/, '')} MB`;
+}
+
+/** Marks with up to one decimal and no trailing `.0` (UI spec §0.4): `7.5`, `10`. */
+export function formatMarks(value: number): string {
+  return String(Math.round(value * 10) / 10);
+}

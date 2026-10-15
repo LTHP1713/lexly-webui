@@ -1,8 +1,8 @@
 # Lexly — Frontend Implementation Plan (lexly-webui)
 
-**Status:** Draft for review, revised 2026-10-13 (synced with backend Phase 0 and Phase 1)
+**Status:** Draft for review, revised 2026-10-16 (synced with backend Phases 0–3)
 **Frontend repo:** https://github.com/LTHP1713/lexly-webui (reviewed at commit `fab9df4` "bare act & case laws")
-**Backend state:** Phase 0 merged to `lexly-backend` `main` (`0545ab9`, PR #2). Phase 1 committed on `feature/phase1` (`ddac579`), not yet merged. The contract copy in this repo matches that commit.
+**Backend state (2026-10-15):** Phases 0–3 are merged to `lexly-backend` `main` (Phase 3: `75a7c08`, PR #4). The contract copy in this repo matches it. Frontend F0–F3 are Done (F3 verified against backend `main` on 2026-10-16).
 **Based on:** `Lexly-TDD.md` v2 (frozen 2026-10-12) and `Lexly-Implementation-Plan.md`. Request/response shapes: `Lexly-API-Contract.md`. Section references like §7.3 point to the TDD; "Phase 3" points to the backend plan.
 **Companion docs:** `Lexly-UI-Spec.md` (layout, states and copy per screen, written per phase) and `Lexly-Frontend-Status-Report.md` (what is built).
 **Supersedes:** `Lexly-Frontend-Development-Master-Doc.md` §3. Its prompts target the old subscription / MCQ-practice design. Its §4 (security) and §5 (progress SOP) still apply and are summarised in §9 and §10 below.
@@ -121,8 +121,7 @@ SUPERADMIN    /admin
               /admin/caselaws ✅  /admin/caselaws/new ✅  /admin/caselaws/:id ✅  /admin/caselaws/:id/content ✅
               /admin/acts  /admin/acts/:actId  /admin/sections/:sectionId   (content admin)
               /admin/import                                                (bulk JSON)
-              /admin/colleges  /admin/colleges/:id                         (admins, assessments, AI usage tabs)
-              /admin/colleges/:id/assessments/:assessmentId                (read-only, A9)
+              /admin/colleges  /admin/colleges/:id                         (admins, AI usage tabs)
               /admin/solo/subjects  /admin/solo/plans
               /admin/analytics?collegeId=  /admin/audit
 C_ADMIN       /college  /college/users  /college/users/import  /college/users/:id
@@ -198,12 +197,10 @@ VITE_API_BASE_URL=http://localhost:8080/api/v1
 VITE_API_USERS_ME=true            # remove the flag in F0: /users/me is required from now on
 VITE_API_UNIFIED_SEARCH=false     # not in TDD v2 (D3)
 VITE_API_LEARNING_PROGRESS=false  # not in TDD v2 (D3)
-VITE_MAX_UPLOAD_MB=               # only until Phase 3: the contract returns uploadLimits in the student assessment detail (B4)
-VITE_MAX_UPLOAD_PAGES=
 VITE_HOME_MOCKS=                  # dev only, unchanged
 ```
 
-Remove `VITE_API_PRACTICE_STATS`.
+Remove `VITE_API_PRACTICE_STATS`. There are no upload-limit variables: the student assessment detail returns `uploadLimits` (contract §9.3, B4).
 
 ### 3.9 Testing
 
@@ -226,8 +223,8 @@ Frontend phases mirror the backend phases. **F*n* starts once backend Phase *n*'
 |---|---|---|---|---|
 | F0 | Clean-up & foundations | current backend + Phase 0 | S | most groundwork done in `fab9df4`; backend P0 merged |
 | F1 | Identity, roles, SUPERADMIN & content admin | Phase 1 | L | case-law admin done; backend P1 committed (`feature/phase1`), contract §1, §2, §5–§7 LIVE |
-| F2 | College administration | Phase 2 | M | — |
-| F3 | Assessments & answering | Phase 3 | L | — |
+| F2 | College administration | Phase 2 | M | **Done** 2026-10-14 |
+| F3 | Assessments & answering | Phase 3 | L | **Done** 2026-10-16 against backend `main` (`75a7c08`); F3.9 dropped |
 | F4 | Manual grading & student results | Phase 4 | M | — |
 | F5 | AI evaluation UI | Phase 5 | S | — |
 | F6 | Rankings & statistics | Phase 6 | M | — |
@@ -308,7 +305,7 @@ F6 can run alongside F5, as on the backend.
 
 | # | Task | Details |
 |---|---|---|
-| F3.1 | Professor list | `/professor`, with filters for subject and status (`DRAFT / PUBLISHED / CLOSED / REMOVED`). Columns: title, subject, due date, status, and the §7.5 counts (submitted, pending evaluation, AI evaluated, published, not attempted) |
+| F3.1 | Professor list | `/professor`, with filters for subject and status (`DRAFT / PUBLISHED / CLOSED / REMOVED`). Columns: title, subject, due date, status, and the §7.5 counts. F3 shows submitted and not attempted; the grading counts are 0 until backend P4, so F4/F5 add pending evaluation, AI evaluated and published |
 | F3.2 | Draft editor | Subject (mapped only), title, instructions, due date (`DateTimeField`), and 1–50 questions in a `RepeatableList`, each with text, max marks (`MarksInput` > 0) and word limit (> 0). Running total of marks; unsaved-changes guard; explicit save |
 | F3.3 | Publish | A pre-flight checklist mirroring §6.1, each failure linked to its field. Confirm: "Once published, nothing can be edited and the due date can't be extended" |
 | F3.4 | Delete / remove | Drafts: delete. Published or closed: Remove, with a confirm explaining it disappears from students and rankings |
@@ -316,10 +313,10 @@ F6 can run alongside F5, as on the backend.
 | F3.6 | Student assessment | Instructions and due date, then one card per question showing text, max marks, word limit and the §6.2 state machine: **Not uploaded** → **Uploaded** (filename, size, time, View, Replace, **Submit**) → **Submitted** (locked, View). Submit confirm: "You can't change this answer after submitting." After the due date the cards are read-only, and an unsubmitted upload is explained as "Not attempted". The countdown uses `serverTime` from the detail response to correct the device clock |
 | F3.7 | Upload | `PUT /student/questions/{qid}/answer` via `apiClient.upload` with progress; client checks first, using `uploadLimits` from the assessment detail; `INVALID_FILE` inline; `ASSESSMENT_CLOSED` triggers a refetch. View your own file in `PdfViewer` |
 | F3.8 | Submissions grid | `/professor/assessments/:id`: questions plus a students × questions grid. Each cell is an icon + text status; filters for question and status; paged by student; sticky first column and header. A cell opens the answer review (F4) |
-| F3.9 | SUPERADMIN read-only | College detail gets an **Assessments** tab. The professor components are reused with actions hidden (A9) |
+| F3.9 | ~~SUPERADMIN read-only~~ | Dropped 2026-10-15: SUPERADMIN has no access to college assessments or answers (A9 changed, TDD §15; contract §9.6) |
 | F3.10 | Tests | Each answer-card transition and each 409; the publish checklist; countdown boundaries; another professor's assessment shows Not Found |
 
-**Backend asks:** B3, B4, B5, B6.
+**Backend asks:** B3, B4, B5, B6 (all met by backend P3).
 
 **Done when:** the backend Phase 3 scenario works in the browser. A 10-question assessment is published; a student uploads, replaces and submits 7 answers; after the due date the student sees 3 "Not attempted", and the professor's grid matches.
 
@@ -415,8 +412,8 @@ F6 can run alongside F5, as on the backend.
 | `RequireRole`, role nav config, `NotFound` | new | F0 |
 | `DataTable` + `Pagination` (URL filters) | new | F1 |
 | `ImportResultTable` | new | F1 |
-| `FileDropzone` + upload progress | new | F2 |
-| `StatusBadge`, `DateTimeField`, countdown, `MarksInput`, `PdfViewer` | new | F3 |
+| `FileDropzone` + upload progress | ✅ (F2, F3) | F2 |
+| `StatusBadge`, `DateTimeField`, `Deadline` countdown, `NumberField` (MarksInput), `PdfViewer` | ✅ (F1, F3) | F3 |
 | `AiSuggestion`, `AiFlagChips` | new | F5 |
 | `RankingTable`, `StatTile` | new | F6 |
 | `UsageMeter`, `PlanGate` | new | F7 |
@@ -431,8 +428,8 @@ Status as of the contract after backend Phase 1 (2026-10-13). "In contract" mean
 |---|---|---|---|
 | B1 | `GET /users/me` adds the college and `mustChangePassword` (it already has `role`) | F1 | **LIVE (P1).** Nested `college: { id, code, name }` (or `null`), plus `mustChangePassword` and `loginId` (contract §2.1) |
 | B2 | `POST /auth/change-password` returns a new access token and sets the rotated refresh cookie | F1 | **LIVE (P1).** Returns `{ accessToken, refreshToken, mustChangePassword }` and revokes every other refresh token (contract §1.5) |
-| B3 | CORS `exposedHeaders: Content-Disposition, Location`; production origin | F3 / F8 | `Content-Disposition` in contract §0.6 (P3). `Location` isn't mentioned; ask only if a screen needs it. Production origin open (D6) |
-| B4 | Upload limits exposed so the client checks match the server | F3 | In contract §9.3 (`uploadLimits`). Values still open (O4) |
+| B3 | CORS `exposedHeaders: Content-Disposition, Location`; production origin | F3 / F8 | **`Content-Disposition` LIVE (P3)**, contract §0.6. `Location` isn't mentioned; ask only if a screen needs it. Production origin open (D6) |
+| B4 | Upload limits exposed so the client checks match the server | F3 | **LIVE (P3).** `uploadLimits` in the student assessment detail (contract §9.3): 5 MB and 10 pages (O4, decided 2026-10-15) |
 | B5 | Agreed response shapes for the student assessment detail, professor grid, answer review (with history) and solo usage (with period end) | F3–F7 | In contract §9.3, §9.5, §10.1, §13.2 |
 | B6 | Every list endpoint returns `PagedResponse` with server-side filters | F2 / F3 | In contract §0.4 and §9.5 |
 | B7 | Confirm the HTTP status of each new error code in §3.6 | each phase | Registry in contract §0.8; still check live per phase. P1 codes LIVE: `PASSWORD_CHANGE_REQUIRED` 403, `COLLEGE_INACTIVE` 403, `COLLEGE_CODE_ALREADY_EXISTS` 409. `BULK_IMPORT_REJECTED` removed (P0). `RATE_LIMITED` moved to P8 |
@@ -448,7 +445,7 @@ Status as of the contract after backend Phase 1 (2026-10-13). "In contract" mean
 | D2 | Separate `lexly-webui` repo | Keep it. One SPA with per-role chunks |
 | D3 | Bare-Act Progress, Continue Learning and unified search (not in TDD v2) | Hide now; revisit after F8 |
 | D4 | Dark mode | Light-only until F8 |
-| D5 | Upload size and page limits | From backend Phase 3 |
+| D5 | Upload size and page limits | **Decided 2026-10-15 (backend P3):** 5 MB and 10 pages, read from `uploadLimits` |
 | D6 | Production domains | SPA and API same-site (e.g. `app.` + `api.` subdomains) or one origin behind a reverse proxy, so the `SameSite=Lax` refresh cookie keeps working |
 | D7 | CSV/XLSX templates | Approved with backend Phase 2 |
 | D8 | Payment gateway UX | From backend Phase 8 |

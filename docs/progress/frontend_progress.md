@@ -2,6 +2,143 @@
 
 ## Completed
 
+### 2026-10-16 — F3 Assessments & answering (F3.1–F3.8, F3.10; F3.9 dropped)
+
+**Status:** Done 2026-10-16. Backend Phase 3 is merged to `main` (`75a7c08`, PR #4); the
+contract copy here is identical to the backend's. Branch `feature/f3-assessments`. Lint (one
+pre-existing warning), `tsc -b`, the build and 176 unit tests pass.
+
+**Verified against the live backend** (`lexly-backend` `main` at `75a7c08`). The backend that
+was running was a pre-Phase-3 build (`No endpoint GET /api/v1/professor/assessments`, which is
+why the professor home showed an error), so I restarted it from `main`; Flyway applied V19.
+`e2e/f3-assessments.spec.ts` (5 tests, desktop) passes and covers the plan's "Done when": a
+10-question assessment is published (after the checklist blocked an incomplete one); a student
+uploads 8 answers, replaces one, views it, and submits 7; at the due date the page turns
+read-only by itself and shows 3 "Not attempted"; after the close job the professor sees
+"7 of 20" submitted, 13 not attempted, and Asha's grid row with 7 Submitted and 3 Not attempted;
+the student screens pass a phone check. The full suite: 36 passed, 24 skipped by design, 0 failed.
+
+What changed:
+- **API:** `api/assessments.ts` (shared types, mappers), `api/professor.ts` (§9.2, §9.5 grid),
+  `api/student.ts` (§9.3–9.4, upload via `apiClient.upload` with progress, `checkAnswerFile`:
+  PDF type/name, empty, `maxFileMb`, `%PDF-`). Four P3 error codes in `errors.ts`.
+- **Shared:** `AssessmentStatusBadge`, `StudentStateBadge`, `CellStatusLabel`
+  (`assessmentLabels.ts` holds the label maps), `Deadline` + `lib/deadline.ts` (`timeLeft`,
+  `clockOffset`, `useNow`: 30 s ticks, 1 s in the last minute, paused while hidden),
+  `NumberField` / `DateTimeField` (`lib/dateTimeLocal.ts`), `PdfViewer` (blob URL, revoked on
+  close), `formatMarks`.
+- **Professor:** `/professor` list (F3.1), `/professor/assessments/new` and `/:id/edit` editor
+  with the live "Before you publish" checklist, save-then-confirm publish, delete (F3.2–F3.4),
+  `/professor/assessments/:id` detail with stat tiles, questions, Remove, and the submissions
+  grid (sticky header/column, icon + text cells, question/status/page in the URL, search in
+  state only; cards on phones) (F3.8). Wide layout for `/professor/**`.
+- **Student:** `/student` grouped list (To do / Submitted / Closed, subject + page in the URL)
+  (F3.5); `/student/assessments/:id` answer cards with the §6.2 states, upload with progress +
+  Cancel, Replace, Submit confirm, View, each card error from the spec table, and the
+  server-corrected clock that turns the page read-only at the due date and refetches (F3.6–F3.7).
+- **Removed:** the F2.8 placeholder homes and `SubjectCards` (the spec replaces them with the
+  list filters), and their two unit tests; `e2e/f2-college.spec.ts` now checks the filters.
+- **Audit:** `ASSESSMENT_PUBLISHED` / `ASSESSMENT_REMOVED` summaries per the spec.
+- **Tests (F3.10):** `deadline.test.ts` (countdown boundaries, clock offset),
+  `assessmentForm.test.ts` (draft checks, checklist, body), `professor.test.tsx` (list, blocked
+  publish, save → confirm → publish, publish `VALIDATION_ERROR` on fields, `/edit` of a published
+  one, `ASSESSMENT_NOT_EDITABLE`, Not Found, grid + question filter, remove),
+  `student.test.tsx` (grouping, not uploaded → uploaded → submitted, non-PDF refused,
+  `INVALID_FILE`, `ANSWER_LOCKED`, `ASSESSMENT_CLOSED`, submit without upload, closed view,
+  server clock, Not Found), audit summaries. `e2e/f3-assessments.spec.ts` runs the plan's "Done
+  when" (10 questions, 7 submitted + 1 uploaded-only, 3 Not attempted, the grid after the close
+  job) plus a phone pass.
+
+Notes:
+- jsdom's XHR drops multipart filenames before MSW sees them, so the unit test checks the part's
+  bytes; `uploadAnswer` passes the filename to `FormData.append` explicitly.
+- Found while testing, not changed: `ErrorState` shows the server's `message` (e.g. "No endpoint
+  GET …"), as it has since F0. CLAUDE.md says to map codes to friendly text.
+- E2E fixes found on the live run: the student test needs a 6-minute timeout (it waits for
+  the due date), and grid cells are counted by their "✓Submitted" text (icon and text share one
+  element).
+
+### 2026-10-14 — F2 College administration (F2.1–F2.9)
+
+**Status:** Done 2026-10-14. Backend `feature/phase2` was merged to `main` (`676ea65`, PR #3, same
+code as `389d70e`), and `npm run test:e2e` was re-run against it (see below). Branch
+`feature/f2-college-admin`, merged into `master`. Lint (one pre-existing warning), `tsc -b`, the build and 136 unit
+tests pass.
+
+What changed:
+- **F2.1 React Query** (`@tanstack/react-query`, D1): `lib/queryClient.ts` (client, `queryKeys`,
+  the cache is cleared whenever the signed-in user changes) and `hooks/useCachedQuery.ts`, which
+  returns `useApiQuery`'s result shape so screens keep their loading/stale/error rendering. The
+  F1 **lists** moved to it (colleges, college admins, admin acts, an act's sections, admin case
+  laws, audit and its college filter). The F1 detail loaders and form loaders stay on
+  `useApiQuery`: they copy the first response into local state, so a cached copy could seed a
+  stale form.
+- **Shell:** C_ADMIN nav Users · Subjects · Audit · Library (new `UsersIcon`); `/college` is now a
+  hub (college name, code chip, three link cards); Users sub-nav People · Import; wide layout for
+  `/college/**` except the import page.
+- **F2.2–F2.5 Users:** `/college/users` (Students/Professors tabs with arrow keys, search, sort and
+  page in the URL, table from 768 px and cards below, row menu); `/college/users/:id` (facts,
+  details, the professor's subjects, Edit · Reset password · Remove; 404 → Not Found). Dialogs in
+  `userDialogs.tsx`: add/edit with `LOGIN_ID_ALREADY_EXISTS` / `EMAIL_ALREADY_EXISTS` on their
+  fields (plus the "import to convert" sentence when adding a student), reset password, and
+  remove with the typed login ID and per-role consequences. Every change refreshes the user
+  lists, that user's detail and the subjects (`userQueries.ts`); a removal drops the detail from
+  the cache instead of refetching it.
+- **F2.6 Import:** `/college/users/import` with the kind in the URL, templates copied from the
+  backend's `docs/templates/` to `public/templates/`, the new `FileDropzone` (a button that also
+  takes drops; extension, empty and 5 MB checks before upload), upload progress then "Checking
+  rows…", and `ImportResultTable` with spreadsheet row numbers, a "Roll no"/"Employee ID" key
+  column and the `CONVERTED` note. `IMPORT_FILE_INVALID` and the server's 5 MB error show under
+  the file.
+- **F2.7 Subjects:** `/college/subjects` (search in the URL; "None" professors in the warning
+  colour) and `/college/subjects/:id` (description with its line breaks, the professors card).
+  Add/edit (code upper-cased; `SUBJECT_CODE_ALREADY_EXISTS` on the field; adding opens the
+  detail), a searchable professor multi-select whose selection survives new searches (chips),
+  and delete with the `SUBJECT_IN_USE` / has-assessments variant that offers Rename.
+- **F2.8:** `SubjectCards` on `/professor` ("My subjects", with "With {other professors}") and
+  `/student` ("Subjects at your college").
+- **Audit summaries** for the P2 `details`: login ID + role, "Professor account · EMP7",
+  "Students: 2 created, 1 converted, …", "CON-101 · 2 professors".
+- **Shared:** `DialogForm.tsx` (`DialogButtons`, `Banner`) and `lib/forms.ts` (`saveErrors`), moved
+  out of the F1 college dialogs; `TypedConfirmDialog` has a `busyLabel`; `ImportResultTable`
+  takes `rowNumber`, `keyLabel` and `rowNote`; `BulkImportResult` has `summary.converted`;
+  `errors.ts` has the four P2 codes; `formatBytes`.
+- **Tests (F2.9):** unit tests for the user and subject API modules and the file checks; route
+  tests for the users list and tabs, add-dialog conflicts, the remove dialog needing the exact
+  login ID, Not Found for another college's user and subject, all four import outcomes, a
+  whole-file error, the subject create/duplicate/professor mapping/in-use flows and the
+  read-only cards. `findBy*` now waits 5 s (`src/test/setup.ts`): each route test re-imports the
+  app, and full runs were timing out on this machine.
+
+**Verified against the live backend** (`lexly-backend` `feature/phase2` at `389d70e`; the running
+backend was an older build without `/college/**`, so I restarted it from that branch, and
+Flyway applied V18). `e2e/f2-college.spec.ts` (8 tests, desktop) passes. It covers the plan's
+"Done when": the C_ADMIN imports professors, then a students file with a duplicate roll no, a bad
+email and an S_STUDENT's email. The result is "2 created · 1 converted · 2 rejected · 0 failed, out
+of 5", with spreadsheet row numbers and the converted note; a wrong header gives the whole-file
+error. The admin then adds a user (duplicate ID → field error), resets a password, removes a
+student by typing the roll no, opens a made-up user id (Not Found), creates a subject, maps two
+professors through the search, and deletes a second subject. An imported student signs in with
+the college code + roll no (forced change, then sees the subject on `/student`), the converted
+account signs in with its roll no, and a professor sees "My subjects" with the co-professor. The
+audit log shows the import and mapping summaries, and the college pages pass at 390 px (cards,
+no sideways scroll). axe runs on every screen. The full suite (`npm run test:e2e`): 31 passed, 19
+skipped by design, 0 failed. The F1 spec was updated for the new C_ADMIN hub heading and nav.
+
+**Re-run against backend `main`** (`676ea65`, 2026-10-14; `git diff 389d70e 676ea65` is empty, so
+the running backend is `main`'s code): `npm run test:e2e` → 31 passed, 19 skipped by design, 0
+failed.
+
+**Notes:**
+- Each run leaves an `F2…` college, its users and a registered `f2.solo.*` account in the dev DB.
+- `PW_CHROMIUM_PATH` must point at the installed `chromium_headless_shell-1243`; the Playwright
+  package now expects revision 1248.
+- Deviations: the import page's template links are plain `download` links (the files are
+  static); the professor picker shows at most 50 results with a "search to narrow" line.
+- Not migrated yet: other mutations in F1 screens (rename a college, add an act) don't invalidate
+  the cached lists; the lists refetch on mount anyway (`staleTime: 0`).
+- `CLAUDE.md` (untracked) still describes the pre-F0 state under "Current state".
+
 ### 2026-10-14 — F1 Identity, roles, SUPERADMIN & content admin (F1.1–F1.11)
 
 **Status:** Done 2026-10-14. Backend `feature/phase1` was merged to `main` (`ca7c842`, same code as
@@ -769,5 +906,7 @@ on `feature/phase1`.
 
 1. ~~**F0 on `feature/f0-cleanup`**~~ — done 2026-10-14 (entry above). PR #2; CI passed.
 2. ~~**F1 on `feature/f1-identity`**~~ — done 2026-10-14 (entry above). Merge PR #2, then #3.
-3. Write the F2 UI spec before Phase 2 starts.
-4. Later (D4): choose an app-wide dark-mode approach.
+3. ~~**F2 on `feature/f2-college-admin`**~~ — done 2026-10-14 (entry above), merged into `master`.
+4. ~~**F3 on `feature/f3-assessments`**~~ — done 2026-10-16 (entry above). Commit, then merge into `master`.
+5. F4 (manual grading & results) once backend Phase 4 is agreed: write the UI spec F4 section first.
+6. Later (D4): choose an app-wide dark-mode approach.

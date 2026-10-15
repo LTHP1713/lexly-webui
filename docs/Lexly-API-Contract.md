@@ -71,8 +71,8 @@ List endpoints that can grow return `PagedResponse<T>`:
 - Searches (`/sections/search`, `/caselaws?q=`) and **every user-, college- or file-specific endpoint**: `Cache-Control: no-store`.
 
 ### 0.6 Files
-- **Uploads:** `multipart/form-data` with one part named `file`. PDFs are checked server-side: content-type `application/pdf`, `%PDF-` magic bytes, size ≤ `lexly.storage.max-file-mb`, pages ≤ `lexly.storage.max-pages` (values decided in Phase 3). Any failure → `400 INVALID_FILE` with a message naming the limit.
-- **Downloads:** `200` with `Content-Type: application/pdf`, `Content-Disposition: inline; filename="<safe name>"`, `Cache-Control: no-store`. CORS must expose `Content-Disposition` (P3).
+- **Uploads:** `multipart/form-data` with one part named `file`. PDFs are checked server-side: content-type `application/pdf`, `%PDF-` magic bytes, size ≤ `lexly.storage.max-file-mb` (**5 MB**), pages ≤ `lexly.storage.max-pages` (**10**), readable by PDFBox and not password-protected (decided 2026-10-15). Any failure → `400 INVALID_FILE` with a message naming the problem or limit (`file: must be at most 5 MB`, `file: must have at most 10 pages`, `file: must be a PDF`, `file: is required`). A request over the 10 MB multipart ceiling never reaches the endpoint and gets `400 VALIDATION_ERROR` (`file: is larger than the upload limit`).
+- **Downloads:** `200` with `Content-Type: application/pdf`, `Content-Disposition: inline; filename="<safe name>"` (the uploaded name reduced to `A-Z a-z 0-9 . _ -` and space, ending in `.pdf`), `Cache-Control: no-store`. CORS exposes `Content-Disposition` (LIVE, P3).
 - File names are never taken from user input for storage. `originalFilename` is kept only for display.
 
 ### 0.7 Roles
@@ -102,14 +102,14 @@ Each endpoint below lists the roles that may call it. Other roles get `403 FORBI
 | `PASSWORD_CHANGE_REQUIRED` | 403 | LIVE (P1) | `mustChangePassword` is set and the endpoint isn't allowed (§1.6) |
 | `COLLEGE_INACTIVE` | 403 | LIVE (P1) | Login/refresh for a user whose college is deactivated, after a correct password |
 | `COLLEGE_CODE_ALREADY_EXISTS` | 409 | ADDED, LIVE (P1) | College code taken |
-| `LOGIN_ID_ALREADY_EXISTS` | 409 | ADDED (P2) | Roll no / employee ID already used in the college |
-| `SUBJECT_CODE_ALREADY_EXISTS` | 409 | ADDED (P2) | Subject code already used in the college |
-| `IMPORT_FILE_INVALID` | 400 | PROPOSED (P2) | Unreadable file, wrong headers, > 2,000 rows, wrong format |
-| `SUBJECT_IN_USE` | 409 | PROPOSED (P2) | Deleting a subject that has assessments |
-| `ASSESSMENT_NOT_EDITABLE` | 409 | PROPOSED (P3) | Edit/delete/publish on a non-`DRAFT` assessment, or remove on a `DRAFT` |
-| `ASSESSMENT_CLOSED` | 409 | PROPOSED (P3) | Upload/submit after `dueAt` or on a closed/removed assessment |
-| `ANSWER_LOCKED` | 409 | PROPOSED (P3) | Upload/submit on an already `SUBMITTED` answer |
-| `INVALID_FILE` | 400 | PROPOSED (P3) | Upload failed the §0.6 checks |
+| `LOGIN_ID_ALREADY_EXISTS` | 409 | ADDED, LIVE (P2) | Roll no / employee ID already used in the college |
+| `SUBJECT_CODE_ALREADY_EXISTS` | 409 | ADDED, LIVE (P2) | Subject code already used in the college |
+| `IMPORT_FILE_INVALID` | 400 | LIVE (P2) | Unreadable file, wrong headers, > 2,000 rows, wrong format |
+| `SUBJECT_IN_USE` | 409 | LIVE (P2) | Deleting a subject that has assessments in any status (P3) |
+| `ASSESSMENT_NOT_EDITABLE` | 409 | LIVE (P3) | Edit/delete/publish on a non-`DRAFT` assessment, or remove on a `DRAFT` or `REMOVED` one |
+| `ASSESSMENT_CLOSED` | 409 | LIVE (P3) | Upload/submit at or after `dueAt`, or on a closed assessment (a removed one is `404`) |
+| `ANSWER_LOCKED` | 409 | LIVE (P3) | Upload/submit on an already `SUBMITTED` answer |
+| `INVALID_FILE` | 400 | LIVE (P3) | Upload failed the §0.6 checks |
 | `INVALID_MARKS` | 400 | PROPOSED (P4) | Marks < 0, > max, or not a multiple of 0.5 |
 | `GRADE_PUBLISHED` | 409 | PROPOSED (P4) | Changing a published grade |
 | `AI_EVALUATION_NOT_ALLOWED` | 409 | PROPOSED (P5) | AI evaluate before the PDF was downloaded, on a published grade, or while one is running (also used for a solo attempt while another is evaluating) |
@@ -553,7 +553,7 @@ Sequence numbers (`issueNumber` etc.) are assigned by the server from list order
 **Per-row behaviour (TDD §7.1), live since P0.** Each row runs in its own transaction. The response is always `200` unless the envelope itself is invalid (`400`: empty list, too many rows, a `null` row, missing `actShortCode`, or a body that can't be parsed, such as an unknown `importance`):
 ```json
 {
-  "summary": { "total": 12, "created": 10, "rejected": 1, "failed": 1 },
+  "summary": { "total": 12, "created": 10, "converted": 0, "rejected": 1, "failed": 1 },
   "rows": [
     { "index": 0, "key": "ICA-2",  "status": "CREATED",  "id": "…", "errors": [] },
     { "index": 4, "key": "ICA-10", "status": "REJECTED", "id": null, "errors": ["sectionNumber: duplicate of row 1"] },
@@ -657,12 +657,12 @@ Roles: SUPERADMIN (all colleges; `collegeId` optional) and C_ADMIN (own college 
 - `action` values (from TDD §11.1): `LOGIN_FAILED`, `PASSWORD_RESET`, `PASSWORD_CHANGED`, `COLLEGE_CREATED`, `COLLEGE_UPDATED`, `USER_CREATED`, `USER_UPDATED`, `USER_REMOVED`, `USER_IMPORT`, `CONTENT_IMPORT`, `SUBJECT_CREATED`, `SUBJECT_UPDATED`, `SUBJECT_DELETED`, `SUBJECT_PROFESSORS_CHANGED`, `ASSESSMENT_PUBLISHED`, `ASSESSMENT_REMOVED`, `AI_EVALUATION_REQUESTED`, `GRADE_EDITED`, `GRADE_PUBLISHED`, `SOLO_PLAN_CHANGED`, `SOLO_QUOTA_RESET`.
 - `entityType` values: `USER`, `COLLEGE`, `BARE_ACT`, `SECTION`, `CASE_LAW`, `SUBJECT`, `ASSESSMENT`, `GRADE`, `SOLO_PLAN`. An unknown `action` or `entityType` filter → `400 VALIDATION_ERROR`.
 - `details` is free-form JSON. It never contains passwords, tokens, answer text or feedback. `LOGIN_FAILED` has `{ "identifier": "<email or CODE:loginId>", "reason": "BAD_CREDENTIALS" | "COLLEGE_INACTIVE" }`, no actor, and the matched account as `entityId` (or `null`).
-- Recorded since P1: `LOGIN_FAILED`, `PASSWORD_CHANGED`, `PASSWORD_RESET`, `COLLEGE_CREATED`, `COLLEGE_UPDATED`, `USER_CREATED` / `USER_REMOVED` (C_ADMINs), `CONTENT_IMPORT` (summary only). The others are recorded from the phase that adds their feature.
+- Recorded since P1: `LOGIN_FAILED`, `PASSWORD_CHANGED`, `PASSWORD_RESET`, `COLLEGE_CREATED`, `COLLEGE_UPDATED`, `USER_CREATED` / `USER_REMOVED` (C_ADMINs), `CONTENT_IMPORT` (summary only). Since P2: `USER_CREATED`, `USER_UPDATED`, `USER_REMOVED` and `PASSWORD_RESET` for students and professors, `USER_IMPORT` (summary only) and the four `SUBJECT_*` actions. Since P3: `ASSESSMENT_PUBLISHED`, `ASSESSMENT_REMOVED`. The others are recorded from the phase that adds their feature.
 - Rows are purged after 30 days.
 
 ---
 
-## 8. College administration (C_ADMIN) — PROPOSED (P2)
+## 8. College administration (C_ADMIN) — LIVE (P2)
 
 ### 8.1 Users
 
@@ -670,26 +670,33 @@ Roles: SUPERADMIN (all colleges; `collegeId` optional) and C_ADMIN (own college 
 |---|---|---|
 | `GET /college/users?role=&q=&page=&size=&sort=fullName,asc` | — | `200 PagedResponse<UserSummary>` |
 | `POST /college/users` | `{ "role", "fullName", "email", "loginId" }` | `201 UserSummary` |
-| `GET /college/users/{id}` (ADDED) | — | `200 UserSummary` |
+| `GET /college/users/{id}` (ADDED, agreed 2026-10-14) | — | `200 UserSummary` |
 | `PUT /college/users/{id}` | `{ "fullName", "email", "loginId" }` | `200 UserSummary` |
 | `POST /college/users/{id}/reset-password` | — | `204` |
 | `DELETE /college/users/{id}` | — | `204` |
 
 | Field | Rules |
 |---|---|
-| `role` | `C_STUDENT` \| `C_PROFESSOR` (filter and create) |
-| `fullName` | required, ≤ 255 |
-| `email` | required, platform-unique (`409 EMAIL_ALREADY_EXISTS`) |
-| `loginId` | required, ≤ 50, unique within the college across both roles (`409 LOGIN_ID_ALREADY_EXISTS`) |
-| `q` | matches name, email, login ID |
-| sort | whitelist `fullName`, `loginId`, `createdAt` |
+| `role` | `C_STUDENT` \| `C_PROFESSOR` (filter and create); any other role → `400` |
+| `fullName` | required, ≤ 255, trimmed |
+| `email` | required, ≤ 255, platform-unique (`409 EMAIL_ALREADY_EXISTS`), trimmed |
+| `loginId` | required, ≤ 50, unique within the college across both roles (`409 LOGIN_ID_ALREADY_EXISTS`), trimmed |
+| `q` | matches name, email, login ID, case-insensitively |
+| sort | whitelist `fullName`, `loginId`, `createdAt`; default `fullName,asc`. Anything else → `400` |
 
+- Single create starts with password = `loginId` and `mustChangePassword = true`. An email that belongs to an S_STUDENT is `409 EMAIL_ALREADY_EXISTS` here; only the student import converts (§8.3).
+- Editing doesn't change the password or the role, even when `loginId` changes.
 - Reset password sets the password to `loginId`, sets `mustChangePassword = true` and revokes refresh tokens.
-- Delete is a hard delete per TDD §4.7. A student's answers, files, grades and grade history go with them; a professor's assessments remain with `createdBy = null`.
+- Delete is a hard delete per TDD §4.7. The user's refresh tokens and professor↔subject mappings go with them. A student's answers and answer files go too (P3; grades and grade history from P4), and a professor's assessments remain with `createdBy = null`.
 - Ids outside the college, or C_ADMIN ids → `404`.
+- Audit: `USER_CREATED`, `USER_UPDATED`, `PASSWORD_RESET`, `USER_REMOVED`.
 
 ### 8.2 Import templates
-The templates are static files shipped by the web app (`/templates/students.csv|xlsx`, `/templates/professors.csv|xlsx`). Headers are exactly `full_name,email,roll_no` and `full_name,email,employee_id`.
+Sample templates live in the backend repo under `docs/templates/` (`students.csv|xlsx`, `professors.csv|xlsx`, two example rows each); the web app copies them to `/templates/`. Approved 2026-10-14 (Deferred Items B1). Parsing rules:
+
+- Row 1 is the header: exactly `full_name, email, roll_no` (students) or `full_name, email, employee_id` (professors). Headers are trimmed and matched case-insensitively, columns may be in any order, and a missing, unknown or repeated column is `IMPORT_FILE_INVALID`. Blank header cells are ignored.
+- The format comes from the extension (`.csv` or `.xlsx`). CSV must be UTF-8 (a BOM is allowed). For XLSX only the first sheet is read; cells are read as displayed, so the templates format every column as text to keep leading zeros in IDs.
+- Cell values are trimmed. Fully blank rows are skipped, but they still count for row numbers.
 
 ### 8.3 Bulk user import
 
@@ -698,18 +705,20 @@ The templates are static files shipped by the web app (`/templates/students.csv|
 | `POST /college/users/import/students` | multipart `file` (`.csv` or `.xlsx`) | `200 BulkImportResult` |
 | `POST /college/users/import/professors` | multipart `file` | `200 BulkImportResult` |
 
-- `BulkImportResult` is as in §5.5, with `status` ∈ `CREATED | CONVERTED | REJECTED | FAILED` and `summary.converted` added.
-- `index` is the **spreadsheet row number** (the header is row 1, so the first data row is 2); `key` = `loginId`.
-- `CONVERTED` (students only): the email belonged to an `S_STUDENT`, who is now a `C_STUDENT` of this college. Their solo data is deleted and the password is reset to the roll no (§4.6).
-- Rejection reasons include: missing field, bad email, duplicate email or ID within the file (`"duplicate of row 7"`), ID already used in the college, and email used by a non-S_STUDENT.
-- Errors: `400 IMPORT_FILE_INVALID` (unreadable, wrong or missing headers, > 2,000 data rows, not CSV/XLSX), `429 RATE_LIMITED`.
+- `BulkImportResult` is as in §5.5, with `status` ∈ `CREATED | CONVERTED | REJECTED | FAILED` and `summary.converted` added (always `0` for content imports).
+- `index` is the **spreadsheet row number** (the header is row 1, so the first data row is 2); `key` = `loginId` (`null` when the cell is blank). `id` is set for `CREATED` and `CONVERTED`.
+- `CONVERTED` (students only): the email belonged to an `S_STUDENT`, who is now a `C_STUDENT` of this college, with the file's name and roll no. Their solo data is deleted (from P7), the password is reset to the roll no with a forced change, and their sessions end (§4.6). In a professor import the same email is `REJECTED`.
+- Errors use column names as paths: `full_name: must not be blank`, `email: must be a well-formed email address`, `email: duplicate of row 2`, `roll_no: duplicate of row 2`, `roll_no: 'R-17' is already used in this college`, `email: is already used by another account`. A `REJECTED` row lists every problem it has. Limits match §8.1.
+- Created users start with password = their ID and `mustChangePassword = true`.
+- Errors: `400 IMPORT_FILE_INVALID` (no `file` part, empty, unreadable, not UTF-8, wrong headers, no data rows, > 2,000 data rows, not CSV/XLSX), `400 VALIDATION_ERROR` (`file: is larger than the upload limit`, 5 MB, `lexly.import.max-file-mb`). `429 RATE_LIMITED` comes with the rate limits in P8.
+- Audit: one `USER_IMPORT` event with `{ kind: STUDENTS|PROFESSORS, total, created, converted, rejected, failed }`.
 
 ### 8.4 Subjects
 
 | Method & path | Roles | Body | Success |
 |---|---|---|---|
 | `GET /college/subjects?q=` | C_ADMIN, C_PROFESSOR (mapped only), C_STUDENT | — | `200 Subject[]` |
-| `GET /college/subjects/{id}` (ADDED) | same scoping | — | `200 Subject` |
+| `GET /college/subjects/{id}` (ADDED, agreed 2026-10-14) | same scoping | — | `200 Subject` |
 | `POST /college/subjects` | C_ADMIN | `{ "code", "name", "description" }` | `201 Subject` |
 | `PUT /college/subjects/{id}` | C_ADMIN | same | `200 Subject` |
 | `DELETE /college/subjects/{id}` | C_ADMIN | — | `204` / `409 SUBJECT_IN_USE` |
@@ -729,13 +738,17 @@ The templates are static files shipped by the web app (`/templates/students.csv|
 }
 ```
 
-- `code` is required, ≤ 30, unique within the college (`409 SUBJECT_CODE_ALREADY_EXISTS`). `name` is required, ≤ 255.
-- `professorIds` **replaces** the mapping. An id that isn't a C_PROFESSOR of this college → `400 VALIDATION_ERROR` (`"professorIds[2]: not a professor of this college"`).
-- Sorted by `name`.
+- `code` is required, ≤ 30, trimmed and stored upper-case, unique within the college (`409 SUBJECT_CODE_ALREADY_EXISTS`). It can be changed on update. `name` is required, ≤ 255. `description` is optional, ≤ 2,000.
+- `professorIds` **replaces** the mapping; `[]` clears it and repeated ids count once. An id that isn't a C_PROFESSOR of this college → `400 VALIDATION_ERROR` naming every bad position (`"professorIds[2]: not a professor of this college"`).
+- `professors` is sorted by `fullName`. `assessmentCount` counts the subject's assessments in every status, drafts and removed ones included (P3), so it is `0` exactly when the subject can be deleted.
+- `q` matches code or name, case-insensitively. Sorted by `name`.
+- Out of scope → `404`: another college's subject, or a subject not mapped to the calling professor. SUPERADMIN and S_STUDENT get `403`.
+- Delete: `409 SUBJECT_IN_USE` while the subject has any assessment (`assessmentCount > 0`); otherwise its professor mappings go with it.
+- Audit: `SUBJECT_CREATED`, `SUBJECT_UPDATED`, `SUBJECT_DELETED`, `SUBJECT_PROFESSORS_CHANGED` (with the new `professorIds`).
 
 ---
 
-## 9. Assessments & answering — PROPOSED (P3)
+## 9. Assessments & answering — LIVE (P3)
 
 ### 9.1 Shared enums
 
@@ -782,9 +795,9 @@ The templates are static files shipped by the web app (`/templates/students.csv|
 - `maxMarks` nullable, > 0, ≤ 100, a multiple of 0.5
 - `wordLimit` nullable, 1–10,000
 
-Question order is list order. On PUT, existing question ids are kept when sent back; omitted ones are deleted.
+Question order is list order. On PUT, existing question ids are kept when sent back; omitted ones are deleted. An `id` that isn't a question of this assessment, or the same `id` twice, → `400` (`questions[1].id: not a question of this assessment`). `maxMarks` comes back with one decimal (`10.0`). The subject can change while the assessment is a draft.
 
-**Publish** validates completeness (TDD §6.1). Failures → `400 VALIDATION_ERROR` with one path per problem, e.g. `questions: must contain 1–50 questions`, `questions[2].text: must not be blank`, `questions[4].maxMarks: must be greater than 0`, `dueAt: must be in the future`.
+**Publish** validates completeness (TDD §6.1). Failures → `400 VALIDATION_ERROR` with one path per problem, e.g. `subjectId: is no longer one of your subjects`, `dueAt: must not be null`, `dueAt: must be in the future`, `questions: must contain 1–50 questions`, `questions[2].text: must not be blank`, `questions[4].maxMarks: must not be null`, `questions[4].wordLimit: must not be null`. Question indexes are 0-based, as in the draft request.
 
 ```json
 // AssessmentDetail
@@ -817,7 +830,11 @@ Question order is list order. On PUT, existing question ids are kept when sent b
 | Field | Notes |
 |---|---|
 | `createdBy` | `null` when the professor was removed (show "Former professor") |
-| `counts` | Per answer slot (student × question). `students` = C_STUDENTs in the college. `pendingEvaluation` = submitted answers whose grade is not `PUBLISHED`. `aiEvaluated` = grades in `AI_EVALUATED`. `published` = grades in `PUBLISHED`. `notAttempted` = `answerSlots − submitted` once `CLOSED`, else 0. All grading counts are 0 until Phase 4 |
+| `counts` | Per answer slot (student × question). `students` = C_STUDENTs in the college. `pendingEvaluation` = submitted answers whose grade is not `PUBLISHED`. `aiEvaluated` = grades in `AI_EVALUATED`. `published` = grades in `PUBLISHED`. `notAttempted` = `answerSlots − submitted` once `CLOSED` or `REMOVED`, else 0. The grading counts (`pendingEvaluation`, `aiEvaluated`, `published`) are 0 until Phase 4 |
+
+- List: only the caller's own assessments, every status. Sort whitelist `dueAt`, `createdAt`, `updatedAt`, `title`; default `dueAt,desc` (drafts without a due date first).
+- Remove deletes the assessment's `UPLOADED` (never submitted) answers and their files, since they can no longer be submitted.
+- Audit: `ASSESSMENT_PUBLISHED` (`title`, `subjectCode`, `questionCount`, `dueAt`) and `ASSESSMENT_REMOVED` (`title`, `subjectCode`).
 
 Errors: `404` (not the caller's, or the subject isn't mapped), `409 ASSESSMENT_NOT_EDITABLE` (PUT/DELETE/publish on non-DRAFT; remove on DRAFT or REMOVED).
 
@@ -828,7 +845,7 @@ Errors: `404` (not the caller's, or the subject isn't mapped), `409 ASSESSMENT_N
 | `GET /student/assessments?subjectId=&state=&page=&size=` | `200 PagedResponse<StudentAssessmentSummary>` |
 | `GET /student/assessments/{id}` | `200 StudentAssessmentDetail` |
 
-Only `PUBLISHED` and `CLOSED` assessments of the student's college are returned. Default order: open ones by `dueAt asc`, then closed ones by `dueAt desc`.
+Only `PUBLISHED` and `CLOSED` assessments of the student's college are returned; drafts, removed assessments and other colleges' ids are `404`. Default order: open ones by `dueAt asc`, then the rest by `dueAt desc`. An unknown `state` → `400`.
 
 ```json
 // StudentAssessmentSummary
@@ -853,8 +870,8 @@ Only `PUBLISHED` and `CLOSED` assessments of the student's college are returned.
 | `OPEN` | `PUBLISHED`, `now < dueAt`, 0 submitted |
 | `PARTIALLY_SUBMITTED` | `PUBLISHED`, 0 < submitted < questionCount |
 | `SUBMITTED` | `PUBLISHED`, submitted = questionCount |
-| `CLOSED` | `CLOSED`, no published grade for this student |
-| `RESULTS_AVAILABLE` | `CLOSED`, ≥ 1 published grade for this student |
+| `CLOSED` | `CLOSED` (or `PUBLISHED` with `now ≥ dueAt`, until the close job runs), no published grade for this student |
+| `RESULTS_AVAILABLE` | as `CLOSED`, with ≥ 1 published grade for this student (from P4; never returned in P3) |
 
 Grades published before closing are visible through `progress.resultsPublished` and the results endpoint (§10.4).
 
@@ -866,7 +883,7 @@ Grades published before closing are visible through `progress.resultsPublished` 
   "dueAt": "2026-11-02T18:30:00Z",
   "serverTime": "2026-10-30T07:12:44Z",
   "totalMarks": 50,
-  "uploadLimits": { "maxFileMb": 10, "maxPages": 20 },
+  "uploadLimits": { "maxFileMb": 5, "maxPages": 10 },
   "questions": [
     {
       "id": "…", "position": 1, "text": "…", "maxMarks": 10, "wordLimit": 500,
@@ -886,7 +903,8 @@ Grades published before closing are visible through `progress.resultsPublished` 
 
 - `answer` is `null` when nothing has been uploaded.
 - `serverTime` lets the client correct a skewed device clock for countdowns.
-- `uploadLimits` mirrors the storage config (Phase 3 decision).
+- `uploadLimits` mirrors `lexly.storage.max-file-mb` / `max-pages`: 5 MB and 10 pages (decided 2026-10-15).
+- `resultPublished` and `progress.resultsPublished` are `false` / `0` until P4.
 
 ### 9.4 Student: answers
 
@@ -896,12 +914,12 @@ Grades published before closing are visible through `progress.resultsPublished` 
 | `POST /student/questions/{questionId}/answer/submit` | — | `200` `answer` object (`status: SUBMITTED`) |
 | `GET /student/questions/{questionId}/answer/file` | — | `200 application/pdf` (own file only) |
 
-Errors:
-- Upload: `400 INVALID_FILE`, `409 ANSWER_LOCKED` (already submitted), `409 ASSESSMENT_CLOSED` (`now ≥ dueAt` or not `PUBLISHED`), `404`, `429 RATE_LIMITED`.
-- Submit: `400 VALIDATION_ERROR` (`"answer: upload a file before submitting"`), `409 ANSWER_LOCKED`, `409 ASSESSMENT_CLOSED`, `404`.
-- File: `404` if nothing has been uploaded.
+Errors, checked in this order:
+- Upload: `404` (another college's question, a draft's or a removed assessment's), `400 INVALID_FILE` (§0.6, including a missing `file` part), `409 ASSESSMENT_CLOSED` (`now ≥ dueAt`, or `CLOSED`), `409 ANSWER_LOCKED` (already submitted), `429 RATE_LIMITED` (P8).
+- Submit: `404`, `409 ASSESSMENT_CLOSED`, `400 VALIDATION_ERROR` (`"answer: upload a file before submitting"`), `409 ANSWER_LOCKED`.
+- File: `404` if nothing has been uploaded, or the assessment isn't visible (§9.3). Works after closing.
 
-When an assessment closes, `UPLOADED` answers are deleted (file and row) and count as not attempted.
+A re-upload replaces the file and resets `uploadedAt`. `originalFilename` is the uploaded name without any folder part (`answer.pdf` when blank). When an assessment closes (the job runs every minute), `UPLOADED` answers are deleted (file and row) and count as not attempted.
 
 ### 9.5 Professor: submissions grid
 
@@ -909,9 +927,12 @@ When an assessment closes, `UPLOADED` answers are deleted (file and row) and cou
 
 | Param | Notes |
 |---|---|
-| `questionId` | limit `cells` to one question |
-| `status` | a `CellStatus` or `GradeStatus`; returns students with ≥ 1 matching cell (within `questionId` if given) |
-| `q` | student name or roll no |
+| `questionId` | limit `cells` to one question; a question of another assessment → `400` |
+| `status` | a `CellStatus` (P3; `GradeStatus` values are added in P4, and are `400` until then); returns students with ≥ 1 matching cell (within `questionId` if given) |
+| `q` | student name or roll no, case-insensitive |
+| `size` | default 50, max 100 |
+
+`NOT_ATTEMPTED` is used once the assessment is `CLOSED` or `REMOVED`; before that an empty cell is `NOT_UPLOADED`. Every current C_STUDENT of the college gets a row.
 
 ```json
 {
@@ -930,17 +951,11 @@ When an assessment closes, `UPLOADED` answers are deleted (file and row) and cou
 }
 ```
 
-`answerId` is set only for `SUBMITTED` answers; professors never see unsubmitted files. `finalMarks` is set only when `PUBLISHED`. `size` max 100.
+`answerId` is set only for `SUBMITTED` answers; professors never see unsubmitted files. `gradeStatus` and `finalMarks` are `null` until P4; `finalMarks` is then set only when `PUBLISHED`.
 
-### 9.6 SUPERADMIN read-only views (A9)
+### 9.6 SUPERADMIN views — REMOVED (2026-10-15)
 
-| Method & path | Success |
-|---|---|
-| `GET /superadmin/colleges/{collegeId}/assessments?subjectId=&status=&page=&size=` | `PagedResponse<ProfessorAssessmentSummary>` |
-| `GET /superadmin/assessments/{id}` | `AssessmentDetail` |
-| `GET /superadmin/assessments/{id}/answers?…` (ADDED) | same as §9.5 |
-| `GET /superadmin/answers/{answerId}` (ADDED) | `AnswerReview` (§10.1) without `navigation` |
-| `GET /superadmin/answers/{answerId}/file` (ADDED) | PDF. Does **not** set `professorDownloadedAt` |
+SUPERADMIN has no access to college assessments, questions or answers (A9 changed, TDD §15). The read-only endpoints are not built: `GET /superadmin/colleges/{collegeId}/assessments`, `GET /superadmin/assessments/{id}`, `GET /superadmin/assessments/{id}/answers`, `GET /superadmin/answers/{answerId}` and `GET /superadmin/answers/{answerId}/file` all return `404`, and `/professor/**` and `/student/**` return `403` to SUPERADMIN.
 
 ---
 
@@ -1056,7 +1071,7 @@ Re-evaluating an `AI_EVALUATED` or `AI_FAILED` grade is allowed. It overwrites `
 | `flags` | Any of `WORD_LIMIT_EXCEEDED`, `ILLEGIBLE`, `OFF_TOPIC`, `BLANK`, `LOW_CONFIDENCE` |
 | `error` | When `AI_FAILED`: a short safe message (`"The evaluation service did not return a valid result"`); the other fields are `null` |
 
-Only professors (and SUPERADMIN read-only) ever receive this object.
+Only professors ever receive this object.
 
 ### 11.3 `GET /superadmin/ai-usage?collegeId=&from=&to=` — ADDED (P5.8)
 ```json
@@ -1282,7 +1297,7 @@ The `isFree` field and the `PRO_REQUIRED` error no longer exist anywhere.
 | O1 | Initial C_ADMIN password: SUPERADMIN-typed temporary password vs. a server-generated one shown once | Typed temporary password (§6.2) |
 | O2 | `COLLEGE_INACTIVE` after a correct password vs. a generic 401 | Explicit 403 after a correct password (more helpful, no enumeration) |
 | O3 | Refund the quota for a `FAILED` solo generation | Yes |
-| O4 | Upload limits (`maxFileMb`, `maxPages`) | Phase 3 decision; the example values above are placeholders |
+| O4 | Upload limits (`maxFileMb`, `maxPages`) | **Decided 2026-10-15:** 5 MB, 10 pages (§0.6) |
 | O5 | Professor removed mid-grading: should SUPERADMIN/C_ADMIN be able to reassign? (A1) | Not in v1 |
 | O6 | Page `size` max | 100 everywhere (grids included) |
 | O7 | Should student results include the AI's word estimate (it's useful feedback on the word limit)? | No: §7.8 forbids every AI field for students |
@@ -1296,3 +1311,5 @@ The `isFree` field and the `PRO_REQUIRED` error no longer exist anywhere.
 | 2026-10-13 | First version. LIVE sections documented from `feature/epic1`; P0–P7 proposed from TDD v2 |
 | 2026-10-13 | P0 implemented: per-row bulk import (§5.5) live; practice endpoints, `BULK_IMPORT_REJECTED` and `FOLLOWUP_LIMIT_REACHED` removed; `page`/`size` validated (§0.4) |
 | 2026-10-13 | P1 implemented: five roles, both login modes, `role`/`mustChangePassword` in auth responses, change-password and its gate, extended `/users/me`, colleges and C_ADMIN accounts (§6), audit log (§7), content admin re-scoped to SUPERADMIN. The P1 ADDED items (`GET /admin/acts/{id}`, `GET /admin/sections/{id}`, `GET /superadmin/colleges/{id}`, `COLLEGE_CODE_ALREADY_EXISTS`) are live but still need sign-off. `RATE_LIMITED` moved to P8 to match Plan 8.3. O1 and O2 implemented with their proposed defaults |
+| 2026-10-14 | P2 implemented: §8 is LIVE. The P2 ADDED items (`GET /college/users/{id}`, `GET /college/subjects/{id}`, `LOGIN_ID_ALREADY_EXISTS`, `SUBJECT_CODE_ALREADY_EXISTS`) were signed off. Import templates approved and their parsing rules written down (§8.2). `BulkImportResult.summary` gained `converted` for every import (§5.5 too, always `0` there). Subject codes are stored upper-case; `description` ≤ 2,000 |
+| 2026-10-15 | P3 implemented: §9 is LIVE. Upload limits decided (5 MB, 10 pages; O4) and the §0.6 checks written down; downloads expose `Content-Disposition`. `ASSESSMENT_NOT_EDITABLE`, `ASSESSMENT_CLOSED`, `ANSWER_LOCKED`, `INVALID_FILE` are live. SUPERADMIN read-only views (§9.6) dropped: A9 changed, SUPERADMIN has no access to college assessments or answers. `assessmentCount` (§8.4) is live and counts every status. Clarified: the grid's `status` accepts `CellStatus` only until P4, removing an assessment discards its unsubmitted answers, uploads and submits on a removed assessment are `404`, and the multipart ceiling is 10 MB |

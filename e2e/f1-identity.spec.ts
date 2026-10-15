@@ -102,9 +102,9 @@ test('the college admin is forced to change the password, then lands on /college
   await expect(page).toHaveURL(/\/change-password$/)
   await changePassword(page, temporaryPassword, ADMIN_NEW_PASSWORD)
   await expect(page).toHaveURL(/\/college$/)
-  await expect(page.getByRole('heading', { level: 1, name: `E2E College ${STAMP} (${COLLEGE_CODE})` })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: `E2E College ${STAMP}` })).toBeVisible()
   const nav = page.getByRole('navigation', { name: 'Primary' }).first()
-  await expect(nav.getByRole('link')).toHaveText(['Audit', 'Library'])
+  await expect(nav.getByRole('link')).toHaveText(['Users', 'Subjects', 'Audit', 'Library'])
   await expectNoAxeViolations(page)
 
   // Own college only; no college filter.

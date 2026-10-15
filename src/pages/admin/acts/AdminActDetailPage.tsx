@@ -20,7 +20,9 @@ import { RowMenu } from '@/components/RowMenu';
 import { ContentSubNav } from '@/components/SubNav';
 import { useToast } from '@/components/Toast';
 import { useApiQuery } from '@/hooks/useApiQuery';
+import { useCachedQuery } from '@/hooks/useCachedQuery';
 import { TABLE_QUERY, useMediaQuery } from '@/hooks/useMediaQuery';
+import { queryKeys } from '@/lib/queryClient';
 import { parseServerErrors } from '@/pages/admin/contentForm';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { ActDialog } from './ActDialog';
@@ -58,7 +60,7 @@ export function AdminActDetailPage() {
 function ActDetail({ initial }: { initial: ActAdmin }) {
   const toast = useToast();
   const [act, setAct] = useState(initial);
-  const sections = useApiQuery(`admin-act-sections:${act.id}`, () => listSections(act.id, { cache: 'no-cache' }));
+  const sections = useCachedQuery(queryKeys.adminActs.sections(act.id), () => listSections(act.id, { cache: 'no-cache' }));
   const [editing, setEditing] = useState(false);
   const [adding, setAdding] = useState(false);
   const [toDelete, setToDelete] = useState<SectionSummary | null>(null);

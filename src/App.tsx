@@ -1,10 +1,12 @@
-import { lazy } from 'react';
+import { lazy, useEffect, useState } from 'react';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { Outlet, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from '@/auth/AuthContext';
 import { RedirectIfAuthenticated, RootRedirect } from '@/auth/RedirectIfAuthenticated';
 import { RequireAuth } from '@/auth/RequireAuth';
 import { RequireRole } from '@/auth/RequireRole';
 import { AppLayout } from '@/components/AppLayout';
+import { clearOnUserChange, createQueryClient } from '@/lib/queryClient';
 import { ChangePasswordPage } from '@/pages/auth/ChangePasswordPage';
 import { LoginPage } from '@/pages/auth/LoginPage';
 import { RegisterPage } from '@/pages/auth/RegisterPage';
@@ -42,123 +44,158 @@ const AdminCaseLawContentPage = lazy(() =>
 );
 const AuditLogPage = lazy(() => import('@/pages/audit/AuditLogPage').then((m) => ({ default: m.AuditLogPage })));
 const CollegeHomePage = lazy(() => import('@/pages/college/CollegeHomePage').then((m) => ({ default: m.CollegeHomePage })));
-const ProfessorHomePage = lazy(() =>
-  import('@/pages/professor/ProfessorHomePage').then((m) => ({ default: m.ProfessorHomePage })),
+const UsersPage = lazy(() => import('@/pages/college/users/UsersPage').then((m) => ({ default: m.UsersPage })));
+const UserDetailPage = lazy(() => import('@/pages/college/users/UserDetailPage').then((m) => ({ default: m.UserDetailPage })));
+const UsersImportPage = lazy(() =>
+  import('@/pages/college/users/UsersImportPage').then((m) => ({ default: m.UsersImportPage })),
 );
-const StudentHomePage = lazy(() => import('@/pages/student/StudentHomePage').then((m) => ({ default: m.StudentHomePage })));
+const SubjectsPage = lazy(() => import('@/pages/college/subjects/SubjectsPage').then((m) => ({ default: m.SubjectsPage })));
+const SubjectDetailPage = lazy(() =>
+  import('@/pages/college/subjects/SubjectDetailPage').then((m) => ({ default: m.SubjectDetailPage })),
+);
+const ProfessorAssessmentsPage = lazy(() =>
+  import('@/pages/professor/ProfessorAssessmentsPage').then((m) => ({ default: m.ProfessorAssessmentsPage })),
+);
+const ProfessorAssessmentDetailPage = lazy(() =>
+  import('@/pages/professor/ProfessorAssessmentDetailPage').then((m) => ({ default: m.ProfessorAssessmentDetailPage })),
+);
+const AssessmentEditorPage = lazy(() =>
+  import('@/pages/professor/AssessmentEditorPage').then((m) => ({ default: m.AssessmentEditorPage })),
+);
+const StudentAssessmentsPage = lazy(() =>
+  import('@/pages/student/StudentAssessmentsPage').then((m) => ({ default: m.StudentAssessmentsPage })),
+);
+const StudentAssessmentPage = lazy(() =>
+  import('@/pages/student/StudentAssessmentPage').then((m) => ({ default: m.StudentAssessmentPage })),
+);
 
 function App() {
+  // One client per app instance (tests mount several); emptied whenever the user changes.
+  const [queryClient] = useState(createQueryClient);
+  useEffect(() => clearOnUserChange(queryClient), [queryClient]);
+
   return (
-    <AuthProvider>
-      <Routes>
-        <Route path="/" element={<RootRedirect />} />
-        <Route
-          path="/login"
-          element={
-            <RedirectIfAuthenticated>
-              <LoginPage />
-            </RedirectIfAuthenticated>
-          }
-        />
-        <Route
-          path="/register"
-          element={
-            <RedirectIfAuthenticated>
-              <RegisterPage />
-            </RedirectIfAuthenticated>
-          }
-        />
-        <Route
-          element={
-            <RequireAuth>
-              <AppLayout />
-            </RequireAuth>
-          }
-        >
-          <Route path="/change-password" element={<ChangePasswordPage />} />
-
-          {/* Library: every role */}
-          <Route path="/acts" element={<ActsPage />} />
-          <Route path="/acts/:actId" element={<SectionsPage />} />
-          <Route path="/sections/:sectionId" element={<SectionDetailPage />} />
-          <Route path="/search" element={<SearchPage />} />
-          <Route path="/caselaws" element={<CaseLawsPage />} />
-          <Route path="/caselaws/:caseLawId" element={<CaseLawDetailPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
-
-          {/* S_STUDENT */}
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <Routes>
+          <Route path="/" element={<RootRedirect />} />
+          <Route
+            path="/login"
+            element={
+              <RedirectIfAuthenticated>
+                <LoginPage />
+              </RedirectIfAuthenticated>
+            }
+          />
+          <Route
+            path="/register"
+            element={
+              <RedirectIfAuthenticated>
+                <RegisterPage />
+              </RedirectIfAuthenticated>
+            }
+          />
           <Route
             element={
-              <RequireRole roles={['S_STUDENT']}>
-                <Outlet />
-              </RequireRole>
+              <RequireAuth>
+                <AppLayout />
+              </RequireAuth>
             }
           >
-            <Route path="/dashboard" element={<HomePage />} />
-            <Route path="/practice" element={<PracticePage />} />
-          </Route>
+            <Route path="/change-password" element={<ChangePasswordPage />} />
 
-          {/* SUPERADMIN */}
-          <Route
-            element={
-              <RequireRole roles={['SUPERADMIN']}>
-                <Outlet />
-              </RequireRole>
-            }
-          >
-            <Route path="/admin" element={<AdminHomePage />} />
-            <Route path="/admin/colleges" element={<CollegesPage />} />
-            <Route path="/admin/colleges/:collegeId" element={<CollegeDetailPage />} />
-            <Route path="/admin/acts" element={<AdminActsPage />} />
-            <Route path="/admin/acts/:actId" element={<AdminActDetailPage />} />
-            <Route path="/admin/sections/:sectionId" element={<AdminSectionPage />} />
-            <Route path="/admin/import" element={<ImportPage />} />
-            <Route path="/admin/caselaws" element={<AdminCaseLawsPage />} />
-            <Route path="/admin/caselaws/new" element={<AdminCaseLawFormPage />} />
-            <Route path="/admin/caselaws/:caseLawId" element={<AdminCaseLawFormPage />} />
-            <Route path="/admin/caselaws/:caseLawId/content" element={<AdminCaseLawContentPage />} />
-            <Route path="/admin/audit" element={<AuditLogPage scope="all" />} />
-          </Route>
+            {/* Library: every role */}
+            <Route path="/acts" element={<ActsPage />} />
+            <Route path="/acts/:actId" element={<SectionsPage />} />
+            <Route path="/sections/:sectionId" element={<SectionDetailPage />} />
+            <Route path="/search" element={<SearchPage />} />
+            <Route path="/caselaws" element={<CaseLawsPage />} />
+            <Route path="/caselaws/:caseLawId" element={<CaseLawDetailPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
 
-          {/* C_ADMIN */}
-          <Route
-            element={
-              <RequireRole roles={['C_ADMIN']}>
-                <Outlet />
-              </RequireRole>
-            }
-          >
-            <Route path="/college" element={<CollegeHomePage />} />
-            <Route path="/college/audit" element={<AuditLogPage scope="college" />} />
-          </Route>
+            {/* S_STUDENT */}
+            <Route
+              element={
+                <RequireRole roles={['S_STUDENT']}>
+                  <Outlet />
+                </RequireRole>
+              }
+            >
+              <Route path="/dashboard" element={<HomePage />} />
+              <Route path="/practice" element={<PracticePage />} />
+            </Route>
 
-          {/* C_PROFESSOR */}
-          <Route
-            element={
-              <RequireRole roles={['C_PROFESSOR']}>
-                <Outlet />
-              </RequireRole>
-            }
-          >
-            <Route path="/professor" element={<ProfessorHomePage />} />
-          </Route>
+            {/* SUPERADMIN */}
+            <Route
+              element={
+                <RequireRole roles={['SUPERADMIN']}>
+                  <Outlet />
+                </RequireRole>
+              }
+            >
+              <Route path="/admin" element={<AdminHomePage />} />
+              <Route path="/admin/colleges" element={<CollegesPage />} />
+              <Route path="/admin/colleges/:collegeId" element={<CollegeDetailPage />} />
+              <Route path="/admin/acts" element={<AdminActsPage />} />
+              <Route path="/admin/acts/:actId" element={<AdminActDetailPage />} />
+              <Route path="/admin/sections/:sectionId" element={<AdminSectionPage />} />
+              <Route path="/admin/import" element={<ImportPage />} />
+              <Route path="/admin/caselaws" element={<AdminCaseLawsPage />} />
+              <Route path="/admin/caselaws/new" element={<AdminCaseLawFormPage />} />
+              <Route path="/admin/caselaws/:caseLawId" element={<AdminCaseLawFormPage />} />
+              <Route path="/admin/caselaws/:caseLawId/content" element={<AdminCaseLawContentPage />} />
+              <Route path="/admin/audit" element={<AuditLogPage scope="all" />} />
+            </Route>
 
-          {/* C_STUDENT */}
-          <Route
-            element={
-              <RequireRole roles={['C_STUDENT']}>
-                <Outlet />
-              </RequireRole>
-            }
-          >
-            <Route path="/student" element={<StudentHomePage />} />
+            {/* C_ADMIN */}
+            <Route
+              element={
+                <RequireRole roles={['C_ADMIN']}>
+                  <Outlet />
+                </RequireRole>
+              }
+            >
+              <Route path="/college" element={<CollegeHomePage />} />
+              <Route path="/college/users" element={<UsersPage />} />
+              <Route path="/college/users/import" element={<UsersImportPage />} />
+              <Route path="/college/users/:userId" element={<UserDetailPage />} />
+              <Route path="/college/subjects" element={<SubjectsPage />} />
+              <Route path="/college/subjects/:subjectId" element={<SubjectDetailPage />} />
+              <Route path="/college/audit" element={<AuditLogPage scope="college" />} />
+            </Route>
+
+            {/* C_PROFESSOR */}
+            <Route
+              element={
+                <RequireRole roles={['C_PROFESSOR']}>
+                  <Outlet />
+                </RequireRole>
+              }
+            >
+              <Route path="/professor" element={<ProfessorAssessmentsPage />} />
+              <Route path="/professor/assessments/new" element={<AssessmentEditorPage />} />
+              <Route path="/professor/assessments/:assessmentId" element={<ProfessorAssessmentDetailPage />} />
+              <Route path="/professor/assessments/:assessmentId/edit" element={<AssessmentEditorPage />} />
+            </Route>
+
+            {/* C_STUDENT */}
+            <Route
+              element={
+                <RequireRole roles={['C_STUDENT']}>
+                  <Outlet />
+                </RequireRole>
+              }
+            >
+              <Route path="/student" element={<StudentAssessmentsPage />} />
+              <Route path="/student/assessments/:assessmentId" element={<StudentAssessmentPage />} />
+            </Route>
           </Route>
-        </Route>
-        <Route element={<NotFoundFrame />}>
-          <Route path="*" element={<NotFoundPage />} />
-        </Route>
-      </Routes>
-    </AuthProvider>
+          <Route element={<NotFoundFrame />}>
+            <Route path="*" element={<NotFoundPage />} />
+          </Route>
+        </Routes>
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }
 

@@ -42,7 +42,7 @@ describe('parseImportSource', () => {
 });
 
 const mixed: ImportResult = toImportResult({
-  summary: { total: 4, created: 1, rejected: 2, failed: 1 },
+  summary: { total: 4, created: 1, converted: 0, rejected: 2, failed: 1 },
   rows: [
     { index: 0, key: 'ICA-2', status: 'CREATED', id: 'id-2', errors: [] },
     { index: 1, key: 'ICA-2', status: 'REJECTED', id: null, errors: ["sectionNumber: 'ICA-2' is a duplicate of row 0"] },
@@ -80,7 +80,7 @@ describe('unknownActShortCode', () => {
 describe('toImportResult', () => {
   it('fills missing lists and counts', () => {
     expect(toImportResult({ rows: [{ index: 0, key: ' ', status: 'CREATED', id: 'a', errors: undefined as never }] })).toEqual({
-      summary: { total: 1, created: 0, rejected: 0, failed: 0 },
+      summary: { total: 1, created: 0, converted: 0, rejected: 0, failed: 0 },
       rows: [{ index: 0, key: null, status: 'CREATED', id: 'a', errors: [] }],
     });
   });

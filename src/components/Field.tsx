@@ -105,3 +105,61 @@ export function TextAreaField({
     </FieldShell>
   );
 }
+
+/**
+ * A number kept as the typed text (so "7." or "" survive while typing); the form model parses
+ * and checks it. Used for max marks (`step` 0.5, the `MarksInput` of UI spec F3) and word limits.
+ */
+export function NumberField({
+  step,
+  min,
+  max,
+  inputMode = 'numeric',
+  ...props
+}: Omit<BaseProps, 'maxLength'> & { step: number; min: number; max: number; inputMode?: 'numeric' | 'decimal' }) {
+  const { id, value, onChange, error, required } = props;
+  return (
+    <FieldShell {...props} length={value.length}>
+      {(describedBy) => (
+        <input
+          id={id}
+          type="number"
+          className={`${styles.input} ${styles.numberInput}`}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          step={step}
+          min={min}
+          max={max}
+          inputMode={inputMode}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={describedBy}
+          aria-required={required || undefined}
+        />
+      )}
+    </FieldShell>
+  );
+}
+
+/**
+ * `<input type="datetime-local">` in the viewer's time zone (UI spec F3 `DateTimeField`). The value
+ * is the input's own `yyyy-MM-ddTHH:mm`; `lib/dateTimeLocal.ts` converts it to and from UTC.
+ */
+export function DateTimeField(props: Omit<BaseProps, 'maxLength'>) {
+  const { id, value, onChange, error, required } = props;
+  return (
+    <FieldShell {...props} length={value.length}>
+      {(describedBy) => (
+        <input
+          id={id}
+          type="datetime-local"
+          className={`${styles.input} ${styles.dateTimeInput}`}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={describedBy}
+          aria-required={required || undefined}
+        />
+      )}
+    </FieldShell>
+  );
+}

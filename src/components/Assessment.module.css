@@ -1,0 +1,400 @@
+/* F3 assessments: deadlines, grid cells, answer cards, the publish checklist and the PDF viewer. */
+
+.deadline {
+  color: var(--lx-muted);
+}
+
+/* Paired with the "Due soon" text, never colour alone. */
+.deadlineSoon {
+  color: #8a4b0b;
+}
+
+.deadlineSoon strong {
+  font-weight: 700;
+}
+
+/* Grid cells: icon + text */
+
+.cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  white-space: nowrap;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.cellIcon {
+  display: inline-flex;
+  justify-content: center;
+  width: 1.1rem;
+  font-size: 0.95rem;
+}
+
+.cell_SUBMITTED {
+  color: #1f5136;
+}
+
+.cell_UPLOADED {
+  color: #6b4b0f;
+}
+
+.cell_NOT_UPLOADED {
+  color: var(--lx-muted);
+  font-weight: 500;
+}
+
+.cell_NOT_ATTEMPTED {
+  color: #7d2c18;
+}
+
+/* Submissions grid: sticky header and first column inside its own scroll area */
+
+.gridWrap {
+  max-height: 70vh;
+  overflow: auto;
+  border: 1px solid var(--lx-border);
+  border-radius: var(--lx-radius);
+  background: var(--lx-card);
+}
+
+.grid {
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 100%;
+  font-size: 0.9rem;
+}
+
+.grid th,
+.grid td {
+  padding: 0.55rem 0.8rem;
+  border-bottom: 1px solid var(--lx-border);
+  text-align: left;
+  vertical-align: middle;
+  background: var(--lx-card);
+}
+
+.grid thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--lx-ivory);
+  color: var(--lx-navy);
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.grid .stickyCol {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  min-width: 12rem;
+  border-right: 1px solid var(--lx-border);
+}
+
+.grid thead .stickyCol {
+  z-index: 3;
+}
+
+.studentName {
+  display: block;
+  font-weight: 600;
+  color: var(--lx-ink);
+}
+
+.studentId {
+  display: block;
+  color: var(--lx-muted);
+  font-family: ui-monospace, 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  font-size: 0.8rem;
+}
+
+.cellChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.9rem;
+  margin: 0.35rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cellChips li {
+  display: inline-flex;
+  gap: 0.3rem;
+  align-items: center;
+}
+
+.cellChipLabel {
+  color: var(--lx-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+/* Questions (professor detail) and answer cards (student) */
+
+.questionList {
+  display: grid;
+  gap: 0.9rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.questionMeta {
+  margin: 0 0 0.3rem;
+  color: var(--lx-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.questionText {
+  margin: 0;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+  line-height: 1.55;
+}
+
+.answerCard {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--lx-border);
+  border-radius: var(--lx-radius);
+  background: var(--lx-card);
+  box-shadow: var(--lx-shadow);
+}
+
+.answerCardHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.answerCardTitle {
+  margin: 0;
+  color: var(--lx-navy);
+  font-family: var(--lx-serif);
+  font-size: 1.1rem;
+}
+
+.answerArea {
+  display: grid;
+  gap: 0.6rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--lx-border);
+}
+
+.fileLine {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 0.9rem;
+}
+
+.fileName {
+  font-weight: 600;
+}
+
+.answerActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.progressRow {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.progressRow progress {
+  width: 100%;
+  height: 0.6rem;
+  accent-color: var(--lx-navy);
+}
+
+.muted {
+  margin: 0;
+  color: var(--lx-muted);
+  font-size: 0.9rem;
+}
+
+/* Student list */
+
+.groupHeading {
+  margin: 1.5rem 0 0.6rem;
+  color: var(--lx-navy);
+  font-family: var(--lx-serif);
+  font-size: 1.15rem;
+}
+
+.assessmentCards {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.assessmentCard {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--lx-border);
+  border-radius: var(--lx-radius);
+  background: var(--lx-card);
+  color: inherit;
+  text-decoration: none;
+  box-shadow: var(--lx-shadow);
+}
+
+.assessmentCard:hover {
+  border-color: var(--lx-gold);
+}
+
+.assessmentCard:focus-visible {
+  outline: 3px solid var(--lx-navy);
+  outline-offset: 2px;
+}
+
+.cardSubject {
+  color: var(--lx-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.cardTitleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem 0.75rem;
+}
+
+.cardTitle {
+  margin: 0;
+  color: var(--lx-navy);
+  font-family: var(--lx-serif);
+  font-size: 1.1rem;
+}
+
+.cardLine {
+  margin: 0;
+  font-size: 0.88rem;
+}
+
+/* Draft editor: form + checklist */
+
+.editorGrid {
+  display: grid;
+  gap: 1.25rem;
+}
+
+@media (min-width: 1024px) {
+  .editorGrid {
+    grid-template-columns: minmax(0, 1fr) 18rem;
+    align-items: start;
+  }
+
+  .checklistAside {
+    position: sticky;
+    top: 5rem;
+  }
+}
+
+.checklist {
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--lx-border);
+  border-radius: var(--lx-radius);
+  background: var(--lx-card);
+}
+
+.checklistTitle {
+  margin: 0 0 0.6rem;
+  color: var(--lx-navy);
+  font-family: var(--lx-serif);
+  font-size: 1.05rem;
+}
+
+.checklist ul {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.9rem;
+}
+
+.checkItem {
+  display: grid;
+  grid-template-columns: 1.2rem 1fr;
+  gap: 0.35rem;
+}
+
+.checkOk {
+  color: #1f5136;
+}
+
+.checkFail {
+  color: #7d2c18;
+}
+
+.checkFail a {
+  color: inherit;
+}
+
+.totalMarks {
+  margin: 0;
+  color: var(--lx-navy);
+  font-weight: 700;
+}
+
+/* PDF viewer */
+
+.pdfDialog {
+  width: min(64rem, calc(100vw - 1rem));
+  height: min(90vh, 60rem);
+  padding: 1rem;
+}
+
+.pdfDialog[open] {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.pdfHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.pdfTitle {
+  margin: 0;
+  overflow: hidden;
+  color: var(--lx-navy);
+  font-family: var(--lx-serif);
+  font-size: 1.1rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pdfFrame {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  border: 1px solid var(--lx-border);
+  border-radius: 0.5rem;
+  background: var(--lx-ivory);
+}
+
+.pdfStatus {
+  flex: 1;
+  display: grid;
+  place-content: center;
+  gap: 0.75rem;
+  text-align: center;
+}

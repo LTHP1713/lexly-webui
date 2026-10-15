@@ -47,7 +47,7 @@ describe('import page', () => {
       http.post(`${API}/admin/bulk/sections`, async ({ request }) => {
         sent = await request.json();
         return json({
-          summary: { total: 3, created: 1, rejected: 1, failed: 1 },
+          summary: { total: 3, created: 1, converted: 0, rejected: 1, failed: 1 },
           rows: [
             { index: 0, key: 'ICA-2', status: 'CREATED', id: 'sec-2', errors: [] },
             { index: 1, key: 'ICA-2', status: 'REJECTED', id: null, errors: ["sectionNumber: 'ICA-2' is a duplicate of row 0"] },

@@ -103,12 +103,13 @@ describe('role areas', () => {
     await waitFor(() => expect(router.state.location.pathname).toBe(home));
   });
 
-  it('gives the college admin Audit and Library, and a home naming the college', async () => {
+  it('gives the college admin Users, Subjects, Audit and Library, and a hub naming the college', async () => {
     signedInAs({ role: 'C_ADMIN', college: { id: 'c', code: 'NLSIU', name: 'National Law School' } });
     await renderAt('/');
-    expect(await screen.findByRole('heading', { level: 1, name: 'National Law School (NLSIU)' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: 'National Law School' })).toBeInTheDocument();
+    expect(screen.getByText('NLSIU')).toBeInTheDocument();
     const nav = screen.getAllByRole('navigation', { name: 'Primary' })[0];
-    expect(within(nav).getAllByRole('link').map((l) => l.textContent)).toEqual(['Audit', 'Library']);
+    expect(within(nav).getAllByRole('link').map((l) => l.textContent)).toEqual(['Users', 'Subjects', 'Audit', 'Library']);
   });
 
   it('shows the Library sub-nav to college roles only', async () => {

@@ -4,7 +4,8 @@ import { deleteCaseLaw } from '@/api/adminCaseLaws';
 import { listCaseLaws, type CaseLawSummary } from '@/api/caselaws';
 import { ApiError } from '@/api/client';
 import { ErrorState, LoadingState } from '@/components/QueryStates';
-import { useApiQuery } from '@/hooks/useApiQuery';
+import { useCachedQuery } from '@/hooks/useCachedQuery';
+import { queryKeys } from '@/lib/queryClient';
 import { ImportanceBadge } from '@/pages/content/ImportanceBadge';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { ContentSubNav } from '@/components/SubNav';
@@ -28,7 +29,7 @@ export function AdminCaseLawsPage() {
   const [toDelete, setToDelete] = useState<CaseLawSummary | null>(null);
   const toast = useToast();
 
-  const results = useApiQuery(`admin-caselaws:${query}:${page}`, () =>
+  const results = useCachedQuery(queryKeys.adminCaseLaws.list({ query, page }), () =>
     listCaseLaws({ query: query || undefined, page, size: PAGE_SIZE }, { cache: 'no-cache' }),
   );
   const data = results.status === 'success' ? results.data : results.status === 'loading' ? results.staleData : undefined;
