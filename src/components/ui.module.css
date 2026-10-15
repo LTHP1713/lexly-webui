@@ -1230,3 +1230,13 @@ ul.chips {
   white-space: pre-line;
   overflow-wrap: anywhere;
 }
+
+/* F3: number and date-time inputs keep a sensible width */
+
+.numberInput {
+  max-width: 10rem;
+}
+
+.dateTimeInput {
+  max-width: 16rem;
+}

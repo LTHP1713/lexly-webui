@@ -37,7 +37,7 @@ export const CHANGE_PASSWORD_PATH = '/change-password';
 /** Shared read-only content every role may open. Also the home of a user with an unknown role. */
 export const LIBRARY_HOME = '/acts';
 
-/** Each role's home (UI spec §0.7, F1.4). The professor and student homes are placeholders until F3. */
+/** Each role's home (UI spec §0.7, F1.4). The professor and student homes are their assessment lists (F3). */
 const HOMES: Record<Role, string> = {
   SUPERADMIN: '/admin',
   C_ADMIN: '/college',
@@ -104,8 +104,8 @@ const NAV: Record<Role, NavItem[]> = {
     { to: '/college/audit', label: 'Audit', icon: ClockIcon, matches: ['/college/audit'] },
     LIBRARY,
   ],
-  C_PROFESSOR: [LIBRARY],
-  C_STUDENT: [LIBRARY],
+  C_PROFESSOR: [{ to: '/professor', label: 'Assessments', icon: ChecklistIcon, matches: ['/professor'] }, LIBRARY],
+  C_STUDENT: [{ to: '/student', label: 'Assessments', icon: ChecklistIcon, matches: ['/student'] }, LIBRARY],
   S_STUDENT: [
     { to: '/dashboard', label: 'Home', icon: HomeIcon, matches: ['/dashboard'] },
     { to: '/acts', label: 'Bare Acts', icon: BookIcon, matches: ['/acts', '/sections'] },

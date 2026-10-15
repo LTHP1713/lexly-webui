@@ -4,7 +4,7 @@
  * with a duplicate roll no, a bad email and a solo account to convert, reads the per-row results,
  * manages users (add with a duplicate ID, reset, remove with the typed login ID), creates subjects
  * and maps professors. An imported student then signs in with college code + roll no and sees the
- * subject; a professor sees it under "My subjects". Ends with the audit summary and a phone pass.
+ * subject; a professor sees it in the assessment list's filter. Ends with the audit summary and a phone pass.
  *
  * Desktop only (the phone pass resizes the window itself): the flow is stateful.
  */
@@ -273,8 +273,8 @@ test('an imported student signs in with college code + roll no and sees the subj
   await collegeSignIn(page, 'R001', 'R001')
   await changePassword(page, 'R001', NEW_PASSWORD)
   await expect(page).toHaveURL(/\/student$/)
-  await expect(page.getByRole('heading', { level: 3, name: 'Constitutional Law I' })).toBeVisible()
-  await expect(page.getByText('CON-101')).toBeVisible()
+  // Since F3 the subject shows in the assessment list's Subject filter.
+  await expect(page.getByLabel('Subject').getByRole('option', { name: /CON-101 · Constitutional Law I/ })).toBeAttached()
   await expectNoAxeViolations(page)
   await logOut(page)
 
@@ -283,13 +283,12 @@ test('an imported student signs in with college code + roll no and sees the subj
   await expect(page).toHaveURL(/\/change-password$/)
 })
 
-test('a professor sees the subject under My subjects, with the co-professor', async ({ page }) => {
+test('a professor sees their subject in the assessment filter', async ({ page }) => {
   await collegeSignIn(page, 'EMP1', 'EMP1')
   await changePassword(page, 'EMP1', NEW_PASSWORD)
   await expect(page).toHaveURL(/\/professor$/)
-  await expect(page.getByRole('heading', { level: 2, name: 'My subjects' })).toBeVisible()
-  await expect(page.getByRole('heading', { level: 3, name: 'Constitutional Law I' })).toBeVisible()
-  await expect(page.getByText('With Prof. Lata Iyer')).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Assessments' })).toBeVisible()
+  await expect(page.getByLabel('Subject').getByRole('option', { name: /CON-101 · Constitutional Law I/ })).toBeAttached()
   await expectNoAxeViolations(page)
   await logOut(page)
 })

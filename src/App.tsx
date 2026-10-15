@@ -53,10 +53,21 @@ const SubjectsPage = lazy(() => import('@/pages/college/subjects/SubjectsPage').
 const SubjectDetailPage = lazy(() =>
   import('@/pages/college/subjects/SubjectDetailPage').then((m) => ({ default: m.SubjectDetailPage })),
 );
-const ProfessorHomePage = lazy(() =>
-  import('@/pages/professor/ProfessorHomePage').then((m) => ({ default: m.ProfessorHomePage })),
+const ProfessorAssessmentsPage = lazy(() =>
+  import('@/pages/professor/ProfessorAssessmentsPage').then((m) => ({ default: m.ProfessorAssessmentsPage })),
 );
-const StudentHomePage = lazy(() => import('@/pages/student/StudentHomePage').then((m) => ({ default: m.StudentHomePage })));
+const ProfessorAssessmentDetailPage = lazy(() =>
+  import('@/pages/professor/ProfessorAssessmentDetailPage').then((m) => ({ default: m.ProfessorAssessmentDetailPage })),
+);
+const AssessmentEditorPage = lazy(() =>
+  import('@/pages/professor/AssessmentEditorPage').then((m) => ({ default: m.AssessmentEditorPage })),
+);
+const StudentAssessmentsPage = lazy(() =>
+  import('@/pages/student/StudentAssessmentsPage').then((m) => ({ default: m.StudentAssessmentsPage })),
+);
+const StudentAssessmentPage = lazy(() =>
+  import('@/pages/student/StudentAssessmentPage').then((m) => ({ default: m.StudentAssessmentPage })),
+);
 
 function App() {
   // One client per app instance (tests mount several); emptied whenever the user changes.
@@ -161,7 +172,10 @@ function App() {
                 </RequireRole>
               }
             >
-              <Route path="/professor" element={<ProfessorHomePage />} />
+              <Route path="/professor" element={<ProfessorAssessmentsPage />} />
+              <Route path="/professor/assessments/new" element={<AssessmentEditorPage />} />
+              <Route path="/professor/assessments/:assessmentId" element={<ProfessorAssessmentDetailPage />} />
+              <Route path="/professor/assessments/:assessmentId/edit" element={<AssessmentEditorPage />} />
             </Route>
 
             {/* C_STUDENT */}
@@ -172,7 +186,8 @@ function App() {
                 </RequireRole>
               }
             >
-              <Route path="/student" element={<StudentHomePage />} />
+              <Route path="/student" element={<StudentAssessmentsPage />} />
+              <Route path="/student/assessments/:assessmentId" element={<StudentAssessmentPage />} />
             </Route>
           </Route>
           <Route element={<NotFoundFrame />}>

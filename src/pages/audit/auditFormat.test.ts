@@ -62,6 +62,15 @@ describe('auditSummary (UI spec F1.10)', () => {
     ).toBe('CON-101 · 2 professors');
   });
 
+  it('summarises F3 assessment events', () => {
+    const details = { subjectCode: 'CON-101', title: 'Moot problem', questionCount: 10, dueAt: '2026-11-02T12:00:00Z' };
+    expect(auditSummary(event({ action: 'ASSESSMENT_PUBLISHED', details }))).toMatch(
+      /^CON-101 · Moot problem · 10 questions, due \d+ Nov 2026/,
+    );
+    expect(auditSummary(event({ action: 'ASSESSMENT_REMOVED', details }))).toBe('CON-101 · Moot problem');
+    expect(auditSummary(event({ action: 'ASSESSMENT_REMOVED', details: {} }))).toBe('—');
+  });
+
   it('shows a dash for missing fields and unknown actions', () => {
     expect(auditSummary(event({ action: 'PASSWORD_RESET' }))).toBe('—');
     expect(auditSummary(event({ action: 'SOMETHING_NEW' }))).toBe('—');

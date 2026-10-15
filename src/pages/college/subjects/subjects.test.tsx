@@ -1,4 +1,4 @@
-/** F2.7–F2.8: subjects, professor mapping, delete when in use, and the read-only cards. */
+/** F2.7: subjects, professor mapping and delete when in use. (The F2.8 cards became the F3 list filters.) */
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
@@ -124,26 +124,5 @@ describe('subjects (C_ADMIN)', () => {
     server.use(http.get(`${API}/college/subjects/x`, () => apiError(404, 'NOT_FOUND')));
     await renderApp('/college/subjects/x');
     expect(await screen.findByRole('heading', { name: 'Page not found' })).toBeInTheDocument();
-  });
-});
-
-describe('read-only subjects (F2.8)', () => {
-  it('shows a professor their subjects, with the other professors', async () => {
-    signedInAs({ id: 'p1', role: 'C_PROFESSOR', loginId: 'EMP1', college });
-    server.use(
-      http.get(`${API}/college/subjects`, () =>
-        json([subject({ professors: [{ id: 'p1', fullName: 'Dr. K. Menon' }, { id: 'p2', fullName: 'Prof. L. Iyer' }] })]),
-      ),
-    );
-    await renderApp('/professor');
-    expect(await screen.findByRole('heading', { level: 3, name: 'Constitutional Law I' })).toBeInTheDocument();
-    expect(screen.getByText('With Prof. L. Iyer')).toBeInTheDocument();
-  });
-
-  it('shows a student the empty state', async () => {
-    signedInAs({ role: 'C_STUDENT', loginId: 'R1', college });
-    server.use(http.get(`${API}/college/subjects`, () => json([])));
-    await renderApp('/student');
-    expect(await screen.findByText("Your college hasn't added any subjects yet.")).toBeInTheDocument();
   });
 });

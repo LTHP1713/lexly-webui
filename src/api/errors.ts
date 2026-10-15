@@ -22,6 +22,10 @@ export const ErrorCode = {
   SUBJECT_CODE_ALREADY_EXISTS: 'SUBJECT_CODE_ALREADY_EXISTS',
   IMPORT_FILE_INVALID: 'IMPORT_FILE_INVALID',
   SUBJECT_IN_USE: 'SUBJECT_IN_USE',
+  ASSESSMENT_NOT_EDITABLE: 'ASSESSMENT_NOT_EDITABLE',
+  ASSESSMENT_CLOSED: 'ASSESSMENT_CLOSED',
+  ANSWER_LOCKED: 'ANSWER_LOCKED',
+  INVALID_FILE: 'INVALID_FILE',
   /** Client-side: the request never reached the server. */
   NETWORK_ERROR: 'NETWORK_ERROR',
   /** Client-side: an upload or download was cancelled through its `AbortSignal`. */
@@ -45,6 +49,9 @@ const MESSAGES: Partial<Record<string, string>> = {
   LOGIN_ID_ALREADY_EXISTS: 'Another student or professor at your college already uses this ID.',
   SUBJECT_CODE_ALREADY_EXISTS: 'Another subject at your college already uses this code.',
   ABORTED: 'Cancelled.',
+  ASSESSMENT_NOT_EDITABLE: "This assessment has been published or removed, so it can't be edited any more.",
+  ASSESSMENT_CLOSED: "The due date has passed, so this answer can't be changed.",
+  ANSWER_LOCKED: 'This answer was already submitted.',
 };
 
 const SERVER_TROUBLE = 'Lexly is having trouble right now. Please try again in a moment.';

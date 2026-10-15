@@ -5,6 +5,7 @@
  */
 import type { AuditAction, AuditEvent } from '@/api/audit';
 import { ROLE_LABELS, toRole } from '@/auth/roles';
+import { formatInstant } from '@/lib/format';
 
 export const ACTION_LABELS: Record<AuditAction, string> = {
   LOGIN_FAILED: 'Failed sign-in',
@@ -121,8 +122,17 @@ export function auditSummary(event: AuditEvent): string {
       return parts.length > 0 ? parts.join(' · ') : DASH;
     }
     case 'ASSESSMENT_PUBLISHED':
-    case 'ASSESSMENT_REMOVED':
-      return text(d.title) ?? DASH;
+    case 'ASSESSMENT_REMOVED': {
+      // "CON-101 · Moot problem · 10 questions, due 2 Nov 2026, 5:00 pm" (UI spec F3 audit summaries).
+      const head = [text(d.subjectCode), text(d.title)].filter((p): p is string => p !== null).join(' · ');
+      if (event.action === 'ASSESSMENT_REMOVED') return head || DASH;
+      const n = typeof d.questionCount === 'number' ? d.questionCount : null;
+      const due = text(d.dueAt);
+      const tail = [n === null ? null : `${n} ${n === 1 ? 'question' : 'questions'}`, due ? `due ${formatInstant(due)}` : null]
+        .filter(Boolean)
+        .join(', ');
+      return [head, tail].filter(Boolean).join(' · ') || DASH;
+    }
     default:
       return DASH;
   }

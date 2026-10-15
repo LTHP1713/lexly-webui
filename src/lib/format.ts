@@ -77,3 +77,8 @@ export function formatBytes(bytes: number): string {
   if (kb < 1024) return `${kb.toFixed(1).replace(/\.0$/, '')} KB`;
   return `${(kb / 1024).toFixed(1).replace(/\.0$/, '')} MB`;
 }
+
+/** Marks with up to one decimal and no trailing `.0` (UI spec §0.4): `7.5`, `10`. */
+export function formatMarks(value: number): string {
+  return String(Math.round(value * 10) / 10);
+}

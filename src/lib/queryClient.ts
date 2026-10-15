@@ -80,4 +80,17 @@ export const queryKeys = {
     list: (q: string) => ['college', 'subjects', 'list', q] as const,
     detail: (id: string) => ['college', 'subjects', 'detail', id] as const,
   },
+  professorAssessments: {
+    all: ['professor', 'assessments'] as const,
+    lists: ['professor', 'assessments', 'list'] as const,
+    list: (filters: object) => ['professor', 'assessments', 'list', filters] as const,
+    /** The assessment and, under it, its submissions grid. */
+    detail: (id: string) => ['professor', 'assessments', 'detail', id] as const,
+    answers: (id: string, filters: object) => ['professor', 'assessments', 'detail', id, 'answers', filters] as const,
+  },
+  studentAssessments: {
+    all: ['student', 'assessments'] as const,
+    list: (filters: object) => ['student', 'assessments', 'list', filters] as const,
+    detail: (id: string) => ['student', 'assessments', 'detail', id] as const,
+  },
 } as const;
