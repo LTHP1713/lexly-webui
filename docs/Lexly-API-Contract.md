@@ -106,12 +106,12 @@ Each endpoint below lists the roles that may call it. Other roles get `403 FORBI
 | `SUBJECT_CODE_ALREADY_EXISTS` | 409 | ADDED, LIVE (P2) | Subject code already used in the college |
 | `IMPORT_FILE_INVALID` | 400 | LIVE (P2) | Unreadable file, wrong headers, > 2,000 rows, wrong format |
 | `SUBJECT_IN_USE` | 409 | LIVE (P2) | Deleting a subject that has assessments in any status (P3) |
-| `ASSESSMENT_NOT_EDITABLE` | 409 | LIVE (P3) | Edit/delete/publish on a non-`DRAFT` assessment, or remove on a `DRAFT` or `REMOVED` one |
+| `ASSESSMENT_NOT_EDITABLE` | 409 | LIVE (P3) | Edit/delete/publish on a non-`DRAFT` assessment, or remove on a `DRAFT` or `REMOVED` one; from P4 also grading an answer of a `REMOVED` assessment |
 | `ASSESSMENT_CLOSED` | 409 | LIVE (P3) | Upload/submit at or after `dueAt`, or on a closed assessment (a removed one is `404`) |
 | `ANSWER_LOCKED` | 409 | LIVE (P3) | Upload/submit on an already `SUBMITTED` answer |
 | `INVALID_FILE` | 400 | LIVE (P3) | Upload failed the §0.6 checks |
-| `INVALID_MARKS` | 400 | PROPOSED (P4) | Marks < 0, > max, or not a multiple of 0.5 |
-| `GRADE_PUBLISHED` | 409 | PROPOSED (P4) | Changing a published grade |
+| `INVALID_MARKS` | 400 | LIVE (P4) | Marks < 0, > max, or not a multiple of 0.5 |
+| `GRADE_PUBLISHED` | 409 | LIVE (P4) | Changing a published grade |
 | `AI_EVALUATION_NOT_ALLOWED` | 409 | PROPOSED (P5) | AI evaluate before the PDF was downloaded, on a published grade, or while one is running (also used for a solo attempt while another is evaluating) |
 | `PLAN_REQUIRED` | 402 | PROPOSED (P7) | Solo feature without an `ACTIVE` plan |
 | `QUOTA_EXCEEDED` | 429 | PROPOSED (P7) | 60 generations already used this month |
@@ -830,7 +830,7 @@ Question order is list order. On PUT, existing question ids are kept when sent b
 | Field | Notes |
 |---|---|
 | `createdBy` | `null` when the professor was removed (show "Former professor") |
-| `counts` | Per answer slot (student × question). `students` = C_STUDENTs in the college. `pendingEvaluation` = submitted answers whose grade is not `PUBLISHED`. `aiEvaluated` = grades in `AI_EVALUATED`. `published` = grades in `PUBLISHED`. `notAttempted` = `answerSlots − submitted` once `CLOSED` or `REMOVED`, else 0. The grading counts (`pendingEvaluation`, `aiEvaluated`, `published`) are 0 until Phase 4 |
+| `counts` | Per answer slot (student × question). `students` = C_STUDENTs in the college. `pendingEvaluation` = submitted answers whose grade is not `PUBLISHED`. `aiEvaluated` = grades in `AI_EVALUATED`. `published` = grades in `PUBLISHED`. `notAttempted` = `answerSlots − submitted` once `CLOSED` or `REMOVED`, else 0 |
 
 - List: only the caller's own assessments, every status. Sort whitelist `dueAt`, `createdAt`, `updatedAt`, `title`; default `dueAt,desc` (drafts without a due date first).
 - Remove deletes the assessment's `UPLOADED` (never submitted) answers and their files, since they can no longer be submitted.
@@ -871,7 +871,7 @@ Only `PUBLISHED` and `CLOSED` assessments of the student's college are returned;
 | `PARTIALLY_SUBMITTED` | `PUBLISHED`, 0 < submitted < questionCount |
 | `SUBMITTED` | `PUBLISHED`, submitted = questionCount |
 | `CLOSED` | `CLOSED` (or `PUBLISHED` with `now ≥ dueAt`, until the close job runs), no published grade for this student |
-| `RESULTS_AVAILABLE` | as `CLOSED`, with ≥ 1 published grade for this student (from P4; never returned in P3) |
+| `RESULTS_AVAILABLE` | as `CLOSED`, with ≥ 1 published grade for this student |
 
 Grades published before closing are visible through `progress.resultsPublished` and the results endpoint (§10.4).
 
@@ -904,7 +904,7 @@ Grades published before closing are visible through `progress.resultsPublished` 
 - `answer` is `null` when nothing has been uploaded.
 - `serverTime` lets the client correct a skewed device clock for countdowns.
 - `uploadLimits` mirrors `lexly.storage.max-file-mb` / `max-pages`: 5 MB and 10 pages (decided 2026-10-15).
-- `resultPublished` and `progress.resultsPublished` are `false` / `0` until P4.
+- `resultPublished` is `true` once that question's grade is published; `progress.resultsPublished` counts the student's published grades (both can be set before closing).
 
 ### 9.4 Student: answers
 
@@ -928,7 +928,7 @@ A re-upload replaces the file and resets `uploadedAt`. `originalFilename` is the
 | Param | Notes |
 |---|---|
 | `questionId` | limit `cells` to one question; a question of another assessment → `400` |
-| `status` | a `CellStatus` (P3; `GradeStatus` values are added in P4, and are `400` until then); returns students with ≥ 1 matching cell (within `questionId` if given) |
+| `status` | a `CellStatus` or a `GradeStatus` (a grade status matches submitted answers whose grade has it); returns students with ≥ 1 matching cell (within `questionId` if given); anything else → `400` |
 | `q` | student name or roll no, case-insensitive |
 | `size` | default 50, max 100 |
 
@@ -951,7 +951,7 @@ A re-upload replaces the file and resets `uploadedAt`. `originalFilename` is the
 }
 ```
 
-`answerId` is set only for `SUBMITTED` answers; professors never see unsubmitted files. `gradeStatus` and `finalMarks` are `null` until P4; `finalMarks` is then set only when `PUBLISHED`.
+`answerId` and `gradeStatus` are set only for `SUBMITTED` answers; professors never see unsubmitted files. `finalMarks` is set only when the grade is `PUBLISHED` (draft marks never show here).
 
 ### 9.6 SUPERADMIN views — REMOVED (2026-10-15)
 
@@ -959,7 +959,9 @@ SUPERADMIN has no access to college assessments, questions or answers (A9 change
 
 ---
 
-## 10. Grading & results — PROPOSED (P4)
+## 10. Grading & results — LIVE (P4)
+
+A `PENDING` grade is created when an answer is submitted. Every endpoint in §10.1–10.3 is `404` for an answer that isn't submitted, belongs to another professor's assessment, or whose professor was removed. Answers of a `REMOVED` assessment can still be read and downloaded, but grading them (PUT grade, approve) → `409 ASSESSMENT_NOT_EDITABLE`.
 
 ### 10.1 `GET /professor/answers/{answerId}?order=byStudent|byQuestion`
 
@@ -992,13 +994,14 @@ SUPERADMIN has no access to college assessments, questions or answers (A9 change
 | Field | Notes |
 |---|---|
 | `grade.ai` | `null` until Phase 5 / until evaluated; see §11.2 |
-| `history[].event` | `DRAFT_SAVED`, `AI_EVALUATED`, `AI_FAILED`, `PUBLISHED` |
-| `navigation` | Within the same assessment, over submitted answers in the requested `order` (default `byStudent`: student name, then question position). `null` at either end |
+| `grade.gradedBy` | `{ id, fullName }` of the approving professor; `null` before approval or once that professor is removed |
+| `history[]` | Oldest first. `event`: `DRAFT_SAVED`, `AI_EVALUATED`, `AI_FAILED`, `PUBLISHED`. `marks`/`feedback` are the values saved by that event. `actor` is `null` for AI results and removed users |
+| `navigation` | Within the same assessment, over submitted answers in the requested `order` (default `byStudent`: student name, then question position; `byQuestion`: question position, then student name). `nextUngradedAnswerId` is the next answer after this one whose grade isn't `PUBLISHED`. Each is `null` at the end of the list (no wrap-around) |
 
-Errors: `404` (not the caller's assessment, answer not submitted, or professor removed).
+Errors: `404` (see above), `400` for an unknown `order`.
 
 ### 10.2 `GET /professor/answers/{answerId}/file`
-Streams the PDF. The **first** successful call sets `professorDownloadedAt` (this enables AI Evaluate).
+Streams the PDF (§0.6). The **first** successful call sets `professorDownloadedAt` (this enables AI Evaluate); later calls leave it unchanged.
 
 ### 10.3 Grade actions
 
@@ -1008,9 +1011,11 @@ Streams the PDF. The **first** successful call sets `professorDownloadedAt` (thi
 | `POST /professor/answers/{answerId}/approve` | optional `{ "finalMarks", "finalFeedback" }` (saved first, atomically) | `200` `grade` object (`status: PUBLISHED`) |
 
 Rules:
-- `finalMarks`: 0 ≤ marks ≤ `maxMarks`, a multiple of 0.5 → else `400 INVALID_MARKS`.
-- `finalFeedback`: ≤ 10,000 chars. **Approve** requires both `finalMarks` and a non-blank `finalFeedback` (`400 VALIDATION_ERROR` naming the missing field).
-- Saving a draft doesn't change `status`. Approve sets `PUBLISHED`, `publishedAt` and `gradedBy`, writes `grade_history`, and invalidates the ranking cache.
+- `finalMarks`: 0 ≤ marks ≤ `maxMarks`, a multiple of 0.5 → else `400 INVALID_MARKS` (`finalMarks: must be between 0 and 10.0 in steps of 0.5`). Returned with one decimal.
+- `finalFeedback`: ≤ 10,000 chars (`400 VALIDATION_ERROR`). **Approve** requires both `finalMarks` and a non-blank `finalFeedback` (`400 VALIDATION_ERROR`: `finalMarks: must not be null`, `finalFeedback: must not be blank`).
+- A body replaces both fields (an omitted field becomes `null`), for PUT and for approve. A rejected approve saves nothing.
+- Saving a draft doesn't change `status` and writes a `DRAFT_SAVED` history row. Approve sets `PUBLISHED`, `publishedAt` and `gradedBy` and writes a `PUBLISHED` history row (no separate `DRAFT_SAVED` for an approve body). Ranking cache invalidation arrives with the cache (P6).
+- Audit: `GRADE_EDITED` / `GRADE_PUBLISHED` (entity `GRADE`, the answer id; details `assessmentId`, `questionPosition`, `studentId`, `finalMarks`, never feedback).
 - Both actions on a `PUBLISHED` grade → `409 GRADE_PUBLISHED`.
 - Approve is allowed while `AI_EVALUATING`. A late AI result is then written to history only.
 
@@ -1031,7 +1036,9 @@ Rules:
 }
 ```
 
-- `outcome` is one of: `PUBLISHED`, `AWAITING_EVALUATION` (submitted, grade not published), `NOT_ATTEMPTED` (closed without a submission), `NOT_SUBMITTED` (still open, not submitted).
+- `outcome` is one of: `PUBLISHED`, `AWAITING_EVALUATION` (submitted, grade not published), `NOT_ATTEMPTED` (closed, or past `dueAt`, without a submission), `NOT_SUBMITTED` (still open, not submitted).
+- `totals.publishedMarks` / `publishedMaxMarks` cover only questions whose outcome is `PUBLISHED`; `totalMaxMarks` is the whole assessment.
+- Drafts and other colleges' assessments → `404`.
 - **Never** returns AI fields or draft marks/feedback (§7.8).
 - `REMOVED` assessments → `404` (A2).
 
@@ -1313,3 +1320,4 @@ The `isFree` field and the `PRO_REQUIRED` error no longer exist anywhere.
 | 2026-10-13 | P1 implemented: five roles, both login modes, `role`/`mustChangePassword` in auth responses, change-password and its gate, extended `/users/me`, colleges and C_ADMIN accounts (§6), audit log (§7), content admin re-scoped to SUPERADMIN. The P1 ADDED items (`GET /admin/acts/{id}`, `GET /admin/sections/{id}`, `GET /superadmin/colleges/{id}`, `COLLEGE_CODE_ALREADY_EXISTS`) are live but still need sign-off. `RATE_LIMITED` moved to P8 to match Plan 8.3. O1 and O2 implemented with their proposed defaults |
 | 2026-10-14 | P2 implemented: §8 is LIVE. The P2 ADDED items (`GET /college/users/{id}`, `GET /college/subjects/{id}`, `LOGIN_ID_ALREADY_EXISTS`, `SUBJECT_CODE_ALREADY_EXISTS`) were signed off. Import templates approved and their parsing rules written down (§8.2). `BulkImportResult.summary` gained `converted` for every import (§5.5 too, always `0` there). Subject codes are stored upper-case; `description` ≤ 2,000 |
 | 2026-10-15 | P3 implemented: §9 is LIVE. Upload limits decided (5 MB, 10 pages; O4) and the §0.6 checks written down; downloads expose `Content-Disposition`. `ASSESSMENT_NOT_EDITABLE`, `ASSESSMENT_CLOSED`, `ANSWER_LOCKED`, `INVALID_FILE` are live. SUPERADMIN read-only views (§9.6) dropped: A9 changed, SUPERADMIN has no access to college assessments or answers. `assessmentCount` (§8.4) is live and counts every status. Clarified: the grid's `status` accepts `CellStatus` only until P4, removing an assessment discards its unsubmitted answers, uploads and submits on a removed assessment are `404`, and the multipart ceiling is 10 MB |
+| 2026-10-18 | P4 implemented: §10 is LIVE; `INVALID_MARKS` and `GRADE_PUBLISHED` are live. The §9 grading placeholders are filled in (counts, grid `gradeStatus`/`finalMarks`, the grid's `GradeStatus` filter, `RESULTS_AVAILABLE`, `resultPublished`, `progress.resultsPublished`). Clarified: grading answers of a removed assessment is `409 ASSESSMENT_NOT_EDITABLE` (reading still works); an approve body replaces both fields; navigation doesn't wrap; `publishedMaxMarks` counts only published questions; the `history[].actor` and `gradedBy` shapes |
