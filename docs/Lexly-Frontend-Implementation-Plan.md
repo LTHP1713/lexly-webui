@@ -225,7 +225,7 @@ Frontend phases mirror the backend phases. **F*n* starts once backend Phase *n*'
 | F1 | Identity, roles, SUPERADMIN & content admin | Phase 1 | L | case-law admin done; backend P1 committed (`feature/phase1`), contract §1, §2, §5–§7 LIVE |
 | F2 | College administration | Phase 2 | M | **Done** 2026-10-14 |
 | F3 | Assessments & answering | Phase 3 | L | **Done** 2026-10-16 against backend `main` (`75a7c08`); F3.9 dropped |
-| F4 | Manual grading & student results | Phase 4 | M | — |
+| F4 | Manual grading & student results | Phase 4 | M | Built 2026-10-18 against backend `feature/phase4` (`0e1174e`); Done once Phase 4 is merged |
 | F5 | AI evaluation UI | Phase 5 | S | — |
 | F6 | Rankings & statistics | Phase 6 | M | — |
 | F7 | Solo AI practice | Phase 7 | M | — |

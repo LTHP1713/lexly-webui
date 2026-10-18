@@ -8,6 +8,7 @@
 **Update, 2026-10-14 (F0 and F1 built):** F0 is done on `feature/f0-cleanup`, and all of F1 is built on `feature/f1-identity` (stacked on F0). Both were exercised against the live backend (`feature/phase1`, `ddac579`): `npm run test:e2e` 24 passed, 10 skipped by design. Backend `feature/phase1` was then merged to `main` (`ca7c842`) and the e2e suite re-run against it: 24 passed, 10 skipped by design, 0 failed, so F1 is Done (plan §10 gate). PRs: #2 (F0) and #3 (F1, stacked on #2). §1–§3 below are updated; the progress file has the details.
 **Update, 2026-10-14 (F2 built):** backend Phase 2 is on `feature/phase2` (`389d70e`, not merged yet) and the contract §8 is LIVE. All of F2 is built on `feature/f2-college-admin` and verified against that branch: `e2e/f2-college.spec.ts` 8 passed, and the full suite 31 passed, 19 skipped by design, 0 failed. Backend `feature/phase2` was then merged to `main` (`676ea65`, same code) and the suite re-run: 31 passed, 19 skipped, 0 failed, so F2 is Done and merged into `master`.
 **Update, 2026-10-16 (F3 built):** backend Phase 3 is merged to `main` (`75a7c08`, PR #4) and the contract §9 is LIVE (the copy here matches the backend's). F3.1–F3.8 and F3.10 are built on `feature/f3-assessments`; F3.9 was dropped (A9). Verified against backend `main`: `e2e/f3-assessments.spec.ts` 5 passed (the plan's "Done when"), and the full suite 36 passed, 24 skipped by design, 0 failed. 176 unit tests pass. F3 is Done.
+**Update, 2026-10-18 (F4 built):** backend Phase 4 is committed on `feature/phase4` (`0e1174e`, not merged yet) and the contract §10 is LIVE (the copy here matches that commit). F4.1–F4.7 are built on `feature/f4-grading` and verified against it: `e2e/f4-grading.spec.ts` 6 passed (the plan's "Done when") and `e2e/f3-assessments.spec.ts` 5 passed. 206 unit tests pass. F4 is Done once Phase 4 is merged to `main` and the suite is re-run.
 **Update, 2026-10-13:** the doc findings in §4 have been applied. The plan and `Lexly-UI-Spec.md` now agree, and the stale references to the deleted Home contract in the code comments and `.env.example` are fixed. The progress file was restored and its Next Up rewritten from this plan; see §4.4.
 
 ---
@@ -19,7 +20,8 @@
 - **F1 done (2026-10-14):** F1.1–F1.11 on `feature/f1-identity` (PR #3). Backend Phase 1 is merged to `main` (`ca7c842`), and the e2e suite passes against it.
 - **F2 done (2026-10-14):** F2.1–F2.9 on `feature/f2-college-admin`, merged into `master`. Backend Phase 2 is merged to `main` (`676ea65`), and the e2e suite passes against it.
 - **F3 done (2026-10-16):** F3.1–F3.8 and F3.10 on `feature/f3-assessments` (F3.9 dropped). Backend Phase 3 is merged to `main` (`75a7c08`), and the e2e suite passes against it.
-- **Blocked on the backend:** F4–F8 (Phases 4–8 not built yet).
+- **F4 built (2026-10-18):** F4.1–F4.7 on `feature/f4-grading`, verified against backend `feature/phase4` (`0e1174e`); Done once Phase 4 is merged.
+- **Blocked on the backend:** F5–F8 (Phases 5–8 not built yet).
 - **Fixed:** the UI no longer breaks against a P1 backend. Roles come from `/users/me`, `RequireRole` replaced `RequireAdmin`, and gated accounts are sent to `/change-password`.
 - **Docs:** the UI spec, the plan and the contract are now in sync (§4). The UI spec covers F0 and F1, including F1.7 and F1.8. The progress file was restored and its Next Up rewritten (§4.4).
 
@@ -29,7 +31,7 @@
 | F1 Identity, roles, SUPERADMIN, content admin | 11 | 11 | — | — |
 | F2 College administration | 9 | 9 | — | — |
 | F3 Assessments & answering | 10 (F3.9 dropped) | 9 | — | — |
-| F4 Manual grading & results | 7 | 0 | — | Phase 4 |
+| F4 Manual grading & results | 7 | 7 built (Done after the P4 merge) | — | — |
 | F5 AI evaluation UI | 6 | 0 | — | Phase 5 |
 | F6 Rankings & statistics | 6 | 0 | — | Phase 6 |
 | F7 Solo AI practice | 9 | 0 | — | Phase 7 |
@@ -99,13 +101,16 @@ All nine tasks are Done (2026-10-14), verified against backend `main` (`676ea65`
 
 All nine remaining tasks are Done (2026-10-16), verified against backend `main` (`75a7c08`); F3.9 (SUPERADMIN read-only) was dropped when A9 changed. See the progress file.
 
-### F4–F8
+### F4
+
+All seven tasks are built (2026-10-18) and verified against backend `feature/phase4` (`0e1174e`); they count as Done once Phase 4 is merged to `main`. See the progress file.
+
+### F5–F8
 
 None of these have code. Each waits for its backend phase.
 
 | Phase | Tasks | Backend dependency | Contract |
 |---|---|---|---|
-| F4 | F4.1 answer review · F4.2 grade panel · F4.3 grading flow · F4.4 history · F4.5 counts refresh · F4.6 student results · F4.7 tests | Phase 4 | §10 |
 | F5 | F5.1 AI Evaluate button · F5.2 polling · F5.3 AI suggestion · F5.4 failure · F5.5 grid & AI usage · F5.6 tests | Phase 5 | §11 |
 | F6 | F6.1 ranking table · F6.2 subject picker · F6.3 C_ADMIN overview · F6.4 per student · F6.5 freshness · F6.6 tests | Phase 6 | §12 |
 | F7 | F7.1 plan gate · F7.2 usage meter · F7.3 generate question · F7.4 attempts · F7.5 generate answer · F7.6 history · F7.7 SUPERADMIN · F7.8 Home card · F7.9 tests | Phase 7 | §13 |
@@ -223,7 +228,7 @@ Order and dependencies, starting from today. Each frontend phase ships only afte
 ### F4 — Manual grading & results (backend Phase 4)
 
 - **Order:** F4.1/F4.2 answer review + grade panel → F4.3 next/previous flow → F4.4 history → F4.5 count refresh → F4.6 student results → F4.7 tests.
-- **UI spec needed first:** the professor review screen. A reference design would help most here.
+- **Built by 2026-10-18** in that order. The UI spec F4 was written first (no reference design; the review follows the F3 detail and editor patterns).
 
 ### F5 — AI evaluation UI (backend Phase 5) and F6 — Rankings & statistics (backend Phase 6)
 
