@@ -51,7 +51,7 @@ export interface StudentQuestion {
   wordLimit: number | null;
   /** `null` until something is uploaded. */
   answer: Answer | null;
-  /** `false` until backend P4. */
+  /** This question's grade is published (possibly before closing). */
   resultPublished: boolean;
 }
 
@@ -214,4 +214,77 @@ export async function checkAnswerFile(file: File, limits: UploadLimits): Promise
 /** The student's own file; works after closing too. */
 export function answerFilePath(questionId: string) {
   return `${answerPath(questionId)}/file`;
+}
+
+// ---------- Results (contract §10.4) ----------
+
+export const RESULT_OUTCOMES = ['PUBLISHED', 'AWAITING_EVALUATION', 'NOT_ATTEMPTED', 'NOT_SUBMITTED'] as const;
+export type ResultOutcome = (typeof RESULT_OUTCOMES)[number];
+
+/**
+ * One question's result. Only published grades carry marks and feedback; `NOT_ATTEMPTED` scores
+ * 0. There are deliberately no AI or draft fields here (TDD §7.8): students never receive them.
+ */
+export interface QuestionResult {
+  questionId: string;
+  position: number;
+  text: string | null;
+  maxMarks: number;
+  outcome: ResultOutcome;
+  finalMarks: number | null;
+  finalFeedback: string | null;
+  publishedAt: string | null;
+}
+
+export interface StudentResults {
+  assessment: { id: string; title: string; subject: SubjectRef; status: AssessmentStatus; dueAt: string | null };
+  /** `publishedMarks` of `publishedMaxMarks` covers only the published questions. */
+  totals: { publishedMarks: number; publishedMaxMarks: number; totalMaxMarks: number };
+  questions: QuestionResult[];
+}
+
+type ResultsDto = {
+  assessment?: (Record<string, unknown> & { subject?: Partial<SubjectRef> | null }) | null;
+  totals?: Partial<StudentResults['totals']> | null;
+  questions?: (Partial<Omit<QuestionResult, 'outcome'>> & { outcome?: string })[] | null;
+};
+
+export function toStudentResults(dto: ResultsDto): StudentResults {
+  const a = dto.assessment ?? {};
+  return {
+    assessment: {
+      id: stringField(a, 'id') ?? '',
+      title: stringField(a, 'title') ?? '',
+      subject: toSubjectRef(a.subject),
+      status: oneOf(ASSESSMENT_STATUSES, a.status),
+      dueAt: stringField(a, 'dueAt'),
+    },
+    totals: {
+      publishedMarks: count(dto.totals?.publishedMarks),
+      publishedMaxMarks: count(dto.totals?.publishedMaxMarks),
+      totalMaxMarks: count(dto.totals?.totalMaxMarks),
+    },
+    // Only the fields above are copied, so nothing else a response might carry reaches the UI.
+    questions: (dto.questions ?? []).map((q, index) => {
+      const outcome = (RESULT_OUTCOMES as readonly string[]).includes(q.outcome ?? '')
+        ? (q.outcome as ResultOutcome)
+        : 'AWAITING_EVALUATION';
+      return {
+        questionId: q.questionId ?? '',
+        position: toNumber(q.position) ?? index + 1,
+        text: blankToNull(q.text),
+        maxMarks: count(q.maxMarks),
+        outcome,
+        finalMarks: outcome === 'PUBLISHED' || outcome === 'NOT_ATTEMPTED' ? toNumber(q.finalMarks) : null,
+        finalFeedback: outcome === 'PUBLISHED' ? blankToNull(q.finalFeedback) : null,
+        publishedAt: q.publishedAt ?? null,
+      };
+    }),
+  };
+}
+
+export async function getStudentResults(id: string, signal?: AbortSignal): Promise<StudentResults> {
+  return toStudentResults(
+    await apiClient.get<ResultsDto>(`/student/assessments/${encodeURIComponent(id)}/results`, { signal }),
+  );
 }

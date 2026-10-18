@@ -71,6 +71,14 @@ describe('auditSummary (UI spec F1.10)', () => {
     expect(auditSummary(event({ action: 'ASSESSMENT_REMOVED', details: {} }))).toBe('—');
   });
 
+  it('summarises F4 grade events without feedback', () => {
+    const details = { assessmentId: 'a1', questionPosition: 2, studentId: 'u1', finalMarks: 7.5 };
+    expect(auditSummary(event({ action: 'GRADE_PUBLISHED', details }))).toBe('Question 2 · 7.5 marks');
+    expect(auditSummary(event({ action: 'GRADE_EDITED', details: { ...details, finalMarks: null } }))).toBe(
+      'Question 2 · no marks',
+    );
+  });
+
   it('shows a dash for missing fields and unknown actions', () => {
     expect(auditSummary(event({ action: 'PASSWORD_RESET' }))).toBe('—');
     expect(auditSummary(event({ action: 'SOMETHING_NEW' }))).toBe('—');

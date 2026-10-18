@@ -16,6 +16,20 @@ export type CellStatus = (typeof CELL_STATUSES)[number];
 
 export type AnswerStatus = 'UPLOADED' | 'SUBMITTED';
 
+/**
+ * A submitted answer's grade (contract §10, TDD §6.3): `PENDING` from submission, the `AI_*`
+ * states from Phase 5, `PUBLISHED` once the professor approves, and final.
+ */
+export const GRADE_STATUSES = ['PENDING', 'AI_EVALUATING', 'AI_EVALUATED', 'AI_FAILED', 'PUBLISHED'] as const;
+export type GradeStatus = (typeof GRADE_STATUSES)[number];
+
+/** The grid's `status` filter takes either kind (contract §9.5). */
+export type GridStatusFilter = CellStatus | GradeStatus;
+
+/** The order the answer review steps through an assessment (contract §10.1 `?order=`). */
+export const REVIEW_ORDERS = ['byStudent', 'byQuestion'] as const;
+export type ReviewOrder = (typeof REVIEW_ORDERS)[number];
+
 export interface SubjectRef {
   id: string;
   code: string;

@@ -88,10 +88,18 @@ export const queryKeys = {
     detail: (id: string) => ['professor', 'assessments', 'detail', id] as const,
     answers: (id: string, filters: object) => ['professor', 'assessments', 'detail', id, 'answers', filters] as const,
   },
+  professorAnswers: {
+    all: ['professor', 'answers'] as const,
+    /** One answer's review; the order changes only `navigation`. */
+    detail: (id: string, order: string) => ['professor', 'answers', id, order] as const,
+    byId: (id: string) => ['professor', 'answers', id] as const,
+  },
   studentAssessments: {
     all: ['student', 'assessments'] as const,
     lists: ['student', 'assessments', 'list'] as const,
     list: (filters: object) => ['student', 'assessments', 'list', filters] as const,
     detail: (id: string) => ['student', 'assessments', 'detail', id] as const,
+    /** Under the detail, so refreshing an assessment refreshes its results too. */
+    results: (id: string) => ['student', 'assessments', 'detail', id, 'results'] as const,
   },
 } as const;

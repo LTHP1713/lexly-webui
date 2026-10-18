@@ -104,6 +104,9 @@ function AssessmentView({ assessment }: { assessment: LoadedAssessment }) {
   const open = assessment.status === 'PUBLISHED' && now < due;
   const submitted = assessment.questions.filter((q) => q.answer?.status === 'SUBMITTED').length;
   const total = assessment.questions.length;
+  // Grades can be published before closing (contract §9.3), so this doesn't wait for the state.
+  const hasResults = assessment.state === 'RESULTS_AVAILABLE' || assessment.questions.some((q) => q.resultPublished);
+  const resultsPath = `/student/assessments/${assessment.id}/results`;
 
   // The due date passed while the page was open: it is already read-only; fetch the server's view.
   const wasOpen = useRef(open);
@@ -130,6 +133,13 @@ function AssessmentView({ assessment }: { assessment: LoadedAssessment }) {
         <p aria-live="polite" className={styles.hint}>
           {formatCount(submitted)} of {formatCount(total)} answers submitted
         </p>
+        {hasResults && (
+          <div className={styles.headerLinks}>
+            <Link to={resultsPath} className={styles.primaryButton}>
+              View results
+            </Link>
+          </div>
+        )}
       </header>
 
       {assessment.instructions && (
@@ -158,6 +168,7 @@ function AssessmentView({ assessment }: { assessment: LoadedAssessment }) {
               limits={assessment.uploadLimits}
               cache={cache}
               isLastToSubmit={submitted === total - 1}
+              resultsPath={resultsPath}
             />
           </li>
         ))}
@@ -175,12 +186,14 @@ function AnswerCard({
   limits,
   cache,
   isLastToSubmit,
+  resultsPath,
 }: {
   question: StudentQuestion;
   open: boolean;
   limits: UploadLimits;
   cache: ReturnType<typeof useAnswerCache>;
   isLastToSubmit: boolean;
+  resultsPath: string;
 }) {
   const id = useId();
   const replaceRef = useRef<HTMLInputElement>(null);
@@ -373,6 +386,11 @@ function AnswerCard({
               </>
             )}
           </>
+        )}
+        {question.resultPublished && (
+          <p className={localStyles.muted}>
+            Your result is published. <Link to={resultsPath}>View results</Link>
+          </p>
         )}
         <div role="alert">{message && <p className={styles.formError}>{message}</p>}</div>
       </div>

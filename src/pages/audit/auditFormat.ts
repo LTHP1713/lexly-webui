@@ -5,7 +5,7 @@
  */
 import type { AuditAction, AuditEvent } from '@/api/audit';
 import { ROLE_LABELS, toRole } from '@/auth/roles';
-import { formatInstant } from '@/lib/format';
+import { formatInstant, formatMarks } from '@/lib/format';
 
 export const ACTION_LABELS: Record<AuditAction, string> = {
   LOGIN_FAILED: 'Failed sign-in',
@@ -132,6 +132,13 @@ export function auditSummary(event: AuditEvent): string {
         .filter(Boolean)
         .join(', ');
       return [head, tail].filter(Boolean).join(' · ') || DASH;
+    }
+    case 'GRADE_EDITED':
+    case 'GRADE_PUBLISHED': {
+      // "Question 2 · 7.5 marks" (UI spec F4 audit summaries). Feedback is never recorded.
+      const position = typeof d.questionPosition === 'number' ? `Question ${d.questionPosition}` : null;
+      const marks = typeof d.finalMarks === 'number' ? `${formatMarks(d.finalMarks)} marks` : 'no marks';
+      return [position, marks].filter(Boolean).join(' · ');
     }
     default:
       return DASH;

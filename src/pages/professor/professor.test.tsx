@@ -243,7 +243,11 @@ describe('assessment detail (F3.4, F3.8)', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Moot problem' })).toBeInTheDocument();
     const grid = await screen.findByRole('table', { name: 'Submissions' });
     expect(within(grid).getByRole('rowheader', { name: /Asha Rao/ })).toBeInTheDocument();
-    expect(within(grid).getByText('Submitted')).toBeInTheDocument();
+    // A submitted answer shows its grade (F4.5) and opens the review.
+    expect(within(grid).getByRole('link', { name: 'Question 1, Asha Rao: To grade' })).toHaveAttribute(
+      'href',
+      '/professor/answers/ans1?order=byStudent',
+    );
     expect(within(grid).getByText('Uploaded')).toBeInTheDocument();
     expect(screen.getByText('1 student')).toBeInTheDocument();
     // Not attempted is "—" while published.
@@ -254,6 +258,52 @@ describe('assessment detail (F3.4, F3.8)', () => {
     await userEvent.setup().selectOptions(screen.getByLabelText('Question'), '2');
     await waitFor(() => expect(router.state.location.search).toBe('?question=2'));
     await waitFor(() => expect(queries.at(-1)).toContain('questionId=q2'));
+  });
+
+  it('shows grading counts, published marks, the grade filter and the grading order (F4.5)', async () => {
+    const queries: string[] = [];
+    server.use(
+      http.get(`${API}/professor/assessments/a1`, () =>
+        json(
+          assessment({
+            status: 'CLOSED',
+            counts: { students: 3, answerSlots: 6, submitted: 4, pendingEvaluation: 3, aiEvaluated: 0, published: 1, notAttempted: 2 },
+          }),
+        ),
+      ),
+      http.get(`${API}/professor/assessments/a1/answers`, ({ request }) => {
+        queries.push(new URL(request.url).search);
+        return json({
+          ...page([
+            {
+              student: { id: 'u1', fullName: 'Asha Rao', loginId: 'R001' },
+              cells: [
+                { questionId: 'q1', position: 1, answerId: 'ans1', cellStatus: 'SUBMITTED', gradeStatus: 'PUBLISHED', finalMarks: 7.5, submittedAt: '2026-10-16T09:00:00Z' },
+                { questionId: 'q2', position: 2, answerId: 'ans2', cellStatus: 'SUBMITTED', gradeStatus: 'PENDING', finalMarks: null, submittedAt: '2026-10-16T09:00:00Z' },
+              ],
+            },
+          ]),
+          size: 50,
+        });
+      }),
+    );
+    const router = await renderApp('/professor/assessments/a1');
+    await screen.findByRole('heading', { level: 1, name: 'Moot problem' });
+    expect(screen.getByText('To grade', { selector: 'dt' }).nextElementSibling).toHaveTextContent('3');
+    expect(screen.getByText('Published', { selector: 'dt' }).nextElementSibling).toHaveTextContent('1');
+
+    const grid = await screen.findByRole('table', { name: 'Submissions' });
+    expect(within(grid).getByRole('link', { name: 'Question 1, Asha Rao: Published, 7.5 of 10' })).toHaveTextContent('7.5 / 10');
+
+    const ui = userEvent.setup();
+    await ui.selectOptions(screen.getByLabelText('Status'), 'PENDING');
+    await waitFor(() => expect(queries.at(-1)).toContain('status=PENDING'));
+    await ui.selectOptions(screen.getByLabelText('Grading order'), 'byQuestion');
+    await waitFor(() => expect(router.state.location.search).toBe('?status=PENDING&order=byQuestion'));
+    expect(within(screen.getByRole('table', { name: 'Submissions' })).getByRole('link', { name: /Question 2, Asha Rao: To grade/ })).toHaveAttribute(
+      'href',
+      '/professor/answers/ans2?order=byQuestion',
+    );
   });
 
   it('removes a published assessment after the confirm', async () => {

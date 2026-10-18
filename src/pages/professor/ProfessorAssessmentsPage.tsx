@@ -28,6 +28,11 @@ function submittedText(a: AssessmentSummary): string {
   return a.status === 'DRAFT' ? '—' : `${formatCount(a.counts.submitted)} of ${formatCount(a.counts.answerSlots)}`;
 }
 
+/** A grading count, or "—" for drafts (nothing can be submitted yet). */
+function gradingText(a: AssessmentSummary, value: number): string {
+  return a.status === 'DRAFT' ? '—' : formatCount(value);
+}
+
 function notAttemptedText(a: AssessmentSummary): string {
   return a.status === 'CLOSED' || a.status === 'REMOVED' ? formatCount(a.counts.notAttempted) : '—';
 }
@@ -214,6 +219,12 @@ function AssessmentTable({ assessments, now }: { assessments: AssessmentSummary[
               <span title="Answers submitted, out of students × questions">Submitted</span>
             </th>
             <th scope="col" className={styles.numeric}>
+              <span title="Submitted answers whose grade isn't published yet">To grade</span>
+            </th>
+            <th scope="col" className={styles.numeric}>
+              Published
+            </th>
+            <th scope="col" className={styles.numeric}>
               Not attempted
             </th>
           </tr>
@@ -240,6 +251,8 @@ function AssessmentTable({ assessments, now }: { assessments: AssessmentSummary[
                 <span className={styles.cellSub}>{formatMarks(a.totalMarks)} marks</span>
               </td>
               <td className={styles.numeric}>{submittedText(a)}</td>
+              <td className={styles.numeric}>{gradingText(a, a.counts.pendingEvaluation)}</td>
+              <td className={styles.numeric}>{gradingText(a, a.counts.published)}</td>
               <td className={styles.numeric}>{notAttemptedText(a)}</td>
             </tr>
           ))}
@@ -269,6 +282,11 @@ function AssessmentCards({ assessments, now }: { assessments: AssessmentSummary[
           {a.status !== 'DRAFT' && (
             <span className={styles.hint}>
               {formatCount(a.counts.submitted)} of {formatCount(a.counts.answerSlots)} submitted
+            </span>
+          )}
+          {a.status !== 'DRAFT' && a.counts.submitted > 0 && (
+            <span className={styles.hint}>
+              {formatCount(a.counts.pendingEvaluation)} to grade · {formatCount(a.counts.published)} published
             </span>
           )}
         </li>
