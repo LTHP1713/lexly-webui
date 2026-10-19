@@ -115,8 +115,16 @@ export function NumberField({
   min,
   max,
   inputMode = 'numeric',
+  onUnreadable,
   ...props
-}: Omit<BaseProps, 'maxLength'> & { step: number; min: number; max: number; inputMode?: 'numeric' | 'decimal' }) {
+}: Omit<BaseProps, 'maxLength'> & {
+  step: number;
+  min: number;
+  max: number;
+  inputMode?: 'numeric' | 'decimal';
+  /** Whether the browser can't read the typed text as a number (e.g. "7,5"); `value` is then `''`. */
+  onUnreadable?: (unreadable: boolean) => void;
+}) {
   const { id, value, onChange, error, required } = props;
   return (
     <FieldShell {...props} length={value.length}>
@@ -126,7 +134,10 @@ export function NumberField({
           type="number"
           className={`${styles.input} ${styles.numberInput}`}
           value={value}
-          onChange={(event) => onChange(event.target.value)}
+          onChange={(event) => {
+            onUnreadable?.(event.target.validity.badInput);
+            onChange(event.target.value);
+          }}
           step={step}
           min={min}
           max={max}

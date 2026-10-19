@@ -35,7 +35,8 @@ No Figma file or reference designs exist yet. When they do, link them here and f
 - [F1 — Identity, roles, SUPERADMIN & content admin](#f1--identity-roles-superadmin--content-admin)
 - [F2 — College administration](#f2--college-administration)
 - [F3 — Assessments & answering](#f3--assessments--answering)
-- [F4–F8 (not yet written)](#f4f8-not-yet-written)
+- [F4 — Manual grading & student results](#f4--manual-grading--student-results)
+- [F5–F8 (not yet written)](#f5f8-not-yet-written)
 - [Open questions](#open-questions)
 - [Changelog](#changelog)
 
@@ -129,6 +130,8 @@ This expands the plan's §3.6 catalogue with copy. Clients switch on `error`, ne
 | `ASSESSMENT_CLOSED` | Answer card, after a refetch | The due date has passed, so this answer can't be changed. |
 | `ANSWER_LOCKED` | Answer card, after a refetch | This answer was already submitted. |
 | `INVALID_FILE` | Under the answer card's file input | This PDF can't be used: {server reason} |
+| `INVALID_MARKS` | Grade panel, field `finalMarks` | Enter marks from 0 to {maxMarks}, in whole or half marks. |
+| `GRADE_PUBLISHED` | Grade panel banner, after a refetch | This grade has already been published, so it can't be changed. |
 | `INTERNAL_ERROR`, other 5xx | Banner or `ErrorState` | Lexly is having trouble right now. Please try again in a moment. |
 | Anything else | Banner | Something went wrong. Please try again. |
 
@@ -162,13 +165,13 @@ These are the only roles. Backend P1 remapped the old `ADMIN` to `SUPERADMIN` an
 | F1 | Identity, roles, SUPERADMIN & content admin | **Written** | Login (F1.1), Change password (F1.2), Role areas (F1.4), Profile (F1.5), Colleges (F1.6), Acts & sections admin (F1.7), Case-law linking (F1.8), Bulk import (F1.9), Audit log (F1.10) |
 | F2 | College administration | **Written** | Users list and detail (F2.2), Add/edit user (F2.3), Reset password (F2.4), Remove user (F2.5), Import users (F2.6), Subjects (F2.7), Read-only subjects (F2.8) |
 | F3 | Assessments & answering | **Written** | Professor list (F3.1), Draft editor (F3.2), Publish (F3.3), Delete/remove (F3.4), Student list (F3.5), Student assessment (F3.6), Upload (F3.7), Assessment detail and submissions grid (F3.8). F3.9 dropped (A9) |
-| F4 | Manual grading & student results | Not yet | — |
+| F4 | Manual grading & student results | **Written** | Grading counts and grid (F4.5), Answer review (F4.1), Grade panel (F4.2), Grading flow (F4.3), Grade history (F4.4), Student results (F4.6) |
 | F5 | AI evaluation UI | Not yet | — |
 | F6 | Rankings & statistics | Not yet | — |
 | F7 | Solo AI practice | Not yet | — |
 | F8 | Payments & hardening | Not yet | — |
 
-F0.2, F0.4–F0.7, F1.3, F1.11, F2.1, F2.9 and F3.10 have no screens of their own.
+F0.2, F0.4–F0.7, F1.3, F1.11, F2.1, F2.9, F3.10 and F4.7 have no screens of their own.
 
 ---
 
@@ -952,7 +955,7 @@ Instructions (line breaks kept) under the heading "Instructions", when present. 
 - **Upload** (F3.7): choosing a file (dropzone or **Replace**) checks it first: a PDF by type or `.pdf` name ("Choose a PDF file."), not empty ("This file is empty."), ≤ `maxFileMb` ("This file is larger than {maxFileMb} MB. Scan fewer pages or at a lower resolution."), starts with `%PDF-` ("This file isn't a readable PDF."). The page count is checked only by the server. Then it uploads at once with `PUT …/answer` via `apiClient.upload`: a labelled `<progress>` "Uploading {name}… {n}%" and **Cancel** (aborts; nothing changes). Other cards stay usable. Success → the card shows the new upload, toast "Answer uploaded. Submit it when you're ready."
 - **Submit answer**: confirm. Title "Submit your answer to question {position}?"; body "You can't change this answer after submitting." + the file line; **Cancel** · **Submit answer** ("Submitting…"). Success → toast "Answer submitted." When this was the last one: "All answers submitted."
 - **View**: `PdfViewer` on `GET /student/questions/{qid}/answer/file`.
-- `resultPublished` is unused until F4.
+- `resultPublished` and `progress.resultsPublished` drive the results links (F4.6).
 
 **Errors on a card** (shown in the card, `role="alert"`, next to its controls)
 
@@ -976,11 +979,127 @@ Instructions (line breaks kept) under the heading "Instructions", when present. 
 
 ---
 
-## F4–F8 (not yet written)
+## F4 — Manual grading & student results
+
+Contract: §9.2 (counts), §9.3, §9.5 (grid), §10. Every `/professor/answers/{id}` endpoint is a `404` for an answer that isn't submitted or isn't on one of the caller's own assessments, which shows `NotFound`. Answers of a `REMOVED` assessment can still be read and downloaded but not graded (`409 ASSESSMENT_NOT_EDITABLE`). Approve = publish: the student sees the grade at once and it can't be changed. Students never receive AI fields or draft marks (§7.8), and the student types have no fields for them.
+
+### F4 shell changes
+
+| Item | Behaviour |
+|---|---|
+| Routes | `/professor/answers/:answerId` (C_PROFESSOR, wide) and `/student/assessments/:id/results` (C_STUDENT, reading column) |
+| Data refresh | A draft save or approve refreshes that answer's review and every view of the professor's assessments (list counts, detail counts and the grid, F4.5). Sign-out clears the cache |
+| URL | The review carries only ids and `?order=byStudent\|byQuestion`. Marks, feedback and student names never go into a URL (plan §9 rule 3) |
+
+### Shared F4 components
+
+| Component | Behaviour |
+|---|---|
+| `GradeStatusLabel` | For a submitted answer's grade, icon + text: ● "To grade" (`PENDING`; warning), ✓ "{finalMarks} / {maxMarks}" with the `title` "Published" (`PUBLISHED`; success). The `AI_*` statuses read "AI evaluating", "AI evaluated", "AI failed" until F5 styles them |
+| `MarksInput` (grading) | Number input, `step="0.5"`, `min="0"`, `max="{maxMarks}"`, `inputmode="decimal"`. Client check: 0 ≤ marks ≤ max and a multiple of 0.5 ("Enter marks from 0 to {maxMarks}, in whole or half marks.") |
+
+### F4.5 Grading counts on the list, detail and grid
+
+- **Professor list** (F3.1) gains two columns after Submitted: **To grade** (`counts.pendingEvaluation`) and **Published** (`counts.published`); "—" for drafts. Phone cards add "{pendingEvaluation} to grade · {published} published" once anything is submitted.
+- **Detail stat tiles** (F3.8) gain **To grade** and **Published** after Submitted.
+- **Grid**: a `SUBMITTED` cell shows `GradeStatusLabel` instead of "Submitted" and is a link to `/professor/answers/{answerId}?order={order}`. Its accessible name is "Question {n}, {student}: {status text}". Other cells are unchanged and not links.
+- **Grid filters**: Status gains "To grade" (`PENDING`) and "Published" (`PUBLISHED`) after "Submitted". A new **Grading order** select ("By student" · "By question", URL `?order=`, default by student) sets the order the review steps through.
+- After an approve, the list, the detail tiles and the grid show the new counts the next time they are shown (React Query invalidation).
+
+### F4.1 Answer review — `/professor/answers/:answerId`
+
+**Purpose:** read one submitted answer and grade it. Data: `GET /professor/answers/{id}?order=` and the PDF from `GET /professor/answers/{id}/file` (the first download sets `professorDownloadedAt`, which enables AI Evaluate in F5). Template: Detail, wide; split from 1024 px (answer left, grade panel right, sticky), stacked below it with the grade panel after the PDF.
+
+Breadcrumb "Assessments / {assessment.title} / Question {position}". The title links to the assessment detail.
+
+Header: eyebrow "Question {position} of {assessment.title}"; H1 `student.fullName` ("Unnamed student" when blank); facts: roll no (monospace), "Submitted {submittedAt}", `AssessmentStatusBadge` when not `PUBLISHED`/`CLOSED` (i.e. `REMOVED`).
+
+**Answer column**
+- Question card: "{maxMarks} marks · up to {wordLimit} words", the question text (line breaks kept).
+- File line: "{originalFilename} · {size} · {pageCount} pages".
+- The PDF inline in a frame (same loading as `PdfViewer`: "Opening the PDF…", failure + **Try again**, `404` "This file is no longer available."), with "If the PDF doesn't show, **download it**." and an **Open full screen** button that opens `PdfViewer`.
+
+`REMOVED` assessment: notice above the columns, "This assessment was removed, so its answers can't be graded any more. You can still read them."
+
+### F4.2 Grade panel
+
+Heading "Grade"; status line: "Not published. The student can't see your marks or feedback yet." (unpublished) or the Published state below.
+
+**Editable** (grade not `PUBLISHED`, assessment not `REMOVED`):
+
+| Field | Label | Details |
+|---|---|---|
+| `finalMarks` | Marks (out of {maxMarks}) | `MarksInput` (grading). Prefilled from `grade.finalMarks` |
+| `finalFeedback` | Feedback for the student | Textarea (8 rows), ≤ 10,000, counter. Hint "The student sees this with their marks once you publish." Prefilled from `grade.finalFeedback` |
+
+Buttons: **Save draft** (secondary, "Saving…") · **Approve & publish…** (primary).
+
+- **Save draft**: `PUT …/grade` with both fields (blank marks → `null`, blank feedback → `null`). Client checks: the marks rule (when filled) and the feedback length. Success: toast "Draft saved. The student can't see it yet."; the history gets a "Draft saved" row.
+- **Approve & publish…**: client checks first: marks required ("Enter the marks."), feedback required ("Write feedback for the student."), plus the save checks. Failing checks put errors on the fields and focus the first one; no request. Then the confirm:
+  - Title: Publish the grade for question {position}?
+  - Body: "{student} sees {marks} / {maxMarks} and your feedback immediately. A published grade can't be changed."
+  - Buttons: **Cancel** · **Publish grade** ("Publishing…").
+  - `POST …/approve` with both fields (saved and approved in one step). Success: toast "Grade published."; the panel turns read-only; focus moves to **Next ungraded** when there is one.
+- Unsaved-changes guard on while the fields differ from the saved grade (covers Previous / Next and leaving the page).
+
+**Published** (read-only): badge "Published"; "Published {publishedAt} by {gradedBy.fullName}" ("by a former professor" when `null`); "**{finalMarks} / {maxMarks}**"; the feedback (line breaks kept). No buttons.
+
+**Removed assessment**: the panel shows the saved values read-only and the notice above; no buttons.
+
+**Errors**
+
+| Error | Where | Copy |
+|---|---|---|
+| `INVALID_MARKS` | Field `finalMarks` | Enter marks from 0 to {maxMarks}, in whole or half marks. |
+| `VALIDATION_ERROR` `finalMarks` / `finalFeedback` | Fields | "Enter the marks." / "Write feedback for the student." / "Feedback must be at most 10,000 characters." |
+| `GRADE_PUBLISHED` | Banner, then refetch (the panel shows the published grade) | This grade has already been published, so it can't be changed. |
+| `ASSESSMENT_NOT_EDITABLE` | Banner, then refetch | This assessment was removed, so its answers can't be graded any more. |
+| `NOT_FOUND` | Refetch → `NotFound` | — |
+| Other | Banner | §0.6 |
+
+### F4.3 Grading flow
+
+A nav bar above the columns, "Answer navigation": **← Previous** (`navigation.previousAnswerId`) · **Next →** (`nextAnswerId`) · **Next ungraded →** (`nextUngradedAnswerId`; primary once this grade is published). Each keeps `?order=`. A missing target is a disabled button, and when there is no ungraded answer after this one the bar says "No ungraded answers after this one." with a link **Back to submissions**. A **Grading order** select ("By student" · "By question") replaces `?order=` in place. The list doesn't wrap around (contract §10.1).
+
+### F4.4 Grade history
+
+A collapsed `<details>` under the panel: "Grade history ({n})". An ordered list, oldest first. Each entry: event ("Draft saved", "AI evaluated", "AI evaluation failed", "Published") · "{marks} / {maxMarks}" (or "No marks") · actor ("{fullName}", "Lexly AI" for AI events with no actor, "Former user" otherwise) · time; then the feedback saved by that event (line breaks kept, muted), or "No feedback". Empty: "No changes yet."
+
+### F4.6 Student results — `/student/assessments/:id/results`
+
+**Purpose:** see published marks and feedback. Data: `GET /student/assessments/{id}/results`. Template: Detail, reading column, phone-first. `404` → `NotFound`.
+
+**Entry points**
+- Student assessment (F3.6): when `progress.resultsPublished` > 0 (or any `resultPublished`), a **View results** button in the header, and on each answer card whose `resultPublished` is true the line "Your result is published. **View results**".
+- Student list (F3.5): a card in `RESULTS_AVAILABLE` links to the results; any card with published results adds "{n} results published".
+
+Breadcrumb "Assessments / {title} / Results" ({title} links to the assessment). Header: eyebrow "{code} · {name}"; H1 "Results: {title}"; `AssessmentStatusBadge`-free facts: `Deadline`.
+
+**Total** card: "{publishedMarks} / {publishedMaxMarks}" with the label "Marks, of published questions" and "{published} of {n} questions published · the assessment is out of {totalMaxMarks} marks." With nothing published: "No marks are published yet. Your professor publishes each answer's marks when it is graded."
+
+**Question cards** in `position` order: heading "Question {position}"; outcome badge; the question text (line breaks kept, muted); the marks line; feedback.
+
+| `outcome` | Badge | Marks line | Body |
+|---|---|---|---|
+| `PUBLISHED` | "Published" (success) | "{finalMarks} / {maxMarks}" | "Feedback from your professor" + `finalFeedback` (line breaks kept); "Published {publishedAt}" |
+| `AWAITING_EVALUATION` | "Awaiting evaluation" (info) | "— / {maxMarks}" | "Your answer was submitted and hasn't been graded yet." |
+| `NOT_ATTEMPTED` | "Not attempted" (danger) | "0 / {maxMarks}" | "Nothing was submitted before the due date." |
+| `NOT_SUBMITTED` | "Not submitted" (neutral) | "— / {maxMarks}" | "The assessment is still open. **Go to your answers**" |
+
+Below: **Back to your answers** (→ `/student/assessments/{id}`).
+
+### F4 audit summaries
+
+| `action` | Summary |
+|---|---|
+| `GRADE_EDITED` | "Question {questionPosition} · {finalMarks} marks" ("no marks" when `null`) |
+| `GRADE_PUBLISHED` | "Question {questionPosition} · {finalMarks} marks" |
+
+---
+
+## F5–F8 (not yet written)
 
 Each stub lists what the section must cover. Task IDs are the plan's.
-
-**F4 — Manual grading & results** (contract §10): **F4.1/F4.2 professor answer review and grade panel** (PDF, marks, feedback, save draft, approve & publish, `INVALID_MARKS`, `GRADE_PUBLISHED`) · F4.3 previous / next / next ungraded · F4.4 grade history (always returned) · F4.6 student results per `outcome`.
 
 **F5 — AI evaluation UI** (contract §11): F5.1 AI Evaluate gating · F5.2 polling · F5.3 AI suggestion and flag chips · F5.4 failure and retry · F5.5 grid statuses and the AI usage tab.
 
@@ -1012,3 +1131,4 @@ Each stub lists what the section must cover. Task IDs are the plan's.
 | 2026-10-13 | Synced with backend Phase 0 and Phase 1: no legacy role mapping; P1 endpoints marked LIVE (Edit act and the section editor load the admin GETs); change-password server messages; bulk-import `400` cases and the unknown-act case; audit summaries match the recorded `details`; `RATE_LIMITED` raised only from P8; U3 and U4 closed |
 | 2026-10-14 | F2 written against backend Phase 2 (contract §8 LIVE): C_ADMIN nav and hub, users list/detail and dialogs, user import with `FileDropzone` and `CONVERTED`, subjects and professor mapping, read-only subjects on the professor and student homes, F2 error copy in §0.6, audit summaries for the P2 `details` |
 | 2026-10-15 | F3 written against backend Phase 3 (contract §9 LIVE): professor list, draft editor with the publish checklist, delete/remove, assessment detail and submissions grid, student list and the answer cards with upload, submit and `PdfViewer`; F3 error copy in §0.6; F2.8 cards replaced by subject filters. F3.9 and the college Assessments tab dropped (A9 changed) |
+| 2026-10-18 | F4 written against backend Phase 4 (contract §10 LIVE): grading counts and grade cells in the list, detail and grid (with the grade-status filter and grading order), answer review with the inline PDF, grade panel (draft, approve & publish, read-only once published), previous / next / next ungraded, grade history, student results per `outcome` and its entry points; `INVALID_MARKS` and `GRADE_PUBLISHED` copy in §0.6; F4 audit summaries |

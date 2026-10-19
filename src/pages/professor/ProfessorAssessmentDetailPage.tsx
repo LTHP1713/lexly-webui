@@ -1,6 +1,14 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { CELL_STATUSES, type CellStatus } from '@/api/assessments';
+import {
+  CELL_STATUSES,
+  REVIEW_ORDERS,
+  oneOf,
+  type CellStatus,
+  type GradeStatus,
+  type GridStatusFilter,
+  type ReviewOrder,
+} from '@/api/assessments';
 import { errorMessage, hasCode } from '@/api/errors';
 import {
   deleteAssessment,
@@ -9,10 +17,11 @@ import {
   removeAssessment,
   type AssessmentDetail,
   type AssessmentQuestion,
+  type GridCell,
   type GridRow,
 } from '@/api/professor';
-import { AssessmentStatusBadge, CellStatusLabel } from '@/components/AssessmentBadges';
-import { CELL_LABELS } from '@/components/assessmentLabels';
+import { AssessmentStatusBadge, CellStatusLabel, GradeStatusLabel } from '@/components/AssessmentBadges';
+import { CELL_LABELS, GRADE_FILTERS, GRADE_LABELS, gradeStatusText } from '@/components/assessmentLabels';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Deadline } from '@/components/Deadline';
 import { flash } from '@/components/flash';
@@ -27,6 +36,7 @@ import { queryKeys } from '@/lib/queryClient';
 import { pageFromParam } from '@/lib/urlParams';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { useRefreshAssessments } from './assessmentQueries';
+import { ORDER_LABELS, answerReviewLink } from './reviewLinks';
 import localStyles from '@/components/Assessment.module.css';
 import styles from '@/components/ui.module.css';
 
@@ -181,6 +191,14 @@ function AssessmentDetailView({ assessment }: { assessment: AssessmentDetail }) 
             </dd>
           </div>
           <div className={styles.statTile}>
+            <dt>To grade</dt>
+            <dd>{formatCount(assessment.counts.pendingEvaluation)}</dd>
+          </div>
+          <div className={styles.statTile}>
+            <dt>Published</dt>
+            <dd>{formatCount(assessment.counts.published)}</dd>
+          </div>
+          <div className={styles.statTile}>
             <dt>Not attempted</dt>
             <dd>{ended ? formatCount(assessment.counts.notAttempted) : '—'}</dd>
           </div>
@@ -264,8 +282,14 @@ function SubmissionsSection({ assessment }: { assessment: AssessmentDetail }) {
   const position = Number(params.get('question'));
   const question = assessment.questions.find((item) => item.position === position) ?? null;
   const statusParam = params.get('status');
-  const statuses = CELL_STATUSES.filter((s) => ended || s !== 'NOT_ATTEMPTED');
-  const status = (statuses as readonly string[]).includes(statusParam ?? '') ? (statusParam as CellStatus) : null;
+  // Grade statuses go right after "Submitted", since they narrow it down (UI spec F4.5).
+  const statuses: GridStatusFilter[] = [
+    'SUBMITTED',
+    ...GRADE_FILTERS,
+    ...CELL_STATUSES.filter((s) => s !== 'SUBMITTED' && (ended || s !== 'NOT_ATTEMPTED')),
+  ];
+  const status = (statuses as readonly string[]).includes(statusParam ?? '') ? (statusParam as GridStatusFilter) : null;
+  const order = oneOf(REVIEW_ORDERS, params.get('order'));
   const page = pageFromParam(params.get('page'));
   const filtered = Boolean(question || status || q);
 
@@ -281,13 +305,18 @@ function SubmissionsSection({ assessment }: { assessment: AssessmentDetail }) {
   const data = grid.status === 'success' ? grid.data : grid.status === 'loading' ? grid.staleData : undefined;
   const columns = question ? [question] : assessment.questions;
 
-  function update(next: { question?: string; status?: string; page?: number }) {
+  function update(next: { question?: string; status?: string; order?: string; page?: number }) {
     setParams(
       (current) => {
         const merged = new URLSearchParams(current);
         const set = (key: string, value: string | undefined) => (value ? merged.set(key, value) : merged.delete(key));
         if (next.question !== undefined) set('question', next.question);
         if (next.status !== undefined) set('status', next.status);
+        // The order doesn't filter, so it keeps the page.
+        if (next.order !== undefined) {
+          set('order', next.order === 'byStudent' ? undefined : next.order);
+          return merged;
+        }
         set('page', next.page ? String(next.page + 1) : undefined);
         return merged;
       },
@@ -297,7 +326,8 @@ function SubmissionsSection({ assessment }: { assessment: AssessmentDetail }) {
 
   function clearFilters() {
     setSearch('');
-    setParams(new URLSearchParams(), { replace: true });
+    // The grading order isn't a filter, so it stays.
+    setParams(order === 'byStudent' ? new URLSearchParams() : new URLSearchParams({ order }), { replace: true });
   }
 
   return (
@@ -337,7 +367,24 @@ function SubmissionsSection({ assessment }: { assessment: AssessmentDetail }) {
             <option value="">Any</option>
             {statuses.map((value) => (
               <option key={value} value={value}>
-                {value === 'UPLOADED' ? 'Uploaded, not submitted' : CELL_LABELS[value]}
+                {statusFilterLabel(value)}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className={styles.field}>
+          <label htmlFor="grid-order" className={styles.label}>
+            Grading order
+          </label>
+          <select
+            id="grid-order"
+            className={styles.input}
+            value={order}
+            onChange={(event) => update({ order: event.target.value })}
+          >
+            {REVIEW_ORDERS.map((value) => (
+              <option key={value} value={value}>
+                {ORDER_LABELS[value]}
               </option>
             ))}
           </select>
@@ -387,9 +434,9 @@ function SubmissionsSection({ assessment }: { assessment: AssessmentDetail }) {
                 </span>
               </p>
               {wide ? (
-                <SubmissionsGrid rows={data.content} columns={columns} />
+                <SubmissionsGrid rows={data.content} columns={columns} order={order} />
               ) : (
-                <SubmissionCards rows={data.content} columns={columns} />
+                <SubmissionCards rows={data.content} columns={columns} order={order} />
               )}
               <Pagination
                 label="Student pages"
@@ -414,7 +461,48 @@ function cellTitle(submittedAt: string | null): string | undefined {
   return submittedAt ? `Submitted ${formatInstant(submittedAt)}` : undefined;
 }
 
-function SubmissionsGrid({ rows, columns }: { rows: GridRow[]; columns: AssessmentQuestion[] }) {
+function statusFilterLabel(value: GridStatusFilter): string {
+  if (value === 'UPLOADED') return 'Uploaded, not submitted';
+  if ((GRADE_FILTERS as readonly string[]).includes(value)) return GRADE_LABELS[value as GradeStatus];
+  return CELL_LABELS[value as CellStatus];
+}
+
+/**
+ * One cell (UI spec F4.5): a submitted answer shows its grade and links to its review; anything
+ * else is its icon + text status. The link's name says which question and student it opens.
+ */
+function SubmissionCell({
+  cell,
+  column,
+  row,
+  order,
+}: {
+  cell: GridCell | null;
+  column: AssessmentQuestion;
+  row: GridRow;
+  order: ReviewOrder;
+}) {
+  if (!cell) return <>—</>;
+  if (cell.cellStatus !== 'SUBMITTED' || !cell.answerId) {
+    return <CellStatusLabel status={cell.cellStatus} title={cellTitle(cell.submittedAt)} />;
+  }
+  const gradeStatus = cell.gradeStatus ?? 'PENDING';
+  const name = row.student.fullName ?? 'Unnamed student';
+  return (
+    <Link
+      to={answerReviewLink(cell.answerId, order)}
+      className={localStyles.cellLink}
+      aria-label={`Question ${column.position}, ${name}: ${gradeStatusText(gradeStatus, cell.finalMarks, column.maxMarks)}`}
+      title={cellTitle(cell.submittedAt)}
+    >
+      <GradeStatusLabel status={gradeStatus} finalMarks={cell.finalMarks} maxMarks={column.maxMarks} />
+    </Link>
+  );
+}
+
+type CellsProps = { rows: GridRow[]; columns: AssessmentQuestion[]; order: ReviewOrder };
+
+function SubmissionsGrid({ rows, columns, order }: CellsProps) {
   return (
     <div className={localStyles.gridWrap} tabIndex={0} role="region" aria-labelledby="submissions-caption">
       <table className={localStyles.grid}>
@@ -442,7 +530,7 @@ function SubmissionsGrid({ rows, columns }: { rows: GridRow[]; columns: Assessme
               </th>
               {cellsFor(row, columns).map(({ column, cell }) => (
                 <td key={column.id}>
-                  {cell ? <CellStatusLabel status={cell.cellStatus} title={cellTitle(cell.submittedAt)} /> : '—'}
+                  <SubmissionCell cell={cell} column={column} row={row} order={order} />
                 </td>
               ))}
             </tr>
@@ -453,7 +541,7 @@ function SubmissionsGrid({ rows, columns }: { rows: GridRow[]; columns: Assessme
   );
 }
 
-function SubmissionCards({ rows, columns }: { rows: GridRow[]; columns: AssessmentQuestion[] }) {
+function SubmissionCards({ rows, columns, order }: CellsProps) {
   return (
     <ul className={styles.cardList} aria-label="Submissions">
       {rows.map((row) => (
@@ -464,7 +552,7 @@ function SubmissionCards({ rows, columns }: { rows: GridRow[]; columns: Assessme
             {cellsFor(row, columns).map(({ column, cell }) => (
               <li key={column.id}>
                 <span className={localStyles.cellChipLabel}>Q{column.position}</span>
-                {cell ? <CellStatusLabel status={cell.cellStatus} title={cellTitle(cell.submittedAt)} /> : '—'}
+                <SubmissionCell cell={cell} column={column} row={row} order={order} />
               </li>
             ))}
           </ul>

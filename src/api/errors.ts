@@ -26,6 +26,8 @@ export const ErrorCode = {
   ASSESSMENT_CLOSED: 'ASSESSMENT_CLOSED',
   ANSWER_LOCKED: 'ANSWER_LOCKED',
   INVALID_FILE: 'INVALID_FILE',
+  INVALID_MARKS: 'INVALID_MARKS',
+  GRADE_PUBLISHED: 'GRADE_PUBLISHED',
   /** Client-side: the request never reached the server. */
   NETWORK_ERROR: 'NETWORK_ERROR',
   /** Client-side: an upload or download was cancelled through its `AbortSignal`. */
@@ -52,6 +54,8 @@ const MESSAGES: Partial<Record<string, string>> = {
   ASSESSMENT_NOT_EDITABLE: "This assessment has been published or removed, so it can't be edited any more.",
   ASSESSMENT_CLOSED: "The due date has passed, so this answer can't be changed.",
   ANSWER_LOCKED: 'This answer was already submitted.',
+  INVALID_MARKS: "Enter marks within the question's range, in whole or half marks.",
+  GRADE_PUBLISHED: "This grade has already been published, so it can't be changed.",
 };
 
 const SERVER_TROUBLE = 'Lexly is having trouble right now. Please try again in a moment.';

@@ -1,5 +1,6 @@
-import type { AssessmentStatus, CellStatus, StudentAssessmentState } from '@/api/assessments';
-import { ASSESSMENT_STATUS_LABELS, CELL_LABELS } from './assessmentLabels';
+import type { AssessmentStatus, CellStatus, GradeStatus, StudentAssessmentState } from '@/api/assessments';
+import { formatMarks } from '@/lib/format';
+import { ASSESSMENT_STATUS_LABELS, CELL_LABELS, GRADE_LABELS } from './assessmentLabels';
 import { StatusBadge, type BadgeTone } from './StatusBadge';
 import styles from './Assessment.module.css';
 
@@ -43,6 +44,34 @@ export function CellStatusLabel({ status, title }: { status: CellStatus; title?:
         {CELL_ICONS[status]}
       </span>
       {CELL_LABELS[status]}
+    </span>
+  );
+}
+
+/**
+ * A submitted answer's grade (UI spec F4 `GradeStatusLabel`): "To grade", or the published
+ * marks out of the maximum with "Published" in the `title`. Icon + text, never colour alone.
+ */
+export function GradeStatusLabel({
+  status,
+  finalMarks,
+  maxMarks,
+}: {
+  status: GradeStatus;
+  finalMarks: number | null;
+  maxMarks: number | null;
+}) {
+  const published = status === 'PUBLISHED';
+  const text =
+    published && finalMarks !== null
+      ? `${formatMarks(finalMarks)} / ${maxMarks === null ? '—' : formatMarks(maxMarks)}`
+      : GRADE_LABELS[status];
+  return (
+    <span className={`${styles.cell} ${styles[`grade_${status}`]}`} title={published ? 'Published' : undefined}>
+      <span aria-hidden="true" className={styles.cellIcon}>
+        {published ? '✓' : '●'}
+      </span>
+      {text}
     </span>
   );
 }

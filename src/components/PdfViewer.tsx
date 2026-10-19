@@ -10,26 +10,18 @@ type ViewState =
   | { status: 'error'; message: string };
 
 /**
- * An answer PDF in a dialog (UI spec F3 `PdfViewer`). The file needs the bearer header, so it is
- * fetched with `apiClient.download` (never cached) and shown from a blob object URL in the
- * browser's own PDF viewer, with a download link for browsers (mostly phones) that don't render
- * PDFs in a frame. The object URL is revoked when the dialog closes. Render it only while open.
+ * Loads an answer PDF as a blob object URL. The file needs the bearer header, so it is fetched
+ * with `apiClient.download` (never cached); the URL is revoked when the caller unmounts. Key the
+ * caller by `path`, so another file starts from the loading state. `onLoaded` runs after each
+ * successful load.
  */
-export function PdfViewer({ path, title, onClose }: { path: string; title: string; onClose: () => void }) {
-  const ref = useRef<HTMLDialogElement>(null);
-  const closeRef = useRef<HTMLButtonElement>(null);
-  const titleId = useId();
+function usePdfBlob(path: string, fallbackName: string, onLoaded?: () => void) {
   const [attempt, setAttempt] = useState(0);
   const [view, setView] = useState<ViewState>({ status: 'loading' });
-
+  const onLoadedRef = useRef(onLoaded);
   useEffect(() => {
-    const dialog = ref.current;
-    if (dialog && !dialog.open) dialog.showModal();
-    closeRef.current?.focus();
-    return () => {
-      if (dialog?.open) dialog.close();
-    };
-  }, []);
+    onLoadedRef.current = onLoaded;
+  });
 
   useEffect(() => {
     const controller = new AbortController();
@@ -38,7 +30,8 @@ export function PdfViewer({ path, title, onClose }: { path: string; title: strin
       .download(path, { signal: controller.signal })
       .then(({ blob, filename }) => {
         url = URL.createObjectURL(blob.type === 'application/pdf' ? blob : new Blob([blob], { type: 'application/pdf' }));
-        setView({ status: 'ready', url, filename: filename ?? title });
+        setView({ status: 'ready', url, filename: filename ?? fallbackName });
+        onLoadedRef.current?.();
       })
       .catch((err: unknown) => {
         if (hasCode(err, 'ABORTED')) return;
@@ -51,7 +44,69 @@ export function PdfViewer({ path, title, onClose }: { path: string; title: strin
       controller.abort();
       if (url) URL.revokeObjectURL(url);
     };
-  }, [path, title, attempt]);
+  }, [path, fallbackName, attempt]);
+
+  return {
+    view,
+    retry: () => {
+      setView({ status: 'loading' });
+      setAttempt((n) => n + 1);
+    },
+  };
+}
+
+/** The frame, its loading and error states and the download fallback. */
+function PdfBody({ view, retry, title }: { view: ViewState; retry: () => void; title: string }) {
+  return (
+    <>
+      {view.status === 'loading' && (
+        <p role="status" className={localStyles.pdfStatus}>
+          Opening the PDF…
+        </p>
+      )}
+      {view.status === 'error' && (
+        <div role="alert" className={localStyles.pdfStatus}>
+          <p className={styles.formError}>{view.message}</p>
+          <button type="button" className={styles.secondaryButton} onClick={retry}>
+            Try again
+          </button>
+        </div>
+      )}
+      {view.status === 'ready' && (
+        <>
+          <iframe className={localStyles.pdfFrame} src={view.url} title={`PDF: ${title}`} />
+          <p className={styles.hint}>
+            If the PDF doesn&rsquo;t show,{' '}
+            <a href={view.url} download={view.filename}>
+              download it
+            </a>
+            .
+          </p>
+        </>
+      )}
+    </>
+  );
+}
+
+/**
+ * An answer PDF in a dialog (UI spec F3 `PdfViewer`), shown in the browser's own PDF viewer with
+ * a download link for browsers (mostly phones) that don't render PDFs in a frame. Render it only
+ * while open.
+ */
+export function PdfViewer({ path, title, onClose }: { path: string; title: string; onClose: () => void }) {
+  const ref = useRef<HTMLDialogElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const titleId = useId();
+  const { view, retry } = usePdfBlob(path, title);
+
+  useEffect(() => {
+    const dialog = ref.current;
+    if (dialog && !dialog.open) dialog.showModal();
+    closeRef.current?.focus();
+    return () => {
+      if (dialog?.open) dialog.close();
+    };
+  }, []);
 
   return (
     <dialog
@@ -71,38 +126,17 @@ export function PdfViewer({ path, title, onClose }: { path: string; title: strin
           Close
         </button>
       </div>
-      {view.status === 'loading' && (
-        <p role="status" className={localStyles.pdfStatus}>
-          Opening the PDF…
-        </p>
-      )}
-      {view.status === 'error' && (
-        <div role="alert" className={localStyles.pdfStatus}>
-          <p className={styles.formError}>{view.message}</p>
-          <button
-            type="button"
-            className={styles.secondaryButton}
-            onClick={() => {
-              setView({ status: 'loading' });
-              setAttempt((n) => n + 1);
-            }}
-          >
-            Try again
-          </button>
-        </div>
-      )}
-      {view.status === 'ready' && (
-        <>
-          <iframe className={localStyles.pdfFrame} src={view.url} title={`PDF: ${title}`} />
-          <p className={styles.hint}>
-            If the PDF doesn&rsquo;t show,{' '}
-            <a href={view.url} download={view.filename}>
-              download it
-            </a>
-            .
-          </p>
-        </>
-      )}
+      <PdfBody view={view} retry={retry} title={title} />
     </dialog>
+  );
+}
+
+/** The same PDF inline on a page (UI spec F4.1), e.g. next to the grade panel. */
+export function PdfPanel({ path, title, onLoaded }: { path: string; title: string; onLoaded?: () => void }) {
+  const { view, retry } = usePdfBlob(path, title, onLoaded);
+  return (
+    <div className={localStyles.pdfPanel}>
+      <PdfBody view={view} retry={retry} title={title} />
+    </div>
   );
 }

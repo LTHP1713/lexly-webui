@@ -886,7 +886,59 @@ while anonymous redirects back to `/login`. No console errors in any of it.
 
 ## In Progress
 
-_Nothing in flight._
+### 2026-10-18 — F4 Manual grading & student results (F4.1–F4.7)
+
+**Status:** Built and verified against backend `feature/phase4` (`0e1174e`, not merged to
+`main` yet). Branch `feature/f4-grading`, cut from `master` after PR #4. Lint (one pre-existing
+warning), `tsc -b`, the build and 206 unit tests pass. **Done once backend Phase 4 is merged to
+`main` and the e2e suite is re-run against it** (plan §10 gate).
+
+**Verified against the live backend** (`lexly-backend` `feature/phase4` at `0e1174e`; Flyway
+applied V20 on start). `e2e/f4-grading.spec.ts` (6 tests, desktop) passes and covers the plan's
+"Done when": the list and detail show 3 to grade; from the grid the professor opens Asha's Q1,
+the PDF loads inline, approve is blocked without feedback, a draft saves, out-of-range marks are
+refused, approve → confirm → read-only "8 / 10" with focus on Next ungraded; the student at once
+sees "1 result published", Q1 8 / 10 with feedback and Q2 "Awaiting evaluation"; the professor
+continues with Next ungraded (Q2 4.5 / 5, then lands on Vikram), the tiles read 1 to grade / 2
+published and the Published filter works; the student's total reads 12.5 / 15; phone passes for
+the results and the review. Axe scans pass on the grid, review and results.
+`e2e/f3-assessments.spec.ts` still passes against the same backend (5 passed).
+
+What changed:
+- **Docs first:** contract re-copied from backend `feature/phase4` (§10 LIVE, §9 placeholders
+  filled); UI spec F4 section written (shell, `GradeStatusLabel`, F4.1–F4.6, errors, audit).
+- **API:** `api/grading.ts` (§10.1–10.3: review, file path, draft, approve; `grade.ai` left for
+  F5), `toStudentResults` / `getStudentResults` in `api/student.ts` (§10.4; maps only the
+  contract fields, feedback only when published), `GradeStatus` / `ReviewOrder` in
+  `api/assessments.ts`, grid cells gain `gradeStatus` / `finalMarks`, the grid filter takes grade
+  statuses. `INVALID_MARKS`, `GRADE_PUBLISHED` in `errors.ts`. Query keys `professorAnswers`,
+  `studentAssessments.results`.
+- **Professor:** `/professor/answers/:answerId` (F4.1–F4.4): split layout, inline `PdfPanel`
+  (+ full-screen `PdfViewer`), grade panel (`gradeForm.ts`: draft / approve checks, server
+  errors onto fields, banners), read-only once published or for a removed assessment, unsaved
+  guard (new `ignoreSearch` option so the order select doesn't prompt), Previous / Next / Next
+  ungraded with `?order=`, collapsible history. A save or approve patches the cached review and
+  invalidates the reviews and all assessment views (F4.5). List: To grade / Published columns
+  and card line; detail: two new tiles; grid: submitted cells are links showing the grade, the
+  status filter gains To grade / Published, and a Grading order select.
+- **Student:** `/student/assessments/:id/results` (F4.6), **View results** on the detail and per
+  published card, results-available list cards link to the results with "{n} results published".
+- **Shared:** `PdfViewer` split into `usePdfBlob` + `PdfViewer` / `PdfPanel`.
+- **Audit:** `GRADE_EDITED` / `GRADE_PUBLISHED` summaries ("Question 2 · 7.5 marks").
+- **Tests (F4.7):** `gradeForm.test.ts`, `grading.test.tsx` (review, Not Found, approve blocked
+  without feedback / with invalid marks, draft body, `INVALID_MARKS`, approve → read-only,
+  published read-only, `GRADE_PUBLISHED`, removed assessment, navigation + order, unsaved guard,
+  history), `results.test.tsx` (mixed outcomes, nothing published, Not Found, no AI/draft fields,
+  entry points), a grid test in `professor.test.tsx`, audit summaries. `e2e/api.ts` now holds
+  the API helpers both golden paths use; the F3 grid assertion reads "To grade".
+
+Notes:
+- Found while writing the e2e (not changed, outside F4): signing out on `/profile` leaves
+  `from: /profile` in the login page's history state, so the next user signing in on the same
+  tab lands on `/profile` instead of their home. Harmless (the target must be a route the new
+  role may open), but worth a small fix in `RedirectIfAuthenticated` / `logout`.
+- The native `<dialog>` returns focus to its opener when it closes, which jsdom doesn't model:
+  focus after a confirm must be moved in an effect that runs after the dialog's own close.
 
 ## Blocked
 
@@ -908,5 +960,6 @@ on `feature/phase1`.
 2. ~~**F1 on `feature/f1-identity`**~~ — done 2026-10-14 (entry above). Merge PR #2, then #3.
 3. ~~**F2 on `feature/f2-college-admin`**~~ — done 2026-10-14 (entry above), merged into `master`.
 4. ~~**F3 on `feature/f3-assessments`**~~ — done 2026-10-16 (entry above). Commit, then merge into `master`.
-5. F4 (manual grading & results) once backend Phase 4 is agreed: write the UI spec F4 section first.
-6. Later (D4): choose an app-wide dark-mode approach.
+5. **F4 on `feature/f4-grading`** — built and verified against backend `feature/phase4` 2026-10-18 (In Progress above). Done after backend Phase 4 merges to `main` and the e2e suite is re-run.
+6. F5 (AI evaluation UI) once backend Phase 5 is agreed: write the UI spec F5 section first.
+7. Later (D4): choose an app-wide dark-mode approach.

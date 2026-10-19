@@ -9,6 +9,7 @@ import type { Page } from '@/api/content';
 import {
   ASSESSMENT_STATUSES,
   CELL_STATUSES,
+  GRADE_STATUSES,
   blankToNull,
   count,
   oneOf,
@@ -17,6 +18,8 @@ import {
   toSubjectRef,
   type AssessmentStatus,
   type CellStatus,
+  type GradeStatus,
+  type GridStatusFilter,
   type SubjectRef,
 } from '@/api/assessments';
 
@@ -36,9 +39,10 @@ export interface AssessmentCounts {
   /** students × questions. */
   answerSlots: number;
   submitted: number;
-  /** Grading counts: 0 until backend P4. */
+  /** Submitted answers whose grade isn't published yet. */
   pendingEvaluation: number;
   aiEvaluated: number;
+  /** Published grades. */
   published: number;
   /** `answerSlots − submitted` once closed or removed, else 0. */
   notAttempted: number;
@@ -195,6 +199,10 @@ export interface GridCell {
   /** Only for submitted answers: professors never see unsubmitted files. */
   answerId: string | null;
   cellStatus: CellStatus;
+  /** Only for submitted answers. */
+  gradeStatus: GradeStatus | null;
+  /** Only once the grade is published; draft marks never show here. */
+  finalMarks: number | null;
   submittedAt: string | null;
 }
 
@@ -206,8 +214,13 @@ export interface GridRow {
 
 type GridRowDto = {
   student?: { id: string; fullName?: string | null; loginId?: string | null } | null;
-  cells?: (Partial<GridCell> & { cellStatus?: string })[] | null;
+  cells?: (Partial<Omit<GridCell, 'cellStatus' | 'gradeStatus'>> & { cellStatus?: string; gradeStatus?: string | null })[] | null;
 };
+
+/** A known grade status, or null (unknown values included, so a new one never breaks the grid). */
+function toGradeStatus(value: unknown): GradeStatus | null {
+  return GRADE_STATUSES.includes(value as GradeStatus) ? (value as GradeStatus) : null;
+}
 
 export function toGridRow(dto: GridRowDto): GridRow {
   return {
@@ -220,8 +233,10 @@ export function toGridRow(dto: GridRowDto): GridRow {
       questionId: cell.questionId ?? '',
       position: toNumber(cell.position) ?? index + 1,
       answerId: cell.answerId ?? null,
-      // An unknown (e.g. a P4 grade-era) value reads as not uploaded rather than breaking the grid.
+      // An unknown value reads as not uploaded rather than breaking the grid.
       cellStatus: CELL_STATUSES.includes(cell.cellStatus as CellStatus) ? (cell.cellStatus as CellStatus) : 'NOT_UPLOADED',
+      gradeStatus: toGradeStatus(cell.gradeStatus),
+      finalMarks: toNumber(cell.finalMarks),
       submittedAt: cell.submittedAt ?? null,
     })),
   };
@@ -229,7 +244,7 @@ export function toGridRow(dto: GridRowDto): GridRow {
 
 export interface GridQuery {
   questionId?: string;
-  status?: CellStatus;
+  status?: GridStatusFilter;
   q?: string;
   page: number;
   size: number;

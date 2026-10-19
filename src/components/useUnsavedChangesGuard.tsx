@@ -1,14 +1,20 @@
-import { useEffect } from 'react';
-import { useBlocker } from 'react-router-dom';
+import { useCallback, useEffect } from 'react';
+import { useBlocker, type BlockerFunction } from 'react-router-dom';
 import { ConfirmDialog } from './ConfirmDialog';
 
 /**
  * Asks before leaving a form with unsaved changes: in-app navigation (links, back/forward)
  * through the router's blocker, and reload / tab close through `beforeunload`.
- * Returns the confirmation dialog to render.
+ * `ignoreSearch` lets a change of only the query string through (a view option on the same page
+ * that keeps the form mounted). Returns the confirmation dialog to render.
  */
-export function useUnsavedChangesGuard(dirty: boolean) {
-  const blocker = useBlocker(dirty);
+export function useUnsavedChangesGuard(dirty: boolean, { ignoreSearch = false }: { ignoreSearch?: boolean } = {}) {
+  const shouldBlock = useCallback<BlockerFunction>(
+    ({ currentLocation, nextLocation }) =>
+      dirty && (!ignoreSearch || currentLocation.pathname !== nextLocation.pathname),
+    [dirty, ignoreSearch],
+  );
+  const blocker = useBlocker(shouldBlock);
 
   useEffect(() => {
     if (!dirty) return;

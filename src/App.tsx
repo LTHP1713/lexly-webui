@@ -62,8 +62,14 @@ const ProfessorAssessmentDetailPage = lazy(() =>
 const AssessmentEditorPage = lazy(() =>
   import('@/pages/professor/AssessmentEditorPage').then((m) => ({ default: m.AssessmentEditorPage })),
 );
+const AnswerReviewPage = lazy(() =>
+  import('@/pages/professor/AnswerReviewPage').then((m) => ({ default: m.AnswerReviewPage })),
+);
 const StudentAssessmentsPage = lazy(() =>
   import('@/pages/student/StudentAssessmentsPage').then((m) => ({ default: m.StudentAssessmentsPage })),
+);
+const StudentResultsPage = lazy(() =>
+  import('@/pages/student/StudentResultsPage').then((m) => ({ default: m.StudentResultsPage })),
 );
 const StudentAssessmentPage = lazy(() =>
   import('@/pages/student/StudentAssessmentPage').then((m) => ({ default: m.StudentAssessmentPage })),
@@ -176,6 +182,7 @@ function App() {
               <Route path="/professor/assessments/new" element={<AssessmentEditorPage />} />
               <Route path="/professor/assessments/:assessmentId" element={<ProfessorAssessmentDetailPage />} />
               <Route path="/professor/assessments/:assessmentId/edit" element={<AssessmentEditorPage />} />
+              <Route path="/professor/answers/:answerId" element={<AnswerReviewPage />} />
             </Route>
 
             {/* C_STUDENT */}
@@ -188,6 +195,7 @@ function App() {
             >
               <Route path="/student" element={<StudentAssessmentsPage />} />
               <Route path="/student/assessments/:assessmentId" element={<StudentAssessmentPage />} />
+              <Route path="/student/assessments/:assessmentId/results" element={<StudentResultsPage />} />
             </Route>
           </Route>
           <Route element={<NotFoundFrame />}>

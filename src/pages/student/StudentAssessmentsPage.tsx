@@ -136,7 +136,11 @@ export function StudentAssessmentsPage() {
 
 function AssessmentCard({ assessment: a, now }: { assessment: StudentAssessmentSummary; now: number }) {
   return (
-    <Link to={`/student/assessments/${a.id}`} className={localStyles.assessmentCard}>
+    // Once results are out they are what the student came for (UI spec F4.6).
+    <Link
+      to={a.state === 'RESULTS_AVAILABLE' ? `/student/assessments/${a.id}/results` : `/student/assessments/${a.id}`}
+      className={localStyles.assessmentCard}
+    >
       <span className={localStyles.cardSubject}>
         {a.subject.code} · {a.subject.name}
       </span>
@@ -150,6 +154,8 @@ function AssessmentCard({ assessment: a, now }: { assessment: StudentAssessmentS
       <span className={localStyles.cardLine}>
         {formatCount(a.progress.submitted)} of {formatCount(a.questionCount)} submitted
         {a.progress.uploaded > 0 && ` · ${formatCount(a.progress.uploaded)} uploaded, not submitted`}
+        {a.progress.resultsPublished > 0 &&
+          ` · ${formatCount(a.progress.resultsPublished)} ${a.progress.resultsPublished === 1 ? 'result' : 'results'} published`}
       </span>
       <span className={`${localStyles.cardLine} ${localStyles.muted}`}>
         {formatMarks(a.totalMarks)} marks · {a.professorName ?? 'Former professor'}
