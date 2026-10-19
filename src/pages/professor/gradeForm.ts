@@ -14,6 +14,8 @@ export interface GradeForm {
   /** As typed; parsed and checked on save. */
   marks: string;
   feedback: string;
+  /** The browser couldn't read the typed marks (e.g. "7,5"), so `marks` is `''` but isn't blank. */
+  marksUnreadable?: boolean;
 }
 
 export type GradeErrors = Partial<Record<'finalMarks' | 'finalFeedback', string>>;
@@ -58,7 +60,7 @@ export const FEEDBACK_REQUIRED = 'Write feedback for the student.';
 /** Save draft: either field may be blank, so a half-done grade can be saved. */
 export function validateDraft(form: GradeForm, maxMarks: number): GradeErrors {
   const errors: GradeErrors = {};
-  const marks = gradeMarksError(form.marks, maxMarks);
+  const marks = form.marksUnreadable ? marksRangeMessage(maxMarks) : gradeMarksError(form.marks, maxMarks);
   if (marks) errors.finalMarks = marks;
   if (form.feedback.length > FEEDBACK_MAX) errors.finalFeedback = FEEDBACK_TOO_LONG;
   return errors;

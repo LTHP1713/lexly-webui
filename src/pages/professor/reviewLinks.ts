@@ -7,3 +7,8 @@ export const ORDER_LABELS: Record<ReviewOrder, string> = { byStudent: 'By studen
 export function answerReviewLink(answerId: string, order: ReviewOrder): string {
   return `/professor/answers/${encodeURIComponent(answerId)}?order=${order}`;
 }
+
+/** Back to the submissions grid in the same grading order. */
+export function submissionsLink(assessmentId: string, order: ReviewOrder): string {
+  return `/professor/assessments/${encodeURIComponent(assessmentId)}?order=${order}`;
+}

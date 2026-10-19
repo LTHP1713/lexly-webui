@@ -32,6 +32,11 @@ describe('validateDraft / validateApprove (F4.2)', () => {
     expect(validateDraft({ marks: '', feedback: 'x'.repeat(10_001) }, 10).finalFeedback).toMatch(/at most 10,000/);
   });
 
+  it('treats marks the browser could not read (e.g. "7,5") as wrong, not blank', () => {
+    expect(validateDraft({ marks: '', feedback: '', marksUnreadable: true }, 10)).toEqual({ finalMarks: range });
+    expect(validateApprove({ marks: '', feedback: 'Good.', marksUnreadable: true }, 10)).toEqual({ finalMarks: range });
+  });
+
   it('blocks approve without marks or with blank feedback', () => {
     expect(validateApprove({ marks: '', feedback: '   ' }, 10)).toEqual({
       finalMarks: MARKS_REQUIRED,

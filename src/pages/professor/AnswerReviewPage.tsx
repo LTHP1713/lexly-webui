@@ -37,11 +37,12 @@ import {
   type GradeErrors,
   type GradeForm,
 } from './gradeForm';
-import { ORDER_LABELS, answerReviewLink } from './reviewLinks';
+import { ORDER_LABELS, answerReviewLink, submissionsLink } from './reviewLinks';
 import localStyles from '@/components/Assessment.module.css';
 import styles from '@/components/ui.module.css';
 
 const NEXT_UNGRADED_ID = 'review-next-ungraded';
+const BACK_TO_SUBMISSIONS_ID = 'review-back-to-submissions';
 
 /**
  * `/professor/answers/:answerId` (UI spec F4.1–F4.4): one submitted answer with its PDF, the
@@ -68,7 +69,7 @@ export function AnswerReviewPage() {
         {review && (
           <>
             {' / '}
-            <Link to={`/professor/assessments/${review.assessment.id}`}>{review.assessment.title}</Link>
+            <Link to={submissionsLink(review.assessment.id, order)}>{review.assessment.title}</Link>
             <span aria-current="page"> / Question {review.question.position}</span>
           </>
         )}
@@ -227,7 +228,9 @@ function ReviewNav({ review, order }: { review: AnswerReview; order: ReviewOrder
       {!nextUngradedAnswerId && (
         <p className={styles.hint}>
           No ungraded answers after this one.{' '}
-          <Link to={`/professor/assessments/${review.assessment.id}`}>Back to submissions</Link>
+          <Link id={BACK_TO_SUBMISSIONS_ID} to={submissionsLink(review.assessment.id, order)}>
+            Back to submissions
+          </Link>
         </p>
       )}
       <div className={localStyles.reviewNavOrder}>
@@ -270,16 +273,17 @@ function GradePanel({ review, cache }: { review: AnswerReview; cache: ReturnType
   const [banner, setBanner] = useState<string | null>(null);
   const [busy, setBusy] = useState<'save' | 'approve' | null>(null);
   const [confirming, setConfirming] = useState(false);
-  const dirty = editable && gradeSnapshot(form) !== saved;
+  const dirty = editable && (Boolean(form.marksUnreadable) || gradeSnapshot(form) !== saved);
   const guard = useUnsavedChangesGuard(dirty, { ignoreSearch: true });
 
-  // After publishing, focus goes to Next ungraded. It must run after the confirm's own effect has
-  // closed the <dialog>, since closing a native dialog moves focus back to where it was opened.
+  // After publishing, focus goes to Next ungraded, or Back to submissions when none is left. It
+  // must run after the confirm's own effect has closed the <dialog>, since closing a native dialog
+  // moves focus back to where it was opened (the Approve button, which is gone by then).
   const focusNextUngraded = useRef(false);
   useEffect(() => {
     if (!focusNextUngraded.current || confirming) return;
     focusNextUngraded.current = false;
-    document.getElementById(NEXT_UNGRADED_ID)?.focus();
+    (document.getElementById(NEXT_UNGRADED_ID) ?? document.getElementById(BACK_TO_SUBMISSIONS_ID))?.focus();
   });
 
   function update(patch: Partial<GradeForm>) {
@@ -306,6 +310,11 @@ function GradePanel({ review, cache }: { review: AnswerReview; cache: ReturnType
     setBanner(null);
     if (Object.keys(problems).length > 0) {
       focusFirstError(problems);
+      return;
+    }
+    // Every save writes a history entry and an audit row, so an unchanged draft isn't sent again.
+    if (!dirty) {
+      flash('No changes to save.');
       return;
     }
     setBusy('save');
@@ -369,6 +378,7 @@ function GradePanel({ review, cache }: { review: AnswerReview; cache: ReturnType
             label={`Marks (out of ${formatMarks(maxMarks)})`}
             value={form.marks}
             onChange={(marks) => update({ marks })}
+            onUnreadable={(marksUnreadable) => update({ marksUnreadable })}
             error={errors.finalMarks}
             step={0.5}
             min={0}

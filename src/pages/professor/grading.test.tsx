@@ -68,7 +68,7 @@ describe('answer review (F4.1)', () => {
     expect(screen.getByText('R001')).toBeInTheDocument();
     expect(screen.getByText('Discuss Article 21.')).toBeInTheDocument();
     expect(screen.getByText('10 marks · up to 500 words')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Moot problem' })).toHaveAttribute('href', '/professor/assessments/a1');
+    expect(screen.getByRole('link', { name: 'Moot problem' })).toHaveAttribute('href', '/professor/assessments/a1?order=byQuestion');
     expect(await screen.findByTitle('PDF: q2.pdf')).toHaveAttribute('src', 'blob:answer');
   });
 
@@ -201,7 +201,9 @@ describe('grade panel (F4.2)', () => {
       }),
     );
     await renderApp('/professor/answers/ans1');
-    await userEvent.setup().click(await screen.findByRole('button', { name: 'Save draft' }));
+    const ui = userEvent.setup();
+    await ui.type(await screen.findByLabelText('Marks (out of 10)'), '3');
+    await ui.click(screen.getByRole('button', { name: 'Save draft' }));
     expect(await screen.findByText("This grade has already been published, so it can't be changed.")).toBeInTheDocument();
     expect(await screen.findByText('4 / 10')).toBeInTheDocument();
   });

@@ -1,3 +1,5 @@
+import { useEffect, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
 import { hasCode } from '@/api/errors';
 import { getStudentResults, type QuestionResult, type ResultOutcome, type StudentResults } from '@/api/student';
@@ -58,6 +60,7 @@ export function StudentResultsPage() {
 function ResultsView({ results }: { results: StudentResults }) {
   const now = useNow(0, results.assessment.dueAt);
   const { assessment, totals, questions } = results;
+  useRefetchAtDue(assessment.id, assessment.dueAt, now);
   const published = questions.filter((q) => q.outcome === 'PUBLISHED').length;
 
   return (
@@ -108,6 +111,23 @@ function ResultsView({ results }: { results: StudentResults }) {
       </p>
     </>
   );
+}
+
+/**
+ * At the due date, unsubmitted questions turn from "Not submitted" into "Not attempted" on the
+ * server, so the results are fetched again once the page's clock passes it.
+ */
+function useRefetchAtDue(assessmentId: string, dueAt: string | null, now: number) {
+  const client = useQueryClient();
+  const due = dueAt ? new Date(dueAt).getTime() : NaN;
+  const pastDue = now >= due;
+  const wasPastDue = useRef(pastDue);
+  useEffect(() => {
+    if (pastDue && !wasPastDue.current) {
+      void client.invalidateQueries({ queryKey: queryKeys.studentAssessments.results(assessmentId) });
+    }
+    wasPastDue.current = pastDue;
+  }, [pastDue, client, assessmentId]);
 }
 
 const OUTCOME_BADGES: Record<ResultOutcome, [BadgeTone, string]> = {

@@ -5,6 +5,7 @@ import {
   REVIEW_ORDERS,
   oneOf,
   type CellStatus,
+  type GradeStatus,
   type GridStatusFilter,
   type ReviewOrder,
 } from '@/api/assessments';
@@ -462,7 +463,7 @@ function cellTitle(submittedAt: string | null): string | undefined {
 
 function statusFilterLabel(value: GridStatusFilter): string {
   if (value === 'UPLOADED') return 'Uploaded, not submitted';
-  if (value === 'PENDING' || value === 'PUBLISHED') return GRADE_LABELS[value];
+  if ((GRADE_FILTERS as readonly string[]).includes(value)) return GRADE_LABELS[value as GradeStatus];
   return CELL_LABELS[value as CellStatus];
 }
 
