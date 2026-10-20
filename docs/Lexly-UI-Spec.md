@@ -1,6 +1,6 @@
 # Lexly — UI Spec (web)
 
-**Status:** Draft, revised 2026-10-15. F0–F3 written and synced with backend Phases 0–3 (contract §1, §2, §5–§9 LIVE); F4–F8 not yet written.
+**Status:** Draft, revised 2026-10-20. F0–F4 written and synced with backend Phases 0–4 (contract §1, §2, §5–§10 LIVE); F5a written against backend Phase 5a (contract §11a PROPOSED); F5 on hold; F6a–F8 not yet written.
 **Audience:** frontend developers on `lexly-webui`, plus backend and design reviewers.
 **Companion docs:**
 - [`Lexly-Frontend-Implementation-Plan.md`](Lexly-Frontend-Implementation-Plan.md) says **which** screens each phase builds. Task IDs (F1.6 …) come from there.
@@ -36,6 +36,7 @@ No Figma file or reference designs exist yet. When they do, link them here and f
 - [F2 — College administration](#f2--college-administration)
 - [F3 — Assessments & answering](#f3--assessments--answering)
 - [F4 — Manual grading & student results](#f4--manual-grading--student-results)
+- [F5a — AI legal tutor](#f5a--ai-legal-tutor)
 - [F5–F8 (not yet written)](#f5f8-not-yet-written)
 - [Open questions](#open-questions)
 - [Changelog](#changelog)
@@ -132,6 +133,9 @@ This expands the plan's §3.6 catalogue with copy. Clients switch on `error`, ne
 | `INVALID_FILE` | Under the answer card's file input | This PDF can't be used: {server reason} |
 | `INVALID_MARKS` | Grade panel, field `finalMarks` | Enter marks from 0 to {maxMarks}, in whole or half marks. |
 | `GRADE_PUBLISHED` | Grade panel banner, after a refetch | This grade has already been published, so it can't be changed. |
+| `QUOTA_EXCEEDED` (tutor) | Quota banner above the composer; composer disabled; the question kept | You've used today's 10 questions. They reset at midnight India time ({local time of `resetsAt`}). |
+| `AI_UNAVAILABLE` | On the pending tutor message, with **Try again** | The tutor couldn't answer just now. Your question wasn't counted. |
+| `INDEX_RUN_IN_PROGRESS` | Tutor admin: refetch the runs; a polite note, not an error | A re-index is already running. |
 | `INTERNAL_ERROR`, other 5xx | Banner or `ErrorState` | Lexly is having trouble right now. Please try again in a moment. |
 | Anything else | Banner | Something went wrong. Please try again. |
 
@@ -166,8 +170,9 @@ These are the only roles. Backend P1 remapped the old `ADMIN` to `SUPERADMIN` an
 | F2 | College administration | **Written** | Users list and detail (F2.2), Add/edit user (F2.3), Reset password (F2.4), Remove user (F2.5), Import users (F2.6), Subjects (F2.7), Read-only subjects (F2.8) |
 | F3 | Assessments & answering | **Written** | Professor list (F3.1), Draft editor (F3.2), Publish (F3.3), Delete/remove (F3.4), Student list (F3.5), Student assessment (F3.6), Upload (F3.7), Assessment detail and submissions grid (F3.8). F3.9 dropped (A9) |
 | F4 | Manual grading & student results | **Written** | Grading counts and grid (F4.5), Answer review (F4.1), Grade panel (F4.2), Grading flow (F4.3), Grade history (F4.4), Student results (F4.6) |
-| F5 | AI evaluation UI | Not yet | — |
-| F6 | Rankings & statistics | Not yet | — |
+| F5 | AI evaluation UI | On hold (backend Phase 5 on hold) | — |
+| F5a | AI legal tutor | **Written** | Tutor (F5a.3), Tutor admin: index and spend (F5a.4) |
+| F6a | Rankings & statistics | Not yet | — |
 | F7 | Solo AI practice | Not yet | — |
 | F8 | Payments & hardening | Not yet | — |
 
@@ -1097,11 +1102,106 @@ Below: **Back to your answers** (→ `/student/assessments/{id}`).
 
 ---
 
+## F5a — AI legal tutor
+
+Contract: §11a (TDD §10a). Every role may use the tutor. The browser calls only `lexly-backend`; it never talks to `lexly-ai-service`. Answers arrive whole (no streaming) and can take up to about 60 s, so the ask call has no client-side timeout. Each user has 10 questions a day, reset at midnight India time; a "not found" answer counts, a failed call (`AI_UNAVAILABLE`) doesn't. Conversations are private (not even SUPERADMIN can read another user's) and are deleted 24 h after their last message. Question and answer text never goes into a URL, a log or the audit log.
+
+### F5a shell changes
+
+| Item | Behaviour |
+|---|---|
+| Routes | `/tutor` (a new chat) and `/tutor/:conversationId` for every role, wide, a lazy chunk. `/admin/tutor` (SUPERADMIN, wide) |
+| Nav | A **Tutor** item (chat-bubble icon) for every role: SUPERADMIN Colleges · Content · Audit · **Tutor** · Library (its `matches` include `/admin/tutor`); C_ADMIN Users · Subjects · Audit · **Tutor** · Library; C_PROFESSOR and C_STUDENT Assessments · **Tutor** · Library; S_STUDENT Home · Bare Acts · Practice · **Tutor** · Profile |
+| `/admin` hub | A **Tutor** card: "Re-index the tutor and see AI spend" |
+| Data refresh | Tutor responses are `no-store`. Sending a question updates the open conversation and the quota from the `POST` response and refetches the conversation list. Sign-out clears the cache |
+| URL | Only the conversation id, the admin `?tab=` and the spend filters. Never question or answer text |
+
+### F5a.3 Tutor — `/tutor` and `/tutor/:conversationId`
+
+**Purpose:** ask legal questions and get answers cited from Lexly's library and study material. Data: `GET /tutor/quota`, `GET /tutor/conversations`, `GET /tutor/conversations/{id}`, `POST /tutor/messages`, `DELETE /tutor/conversations/{id}`.
+
+**Layout.** Header: eyebrow "Lexly tutor"; H1 "Ask the tutor"; for SUPERADMIN only, a link **Tutor admin** (→ `/admin/tutor`). From 1024 px, two panes: **Your chats** on the left (18 rem), the thread on the right. Below 1024 px one pane at a time: the thread, with a **← All chats** button above it, or the list (opened by that button; picking a chat or **New chat** returns to the thread). The composer sits under the thread, the quota line under the composer and the disclaimer under that.
+
+**Your chats** (`aside`, heading "Your chats")
+- **New chat** (primary, → `/tutor`). Disabled while a question is being answered.
+- One row per conversation, in the server's order (newest `lastMessageAt` first): the `title` on one line (ellipsis, full title as `title`), and below it, muted, "deletes in {n} h" ("deletes in {n} min" under an hour, "deleting soon" once past `expiresAt`), with the exact `expiresAt` as `title`. The open conversation has `aria-current="page"`. A **Delete** icon button per row (accessible name "Delete chat: {title}").
+- Loading: skeleton. Error: `ErrorState` with **Try again** (the thread still works). Empty: "No chats in the last 24 hours."
+- **Delete** → `ConfirmDialog`: title "Delete this chat?"; body "This chat will be deleted now. Chats are deleted automatically 24 h after the last message anyway."; **Cancel** · **Delete chat** (danger, "Deleting…"). Success (or a `404`, it's already gone): toast "Chat deleted."; the list refreshes; deleting the open chat goes to `/tutor`.
+
+**Thread**
+- New chat (`/tutor`), no messages yet: a short explainer, "Ask about any act, section or case law in Lexly. Answers cite their sources, so you can read the law itself." and the heading "Try asking" with three example buttons that fill the composer (and focus it): "Is a contract with a minor void?", "What is the difference between culpable homicide and murder?", "When can a court grant anticipatory bail?".
+- `/tutor/:id`: loading skeleton; `GET` `404` → in the thread pane, "This conversation has expired or was deleted." (heading level 2) with **New chat**; other errors → `ErrorState` with **Try again**.
+- Messages oldest first as an ordered list (`aria-label` "Conversation"). `USER`: right-aligned bubble, label "You" (visually hidden), the text with line breaks kept. `ASSISTANT`: full width, label "Tutor" (visually hidden), the answer, then its sources.
+- **Pending message.** On send the question appears at once as a `USER` message, followed by a status row "Answering… this can take up to a minute" (a spinner + text) in a polite live region. One question in flight: **Send** and **New chat** are disabled until it settles. Navigating to another chat while it runs is allowed; the answer is still saved into its conversation, and a new chat's answer only moves the URL if the user is still on `/tutor`.
+- **On success:** the pending message is replaced by the server's `question` and `answer`; a new chat replaces the URL with `/tutor/{conversation.id}` (replace, not push); the quota line takes `quota` from the response; the chat list refreshes; focus stays in the composer and the live region announces "Answer received."
+- **Failure** (`AI_UNAVAILABLE`, `NETWORK_ERROR`, `INTERNAL_ERROR` and anything not listed below): the pending question stays, marked with an alert "The tutor couldn't answer just now. Your question wasn't counted." and two buttons: **Try again** (resends the same question to the same conversation) and **Edit question** (puts the text back in the composer and removes the pending message). Nothing was stored server-side.
+
+**Answer rendering** (plain text only, built from text nodes; never `dangerouslySetInnerHTML`)
+- Paragraphs split on blank lines; single line breaks are kept.
+- `[n]` markers: a marker is `[` + digits + `]`, wherever it appears (also straight after a word, as in "void[1]."). When `n` matches a `citations[].ref`, it becomes a small superscript button with the text `n` and the accessible name "Source {n}: {label}"; activating it scrolls to that source, opens its snippet, focuses it and highlights it for 2 s. A marker with no matching citation stays as plain text. Adjacent markers (`[1][2]`) become two buttons.
+- **Sources** under the answer (heading "Sources", visually styled small): an ordered list by `ref`, each item numbered "[{ref}]":
+  - `SECTION` / `CASE_LAW`: `label` as a link to `/sections/{sourceId}` or `/caselaws/{sourceId}`. A source deleted since the last Re-index opens that page's normal Not Found.
+  - `FILE`: "{label} · {location}" (just `label` when `location` is `null`), plain text, with a muted "Study material" tag. No link.
+  - The `snippet` in a `<details>` ("Cited passage"), shown as a quote; open by default from 768 px, collapsed below.
+- **Not-found answers** (`notFound: true`): the fixed sentence in a muted note (an info icon + text), then "Try naming the act or section." and "This still used one of today's questions." No sources.
+
+**Composer**
+- A labelled textarea ("Your question", 3 rows, grows to 8), counter "{n} / 2,000" (warning style past 2,000). **Enter** sends, **Shift+Enter** adds a line (IME composition is never sent). **Send** (primary, "Sending…" while in flight).
+- Client checks on send: blank → "Type a question first."; over 2,000 → "Questions can be at most 2,000 characters." (mirrors the `@Size`). Field error under the textarea; no request.
+- While answering, the textarea stays editable (the next question can be typed) but **Send** is disabled.
+
+**Quota line** (under the composer, `aria-live="polite"`): "{remaining} of {limit} questions left today · resets at {time}". `{time}` is `resetsAt` in the viewer's local time ("12:00 am" for a viewer in India); when that falls on a later local date and isn't midnight, "{time} tomorrow" (e.g. "4:30 am tomorrow" at UTC+10). It is loaded once from `GET /tutor/quota` and then updated from each `POST` response, not refetched. Loading: "Checking today's questions…". Error: nothing shown (sending still works). With `remaining` 0 the composer is disabled and the quota banner shows.
+
+**Quota banner** (`QUOTA_EXCEEDED`, or `remaining` 0 on load; `role="status"`, warning tone, above the composer): "You've used today's 10 questions. They reset at midnight India time ({time})." `{time}` as in the quota line, refetched from `GET /tutor/quota` after a `QUOTA_EXCEEDED`. The typed question is kept in the composer (a pending one goes back into it).
+
+**Disclaimer** (muted, small): "Answers come only from Lexly's library and study material and may be incomplete. Check the cited sources."
+
+**Errors** (§0.6 for the rest)
+
+| Error | Where | Copy |
+|---|---|---|
+| `QUOTA_EXCEEDED` | Quota banner; composer disabled; the question back in the composer | See above |
+| `AI_UNAVAILABLE`, `NETWORK_ERROR`, 5xx | On the pending message, with **Try again** / **Edit question** | The tutor couldn't answer just now. Your question wasn't counted. |
+| `NOT_FOUND` on send with a `conversationId` | Go to `/tutor`; notice above the composer; the question back in the composer; the chat list refreshes | This conversation has expired or was deleted. Your question is still below; send it to start a new chat. |
+| `VALIDATION_ERROR` `question` | Field error; the question back in the composer | "Type a question first." / "Questions can be at most 2,000 characters." |
+
+### F5a.4 Tutor admin — `/admin/tutor` (SUPERADMIN)
+
+**Purpose:** keep the tutor's index current and watch AI spend. Template: List, wide. Breadcrumb "Administration / Tutor". Eyebrow "Super admin"; H1 "Tutor admin". Two tabs in the URL (`?tab=index|spend`, default `index`, changed with replace): **Index** · **Spend**.
+
+**Index tab** — data: `GET /superadmin/tutor/index-runs`, `POST /superadmin/tutor/index-runs`.
+- **Re-index** (primary), disabled with the hint "A run is in progress." while the latest run is `RUNNING`. It opens a `ConfirmDialog`: title "Re-index the tutor?"; body "Lexly re-reads the PDF folder and the whole library in the background. This can take several minutes. Unchanged passages are reused, so a re-run is cheaper than the first."; **Cancel** · **Re-index** ("Starting…"). `202`: the new run becomes the latest run; toast "Re-index started." `409 INDEX_RUN_IN_PROGRESS`: no error; the runs are refetched and a polite note says "A re-index is already running."
+- **Latest run** card (heading "Latest run"): status badge ("Running" info, "Succeeded" success, "Failed" danger) and a facts list:
+  - Started: "{startedAt} by {startedBy.fullName}" ("by a removed user" when `null`)
+  - Duration: from `startedAt` to `finishedAt` ("4 min 12 s"); while running "Running for {duration}"
+  - Files: "{ingested} ingested · {failed.length} failed", then the failed file names as a list
+  - Library: "{sections} sections · {caseLaws} case laws"
+  - Chunks: "{embedded} embedded · {reused} reused · {removed} removed"
+  - Embedding tokens: "{embeddingTokens}"
+  - `FAILED`: an alert with `error` ("The run failed." when blank)
+  - While `RUNNING`, the counts not known yet are 0; a polite status "Re-indexing… this page updates every 5 seconds."
+- **Polling:** `GET …/index-runs` every 5 s only while the first run is `RUNNING`; it stops when that run finishes or the page unmounts. When a watched run finishes, the live region says "Re-index finished: {status label}."
+- **Previous runs** (heading "Previous runs"): the other runs (at most 9). Table from 768 px, cards below; columns Started · Status · Started by ("Removed user" when `null`) · Duration · Files (ingested / failed) · Chunks embedded · Embedding tokens. Empty: "No earlier runs."
+- No runs at all: `EmptyState` "The tutor hasn't been indexed yet. Re-index once so it can answer from the library." with **Re-index…**.
+
+**Spend tab** — data: `GET /superadmin/ai-usage/daily?from=&to=&collegeId=&role=` and the colleges list (for the filter).
+- **Filters** (URL `from`, `to`, `collegeId`, `role`): From and To (date inputs; default the last 30 days up to today, as India dates), College ("All colleges" + every college), Role ("All roles", "Super admin", "College admin", "Professor", "College student", "Solo student"). Client checks: both dates present ("Enter both dates."), `to ≥ from` ("The start date must be on or before the end date."), at most 366 days inclusive ("Choose a range of at most 366 days."). An invalid range shows the error under the dates and sends no request. **Clear filters** when any filter is set.
+- **Stat tiles** from `totals`: Cost ("$0.6447": USD with 2–4 decimals), Questions, Index runs, Input tokens, Output tokens, Embedding tokens.
+- **Daily cost chart** (heading "Daily cost"): a bar per day in `days` (oldest first), drawn in plain SVG (no chart library). The y-axis starts at 0 with 3–4 gridlines labelled in USD; the x-axis labels a few dates ("19 Oct"). Bars in `--lx-accent`. Hovering a bar, or focusing the chart and moving with ←/→ (Home/End for the ends), shows a tooltip "{date} · ${cost} · {questions} questions" and highlights the bar. The SVG has `role="img"` and the label "Daily AI cost from {from} to {to}, total ${cost}". All-zero range: the bars are flat, and the note "No AI use in this range." **Show as table** / **Hide table** toggles a table with Date · Questions · Index runs · Input tokens · Output tokens · Embedding tokens · Cost.
+- **Footnotes** (muted): "Rates now: ${input} / ${output} / ${embedding} per million input / output / embedding tokens. Past days keep the rate of their time." With a college or role filter: "Index runs aren't tied to a college or role, so they're excluded."
+- Loading: skeleton tiles; a refetch keeps the previous data with `aria-busy`. Error: `ErrorState` with **Try again**. `400 VALIDATION_ERROR`: the error under the dates. `404` for an unknown `collegeId`: "This college no longer exists." with **Clear filters**.
+
+### F5a audit summaries
+
+None. Tutor questions and answers are never audited (contract §11a). Index runs are visible on the Index tab.
+
+---
+
 ## F5–F8 (not yet written)
 
 Each stub lists what the section must cover. Task IDs are the plan's.
 
-**F5 — AI evaluation UI** (contract §11): F5.1 AI Evaluate gating · F5.2 polling · F5.3 AI suggestion and flag chips · F5.4 failure and retry · F5.5 grid statuses and the AI usage tab.
+**F5 — AI evaluation UI** (contract §11; on hold with backend Phase 5): F5.1 AI Evaluate gating · F5.2 polling · F5.3 AI suggestion and flag chips · F5.4 failure and retry · F5.5 grid statuses and the AI usage tab.
 
 **F6 — Rankings & statistics** (contract §12): F6.1 ranking table · F6.2 subject picker per role · F6.3 C_ADMIN overview · F6.4 per student · F6.5 freshness from `generatedAt`.
 
@@ -1132,3 +1232,4 @@ Each stub lists what the section must cover. Task IDs are the plan's.
 | 2026-10-14 | F2 written against backend Phase 2 (contract §8 LIVE): C_ADMIN nav and hub, users list/detail and dialogs, user import with `FileDropzone` and `CONVERTED`, subjects and professor mapping, read-only subjects on the professor and student homes, F2 error copy in §0.6, audit summaries for the P2 `details` |
 | 2026-10-15 | F3 written against backend Phase 3 (contract §9 LIVE): professor list, draft editor with the publish checklist, delete/remove, assessment detail and submissions grid, student list and the answer cards with upload, submit and `PdfViewer`; F3 error copy in §0.6; F2.8 cards replaced by subject filters. F3.9 and the college Assessments tab dropped (A9 changed) |
 | 2026-10-18 | F4 written against backend Phase 4 (contract §10 LIVE): grading counts and grade cells in the list, detail and grid (with the grade-status filter and grading order), answer review with the inline PDF, grade panel (draft, approve & publish, read-only once published), previous / next / next ungraded, grade history, student results per `outcome` and its entry points; `INVALID_MARKS` and `GRADE_PUBLISHED` copy in §0.6; F4 audit summaries |
+| 2026-10-20 | F5a written against backend Phase 5a (contract §11a): tutor nav item for every role and the `/admin` Tutor card; the tutor screen (chat list with expiry and delete, thread with pending / failed messages, `[n]` source markers, library and `FILE` sources, not-found answers, composer, quota line and banner, disclaimer, expired conversations); tutor admin Index (re-index, latest run, polling, previous runs) and Spend (URL filters, stat tiles, SVG daily cost chart with a table) tabs; `QUOTA_EXCEEDED` (tutor), `AI_UNAVAILABLE` and `INDEX_RUN_IN_PROGRESS` copy in §0.6. F5 marked on hold |

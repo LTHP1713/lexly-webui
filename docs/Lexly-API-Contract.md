@@ -114,7 +114,9 @@ Each endpoint below lists the roles that may call it. Other roles get `403 FORBI
 | `GRADE_PUBLISHED` | 409 | LIVE (P4) | Changing a published grade |
 | `AI_EVALUATION_NOT_ALLOWED` | 409 | PROPOSED (P5) | AI evaluate before the PDF was downloaded, on a published grade, or while one is running (also used for a solo attempt while another is evaluating) |
 | `PLAN_REQUIRED` | 402 | PROPOSED (P7) | Solo feature without an `ACTIVE` plan |
-| `QUOTA_EXCEEDED` | 429 | PROPOSED (P7) | 60 generations already used this month |
+| `QUOTA_EXCEEDED` | 429 | PROPOSED (P5a, P7) | P5a: today's 10 tutor questions are used (§11a.2). P7: 60 solo generations already used this month |
+| `AI_UNAVAILABLE` | 503 | PROPOSED (P5a) | The AI service or model failed or timed out; nothing was stored or counted |
+| `INDEX_RUN_IN_PROGRESS` | 409 | PROPOSED (P5a) | Starting a tutor index run while one is running |
 | `ATTEMPT_LIMIT_REACHED` | 409 | PROPOSED (P7) | 4th evaluated attempt on a solo question |
 | `FOLLOWUP_LIMIT_REACHED` | — | REMOVED (P0) | Old AI design; deleted from `ErrorCodes` |
 
@@ -1089,6 +1091,142 @@ Only professors ever receive this object.
 ```
 `college` is `null` for solo kinds (`SOLO_EVALUATION`, `SOLO_QUESTION`, `SOLO_ANSWER`).
 
+When Phase 5 resumes, this endpoint reads the same `ai_usage_events` table that Phase 5a creates (§11a.5).
+
+---
+
+## 11a. AI legal tutor — PROPOSED (P5a)
+
+Design: TDD §10a. All tutor responses are `Cache-Control: no-store`. Question and answer text never appears in the audit log.
+
+### 11a.1 Shared shapes
+
+**`TutorConversation`**
+```json
+{ "id": "…", "title": "Is a contract with a minor void?", "createdAt": "…", "lastMessageAt": "…", "expiresAt": "…" }
+```
+`title` is the first question on one line, cut to 120 characters. `lastMessageAt` is the time of the last answer. `expiresAt` = `lastMessageAt` + 24 h; from then on the conversation is gone (`404`), and the hourly purge deletes it.
+
+**`TutorMessage`**
+```json
+{ "id": "…", "role": "ASSISTANT", "content": "A contract with a minor is void [1] …", "notFound": false,
+  "citations": [ /* TutorCitation */ ], "createdAt": "…" }
+```
+`role` is `USER` or `ASSISTANT`. `content` is plain text with `[n]` markers that refer to `citations[].ref`. For `USER` messages, `notFound` is `false` and `citations` is `[]`. `notFound` is `true` when the sources don't answer the question; `content` then holds the fixed "not found" sentence and `citations` is `[]`.
+
+**`TutorCitation`**
+```json
+{ "ref": 1, "sourceType": "SECTION", "sourceId": "…", "label": "Section 11, Indian Contract Act, 1872",
+  "location": null, "snippet": "Every person is competent to contract who is of the age of majority …" }
+```
+
+| Field | Notes |
+|---|---|
+| `sourceType` | `SECTION` and `CASE_LAW` are library documents: link to `/sections/{sourceId}` or `/caselaws/{sourceId}`. `FILE` is a document from the PDF folder: no link, `sourceId` is `null` |
+| `label` | Section or case law name, or the file name for `FILE` |
+| `location` | For `FILE`: `page 4`, `sheet 'Marks', rows 21-40`, `section: Facts`. `null` for library documents |
+| `snippet` | The cited passage, at most 300 characters |
+
+A library citation can point to a section or case law deleted since the last Re-index; the frontend then shows the page's normal Not Found.
+
+**`TutorQuota`**
+```json
+{ "limit": 10, "used": 3, "remaining": 7, "resetsAt": "2026-10-19T18:30:00Z" }
+```
+`resetsAt` is the next midnight in `Asia/Kolkata`, as a UTC instant.
+
+### 11a.2 `POST /tutor/messages`
+Roles: all. Asks a question, in a new conversation or an existing one.
+
+Request:
+```json
+{ "conversationId": null, "question": "Is a contract with a minor void?" }
+```
+
+| Field | Rules |
+|---|---|
+| `conversationId` | `null` starts a new conversation; otherwise one of the caller's live conversations |
+| `question` | Required, not blank, at most 2,000 characters |
+
+`200`:
+```json
+{ "conversation": { /* TutorConversation */ }, "question": { /* TutorMessage, USER */ },
+  "answer": { /* TutorMessage, ASSISTANT */ }, "quota": { /* TutorQuota, after this question */ } }
+```
+
+Errors:
+- `400 VALIDATION_ERROR`: `question: must not be blank`, `question: size must be between 0 and 2000`.
+- `404 NOT_FOUND`: unknown, expired or another user's `conversationId`; also when the conversation was deleted while the tutor was answering (the answer is discarded and the question not counted; the deleted chat never comes back).
+- `429 QUOTA_EXCEEDED`: the day's 10 questions are used. `message`: `"You have used today's 10 questions. They reset at midnight India time."` Use `GET /tutor/quota` for `resetsAt`.
+- `503 AI_UNAVAILABLE`: the AI service or the model failed or timed out, or too many questions are already waiting on it (`lexly.tutor.max-concurrent-questions`, 20). No messages are stored and the question is not counted; tokens the service reports as spent are still recorded for the spend graph.
+
+The call can take up to about 60 s (`lexly.tutor.timeout-seconds`).
+
+### 11a.3 `GET /tutor/quota`
+Roles: all. `200` `TutorQuota`.
+
+### 11a.4 Conversations
+Roles: all; always the caller's own.
+
+| Endpoint | Response |
+|---|---|
+| `GET /tutor/conversations` | `200` plain array of `TutorConversation`, newest `lastMessageAt` first (live ones only; at most a day's worth) |
+| `GET /tutor/conversations/{id}` | `200` `TutorConversation` plus `"messages": [TutorMessage]`, oldest first |
+| `DELETE /tutor/conversations/{id}` | `204` |
+
+Another user's or an expired conversation → `404`.
+
+### 11a.5 SUPERADMIN: indexing and spend
+
+**`POST /superadmin/tutor/index-runs`** — no body. Starts a background run (PDF folder, then the library). `202` `TutorIndexRun`. `409 INDEX_RUN_IN_PROGRESS` while one is running.
+
+**`GET /superadmin/tutor/index-runs`** — `200` plain array of the last 10 `TutorIndexRun`, newest first; `[]` if none. Poll while the first one is `RUNNING` (every 5 s).
+
+**`TutorIndexRun`**
+```json
+{ "id": "…", "status": "SUCCEEDED", "startedAt": "…", "finishedAt": "…",
+  "startedBy": { "id": "…", "fullName": "Lexly Admin" },
+  "files": { "ingested": 6, "failed": ["Scan.pdf"] },
+  "library": { "sections": 266, "caseLaws": 12 },
+  "chunks": { "embedded": 41, "reused": 912, "removed": 3 },
+  "embeddingTokens": 9800, "error": null }
+```
+`status` is `RUNNING`, `SUCCEEDED` or `FAILED`. While `RUNNING`, the counts that aren't known yet are `0` and `finishedAt` is `null`. `error` is a short safe message for `FAILED`. `startedBy` is `null` if that user was removed.
+
+**`GET /superadmin/ai-usage/daily?from=&to=&collegeId=&role=`**
+
+| Param | Rules |
+|---|---|
+| `from`, `to` | `yyyy-MM-dd`, India dates, inclusive. Default: the last 30 days up to today. `to` before `from` or a range over 366 days → `400 VALIDATION_ERROR` |
+| `collegeId` | Optional; only questions by that college's users |
+| `role` | Optional; only questions by users with that role at the time |
+
+`200`:
+```json
+{ "from": "2026-09-20", "to": "2026-10-19", "currency": "USD",
+  "rates": { "inputPerMillion": 1.125, "outputPerMillion": 5.625, "embeddingPerMillion": 0.2 },
+  "days": [ { "date": "2026-10-19", "questions": 42, "indexRuns": 1,
+              "inputTokens": 310000, "outputTokens": 52000, "embeddingTokens": 9800, "cost": 0.6447 } ],
+  "totals": { "questions": 42, "indexRuns": 1, "inputTokens": 310000, "outputTokens": 52000,
+              "embeddingTokens": 9800, "cost": 0.6447 } }
+```
+- `days` has one entry per date in the range, zero-filled, oldest first.
+- `cost` is the sum of the stored per-event costs (rates at the time of each event), rounded to 4 decimals. `rates` are the current ones.
+- Index runs have no college or role, so they are left out when `collegeId` or `role` is given.
+
+### 11a.6 Internal: backend → `lexly-ai-service` — INTERNAL
+
+Not callable from the browser. Base URL `lexly.tutor.base-url`; every call sends `x-api-key: <lexly.tutor.api-key>`. Field names are snake_case (the service is Python); the backend maps them to the shapes above. The service's OpenAPI document is the detailed reference.
+
+| Call | Request | Response |
+|---|---|---|
+| `POST /v1/ask` | `{ question, history: [{ role: "user"\|"assistant", content }], user: { id, role } }` | `{ answer, not_found, citations: [{ ref, source_type, source_id, label, location, text }], usage: { input_tokens, output_tokens, embedding_tokens } }` |
+| `POST /v1/ingest` | — (the mounted folder) | `{ files, failed_files, chunks, embedded, reused, removed, removed_files, embedding_tokens }`; `embedded`/`reused`/`removed` count chunks. `409` for an empty or unmounted folder, which the backend treats as "no files" |
+| `POST /v1/library/sync` | `{ run_id, final, documents: [{ source_type, source_id, label, text }] }` (≤ 100 documents per call) | `{ received, embedded, reused, removed, embedding_tokens }`; `removed` is non-zero only when `final` is `true` |
+| `GET /health` | — | `{ status: "ok" }` |
+
+`output_tokens` includes the model's thinking tokens. `embedding_tokens` are estimated (characters / 4) because the embedding API doesn't report them. A `4xx` from the service is a backend bug (logged, `503 AI_UNAVAILABLE` to the user); `5xx` and timeouts are `503` too.
+
 ---
 
 ## 12. Rankings & statistics — PROPOSED (P6)
@@ -1321,3 +1459,4 @@ The `isFree` field and the `PRO_REQUIRED` error no longer exist anywhere.
 | 2026-10-14 | P2 implemented: §8 is LIVE. The P2 ADDED items (`GET /college/users/{id}`, `GET /college/subjects/{id}`, `LOGIN_ID_ALREADY_EXISTS`, `SUBJECT_CODE_ALREADY_EXISTS`) were signed off. Import templates approved and their parsing rules written down (§8.2). `BulkImportResult.summary` gained `converted` for every import (§5.5 too, always `0` there). Subject codes are stored upper-case; `description` ≤ 2,000 |
 | 2026-10-15 | P3 implemented: §9 is LIVE. Upload limits decided (5 MB, 10 pages; O4) and the §0.6 checks written down; downloads expose `Content-Disposition`. `ASSESSMENT_NOT_EDITABLE`, `ASSESSMENT_CLOSED`, `ANSWER_LOCKED`, `INVALID_FILE` are live. SUPERADMIN read-only views (§9.6) dropped: A9 changed, SUPERADMIN has no access to college assessments or answers. `assessmentCount` (§8.4) is live and counts every status. Clarified: the grid's `status` accepts `CellStatus` only until P4, removing an assessment discards its unsubmitted answers, uploads and submits on a removed assessment are `404`, and the multipart ceiling is 10 MB |
 | 2026-10-18 | P4 implemented: §10 is LIVE; `INVALID_MARKS` and `GRADE_PUBLISHED` are live. The §9 grading placeholders are filled in (counts, grid `gradeStatus`/`finalMarks`, the grid's `GradeStatus` filter, `RESULTS_AVAILABLE`, `resultPublished`, `progress.resultsPublished`). Clarified: grading answers of a removed assessment is `409 ASSESSMENT_NOT_EDITABLE` (reading still works); an approve body replaces both fields; navigation doesn't wrap; `publishedMaxMarks` counts only published questions; the `history[].actor` and `gradedBy` shapes |
+| 2026-10-19 | P5a proposed: AI legal tutor (§11a) with conversations, quota, citations, SUPERADMIN index runs and daily spend, and the internal AI service API; error codes `AI_UNAVAILABLE`, `INDEX_RUN_IN_PROGRESS`; `QUOTA_EXCEEDED` also used by the tutor. P5 (§11) is on hold. Backend implemented on `feature/phase5a` against a mocked AI service; the AI service and webui follow |

@@ -176,7 +176,9 @@ New domain inputs:
 | `AI_EVALUATION_NOT_ALLOWED` | Inline: "Open the answer PDF first" or "Already published" |
 | `INVALID_MARKS` | Inline on `MarksInput` |
 | `PLAN_REQUIRED` (402) | Solo plan-gate screen |
-| `QUOTA_EXCEEDED` (429) | Usage banner with the reset date; disable generate buttons |
+| `QUOTA_EXCEEDED` (429) | Tutor (F5a): disable the composer, keep the typed question, refetch `/tutor/quota` and show the banner with the local time of `resetsAt`. Solo (F7): usage banner with the reset date; disable generate buttons |
+| `AI_UNAVAILABLE` (503) | Tutor (F5a): the pending message turns failed with **Try again**, keeping the question; nothing was stored or counted. The rest of the app is unaffected |
+| `INDEX_RUN_IN_PROGRESS` (409) | Tutor admin (F5a): refetch the index runs and show the running one; not an error toast |
 | `ATTEMPT_LIMIT_REACHED` | Hide upload; "3 of 3 attempts used" |
 | `IMPORT_FILE_INVALID` | Whole-file error on the import screen |
 | `RATE_LIMITED` (429) | Toast "Too many requests, try again shortly" (the form banner on sign-in and change password); no automatic retry. The backend raises it only from P8 (contract §0.8), but handle it from F1 |
@@ -226,12 +228,14 @@ Frontend phases mirror the backend phases. **F*n* starts once backend Phase *n*'
 | F2 | College administration | Phase 2 | M | **Done** 2026-10-14 |
 | F3 | Assessments & answering | Phase 3 | L | **Done** 2026-10-16 against backend `main` (`75a7c08`); F3.9 dropped |
 | F4 | Manual grading & student results | Phase 4 | M | Built 2026-10-18 against backend `feature/phase4` (`0e1174e`); Done once Phase 4 is merged |
-| F5 | AI evaluation UI | Phase 5 | S | — |
-| F6 | Rankings & statistics | Phase 6 | M | — |
+| F5 | AI evaluation UI | Phase 5 | S | *On hold* (backend Phase 5 on hold 2026-10-19) |
+| F5a | AI legal tutor | Phase 5a | M | In progress 2026-10-20 against backend `feature/phase5a` (`a4f2bee`) |
+| F6a | Rankings & statistics | Phase 6a | M | — |
+| F6b | AI analysis & admin chatbot | Phase 6b | — | To be planned |
 | F7 | Solo AI practice | Phase 7 | M | — |
 | F8 | Payments & hardening | Phase 8 | M | — |
 
-F6 can run alongside F5, as on the backend.
+F6a can run alongside F5a, as on the backend. On 2026-10-19 the user put Phase 5 (AI grading) on hold, so assessments stay manually graded (F4), and Phase 5a (a RAG legal tutor) was built instead. Phase 6 was split into 6a (manual statistics, the old F6) and 6b (AI analysis of those statistics plus a C_ADMIN chatbot, planned later). Don't reopen this.
 
 ---
 
@@ -340,7 +344,9 @@ F6 can run alongside F5, as on the backend.
 
 ---
 
-### F5 — AI evaluation UI
+### F5 — AI evaluation UI (on hold)
+
+On hold with backend Phase 5 since 2026-10-19. The tasks below are kept for when it resumes.
 
 | # | Task | Details |
 |---|---|---|
@@ -355,7 +361,24 @@ F6 can run alongside F5, as on the backend.
 
 ---
 
-### F6 — Rankings & statistics
+### F5a — AI legal tutor
+
+Backend Phase 5a (TDD §10a, contract §11a): a RAG tutor over the library and an owner-managed PDF folder, open to **every role**. The browser only talks to `lexly-backend`, which calls `lexly-ai-service` with an API key. Chat is multi-turn and each answer arrives whole (no streaming, up to ~60 s). Each user gets 10 questions a day, reset at midnight India time; a "not found" answer counts and a failed call is refunded. Conversations are private to their owner and deleted 24 h after the last message. SUPERADMIN gets Re-index and a daily AI spend graph.
+
+| # | Task | Details |
+|---|---|---|
+| F5a.1 | API module | `src/api/tutor.ts`: types and `to<Model>()` mappers for `TutorConversation`, `TutorMessage`, `TutorCitation`, `TutorQuota`, `TutorIndexRun` and the daily usage; the backend's order kept (conversations newest first, messages oldest first). `queryKeys.tutor.*`. No client-side timeout under ~70 s on the ask call |
+| F5a.2 | Route and nav | `/tutor` and `/tutor/:conversationId`, open to every role (a shared route like the Library, not in `AREAS`), wide, lazily loaded. A **Tutor** nav item (chat-bubble icon) for every role; SUPERADMIN's also matches `/admin/tutor`. The URL holds only the conversation id, never question text |
+| F5a.3 | Tutor screen | Two panes from 1024 px (conversations · thread); below that, the list or the thread with a back button. Quota line updated from each `POST` response. A pending message with an `aria-live` "Answering…" status; one question in flight. Answers as plain text, with `[n]` markers as buttons to their sources; library sources link to `/sections/:id` or `/caselaws/:id`, `FILE` sources show name · location with no link. Not-found answers, delete with a confirm, expired conversations, the disclaimer |
+| F5a.4 | SUPERADMIN tutor admin | `/admin/tutor?tab=index\|spend`, linked from the `/admin` hub and the `/tutor` header. Index: Re-index with a confirm, the latest run card, 5 s polling only while the first run is `RUNNING`, a table of previous runs. Spend: from / to / college / role filters in the URL (`to ≥ from`, ≤ 366 days), stat tiles from `totals`, a hand-drawn SVG daily cost bar chart with tooltips and a data table, rate and exclusion footnotes |
+| F5a.5 | Errors and copy | `QUOTA_EXCEEDED`, `AI_UNAVAILABLE`, `INDEX_RUN_IN_PROGRESS` in `errors.ts` (§3.6); statuses confirmed against the live backend |
+| F5a.6 | Tests | Mappers; the `[n]` parser; quota and expiry formatting; ask happy path, quota, unavailable + retry, expired conversation, not-found answer, citation links, delete; re-index `409` and polling; spend filters and range checks; a non-SUPERADMIN can't see the admin link or route. E2E `e2e/f5a-tutor.spec.ts` (needs the AI service; skips with a message otherwise) |
+
+**Done when:** a user of each role asks a question and sees a cited answer whose library links open the right section or case law; an 11th question that day shows the quota banner; stopping the AI service shows the unavailable state without using up a question; SUPERADMIN re-indexes and watches the run finish; the spend graph shows that day's questions and cost; and all of this works against the backend once `feature/phase5a` is merged.
+
+---
+
+### F6a — Rankings & statistics
 
 | # | Task | Details |
 |---|---|---|
