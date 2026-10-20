@@ -71,6 +71,8 @@ const StudentAssessmentsPage = lazy(() =>
 const StudentResultsPage = lazy(() =>
   import('@/pages/student/StudentResultsPage').then((m) => ({ default: m.StudentResultsPage })),
 );
+const TutorPage = lazy(() => import('@/pages/tutor/TutorPage').then((m) => ({ default: m.TutorPage })));
+const TutorAdminPage = lazy(() => import('@/pages/admin/tutor/TutorAdminPage').then((m) => ({ default: m.TutorAdminPage })));
 const StudentAssessmentPage = lazy(() =>
   import('@/pages/student/StudentAssessmentPage').then((m) => ({ default: m.StudentAssessmentPage })),
 );
@@ -119,6 +121,10 @@ function App() {
             <Route path="/caselaws/:caseLawId" element={<CaseLawDetailPage />} />
             <Route path="/profile" element={<ProfilePage />} />
 
+            {/* AI tutor: every role (F5a) */}
+            {/* One route, so the page keeps its pending question when a new chat gets its id. */}
+            <Route path="/tutor/:conversationId?" element={<TutorPage />} />
+
             {/* S_STUDENT */}
             <Route
               element={
@@ -151,6 +157,7 @@ function App() {
               <Route path="/admin/caselaws/:caseLawId" element={<AdminCaseLawFormPage />} />
               <Route path="/admin/caselaws/:caseLawId/content" element={<AdminCaseLawContentPage />} />
               <Route path="/admin/audit" element={<AuditLogPage scope="all" />} />
+              <Route path="/admin/tutor" element={<TutorAdminPage />} />
             </Route>
 
             {/* C_ADMIN */}

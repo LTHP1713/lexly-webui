@@ -1,0 +1,138 @@
+/* F5a tutor admin: the index run card and the spend chart. */
+
+.liveNote:empty {
+  display: none;
+}
+
+.liveNote {
+  margin: 0 0 0.75rem;
+  color: var(--lx-navy);
+  font-weight: 600;
+}
+
+.runCard {
+  margin: 0 0 1.5rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--lx-border);
+  border-radius: var(--lx-radius);
+  background: var(--lx-card);
+  box-shadow: var(--lx-shadow);
+}
+
+.runHead {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.75rem 1.5rem;
+  margin: 0.5rem 0 0;
+}
+
+.facts dt {
+  color: var(--lx-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.facts dd {
+  margin: 0.1rem 0 0;
+  color: var(--lx-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.failedFiles {
+  margin: 0.35rem 0 0;
+  padding-left: 1.1rem;
+  color: #7d2c18;
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.chartSection {
+  margin: 0 0 1rem;
+}
+
+.chart {
+  position: relative;
+  padding: 0.75rem;
+  border: 1px solid var(--lx-border);
+  border-radius: var(--lx-radius);
+  background: var(--lx-card);
+}
+
+.chartSvg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.chartSvg:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 4px;
+}
+
+.gridLine {
+  stroke: var(--lx-border);
+  stroke-width: 1;
+}
+
+.axisText {
+  fill: var(--lx-muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.bar {
+  fill: var(--lx-navy-soft);
+}
+
+.barActive {
+  fill: var(--lx-gold);
+}
+
+.hit {
+  fill: transparent;
+}
+
+.hitActive {
+  fill: rgb(19 41 75 / 0.06);
+}
+
+.chartHelp {
+  margin: 0.25rem 0 0;
+  color: var(--lx-muted);
+  font-size: 0.8rem;
+}
+
+/* Read out for screen readers; sighted users see the floating tooltip. */
+.tooltipLine {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.tooltip {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  gap: 0.1rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--lx-border);
+  border-radius: 0.5rem;
+  background: var(--lx-card);
+  box-shadow: var(--lx-shadow);
+  color: var(--lx-ink);
+  font-size: 0.82rem;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translate(-50%, calc(-100% - 8px));
+}

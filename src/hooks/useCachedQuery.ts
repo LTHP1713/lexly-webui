@@ -8,12 +8,13 @@ import type { QueryResult } from './useApiQuery';
  * prefix (`queryKeys` in `lib/queryClient.ts`). While a new key loads, the previous key's data
  * is returned as `staleData`; a background refetch of the same key keeps showing `success`, even
  * when it fails (except with a `404`).
- * `enabled: false` (like a `null` key) is `idle`.
+ * `enabled: false` (like a `null` key) is `idle`. `refetchInterval` polls while it returns a number
+ * of milliseconds (it gets the current data), and stops when the screen unmounts.
  */
 export function useCachedQuery<T>(
   queryKey: QueryKey,
   fetcher: (signal: AbortSignal) => Promise<T>,
-  options: { enabled?: boolean } = {},
+  options: { enabled?: boolean; refetchInterval?: (data: T | undefined) => number | false } = {},
 ): QueryResult<T> {
   const enabled = options.enabled ?? true;
   const query = useQuery({
@@ -21,6 +22,9 @@ export function useCachedQuery<T>(
     queryFn: ({ signal }) => fetcher(signal),
     enabled,
     placeholderData: keepPreviousData,
+    refetchInterval: options.refetchInterval
+      ? (current) => options.refetchInterval?.(current.state.data) ?? false
+      : undefined,
   });
   const retry = () => void query.refetch();
 

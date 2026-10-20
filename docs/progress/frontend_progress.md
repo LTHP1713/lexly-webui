@@ -886,6 +886,65 @@ while anonymous redirects back to `/login`. No console errors in any of it.
 
 ## In Progress
 
+### 2026-10-20 — F5a AI legal tutor (F5a.1–F5a.6)
+
+**Status:** Built on `feature/f5a-tutor` (cut from `master` after F4) and merged to `master` on
+2026-10-20 at the user's request, **before the live-backend check** (still owed, below). Lint (one pre-existing warning), `tsc -b`, the build and 251 unit tests pass.
+Roadmap change behind it (2026-10-19, decided by the user): backend Phase 5 (AI grading) is on
+hold, so F5 is on hold too; Phase 5a (RAG tutor) was built instead; Phase 6 is split into 6a and
+6b. Source: `docs/Lexly-F5a-Tutor-Brief.md` (from the backend repo); delete it once this entry
+is closed, since its content is now in the plan, the UI spec and here.
+
+**Blocked on the live check:** the running backend on `localhost:8080` is an older build (every
+tutor route answers `No endpoint …`), so it needs a restart on `lexly-backend`
+`feature/phase5a` (`a4f2bee`) with `LEXLY_AI_SERVICE_URL` / `LEXLY_AI_SERVICE_API_KEY` set. The
+AI service is up (`/health` ok). Its Postgres and Redis containers had exited; they were
+restarted with `docker start lexly-postgres-1 lexly-redis-1` (login was failing with
+`INTERNAL_ERROR` without them). Still to do against Phase 5a: confirm `QUOTA_EXCEEDED` 429,
+`AI_UNAVAILABLE` 503, `INDEX_RUN_IN_PROGRESS` 409, the `400`s on the spend range and the `404`
+on an unknown conversation; run `e2e/f5a-tutor.spec.ts` (it skipped cleanly against the old
+build); then the plan's "Done when" in the browser for each role (11th question, AI service
+stopped, re-index, spend graph).
+
+What changed:
+- **Docs first:** contract re-copied from backend `feature/phase5a` (§0.8 codes, §11a). Plan:
+  F5 on hold, F5a section and phase row, F6 → F6a, F6b row, three codes in §3.6. UI spec: F5a
+  section (shell, tutor screen, tutor admin), §0.6 rows, phase index, changelog.
+- **API:** `api/tutor.ts` (types and mappers for conversations, messages, citations, quota,
+  index runs and daily usage; no client timeout on the ask call); `queryKeys.tutor.*`;
+  `QUOTA_EXCEEDED`, `AI_UNAVAILABLE`, `INDEX_RUN_IN_PROGRESS` in `errors.ts`;
+  `useCachedQuery` gains a `refetchInterval` option.
+- **Shell:** `/tutor/:conversationId?` for every role (one optional-segment route, so the
+  in-flight question survives a new chat getting its id), wide; Tutor nav item with a new
+  `ChatIcon` for every role (SUPERADMIN, C_ADMIN and S_STUDENT now have 5); SUPERADMIN's also
+  matches `/admin/tutor`; `/admin` hub card; `CollegeFilter` moved from the audit page to
+  `components/` for reuse.
+- **Tutor (F5a.3):** two panes from 1024 px (list or thread below it); chat list with
+  "deletes in …" and delete-with-confirm; new-chat explainer with example questions; pending
+  question with a live "Answering…" status, one question in flight; failed state with Try again
+  / Edit question; quota line from each `POST` response and the quota banner; expired chats (on
+  open and on send); answers as text nodes with `[n]` markers as buttons that focus their
+  source; library sources link to `/sections/:id` / `/caselaws/:id`, `FILE` sources don't;
+  not-found answers; composer with Enter / Shift+Enter, counter and client checks; disclaimer.
+- **Tutor admin (F5a.4):** `/admin/tutor?tab=index|spend`. Index: Re-index with confirm, latest
+  run card, 5 s polling only while the first run is `RUNNING`, finish announced, previous runs
+  table / cards, `409` shown as "already running". Spend: from / to / college / role in the URL
+  (India dates, default last 30 days; `to ≥ from` and ≤ 366 days inclusive checked first), stat
+  tiles, hand-drawn SVG daily cost chart (hover and ←/→ tooltip, `role="img"` summary, Show as
+  table), rate and exclusion footnotes.
+- **Tests (F5a.6):** `api/tutor.test.ts` (mappers), `tutorFormat.test.ts` (marker parser:
+  known / unknown / adjacent / inside words; India-midnight reset in four time zones; expiry;
+  spend range), `tutor.test.tsx` (new chat → `/tutor/:id` by replace, citation links, case-law
+  link, not-found answer, quota 429, unavailable + Try again, Edit question, blank check and
+  Shift+Enter, expired on send and on open, delete, examples, nav and admin access),
+  `tutorAdmin.test.tsx` (latest and previous runs, re-index + polling start/stop with fake timers,
+  `409`, spend URL filters and request params, range checks), error copy, roles and App nav.
+  Fixtures and MSW handlers for every §11a endpoint are in `src/test/tutor.ts`.
+  `e2e/f5a-tutor.spec.ts` covers the golden path (re-index → student asks → opens the cited
+  section → follow-up in the same chat) and skips when the service or the endpoints are missing.
+- Checked the screens in headless Chromium with mocked responses (desktop tutor, phone tutor,
+  index tab, spend tab with the tooltip).
+
 ### 2026-10-18 — F4 Manual grading & student results (F4.1–F4.7)
 
 **Status:** Built and verified against backend `feature/phase4` (`0e1174e`, not merged to
@@ -961,5 +1020,7 @@ on `feature/phase1`.
 3. ~~**F2 on `feature/f2-college-admin`**~~ — done 2026-10-14 (entry above), merged into `master`.
 4. ~~**F3 on `feature/f3-assessments`**~~ — done 2026-10-16 (entry above). Commit, then merge into `master`.
 5. **F4 on `feature/f4-grading`** — built and verified against backend `feature/phase4` 2026-10-18 (In Progress above). Done after backend Phase 4 merges to `main` and the e2e suite is re-run.
-6. F5 (AI evaluation UI) once backend Phase 5 is agreed: write the UI spec F5 section first.
-7. Later (D4): choose an app-wide dark-mode approach.
+6. ~~F5 (AI evaluation UI)~~: on hold with backend Phase 5 (2026-10-19).
+7. **F5a on `feature/f5a-tutor`**: built 2026-10-20 (In Progress above). Verify against backend `feature/phase5a` with the AI service, then Done once Phase 5a is merged.
+8. F6a (rankings & statistics) once backend Phase 6a is agreed; F6b to be planned.
+9. Later (D4): choose an app-wide dark-mode approach.

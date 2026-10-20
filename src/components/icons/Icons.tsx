@@ -224,6 +224,32 @@ export function LightbulbIcon(props: IconProps) {
   );
 }
 
+export function ChatIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M5 5.5h14a1.5 1.5 0 0 1 1.5 1.5v8.5A1.5 1.5 0 0 1 19 17h-8l-4.5 3.5V17H5a1.5 1.5 0 0 1-1.5-1.5V7A1.5 1.5 0 0 1 5 5.5Z" />
+      <path d="M8 10h8M8 13h5" />
+    </Icon>
+  );
+}
+
+export function TrashIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M4.5 7h15M10 4h4M6.5 7l1 12.5h9l1-12.5" />
+      <path d="M10 11v5M14 11v5" />
+    </Icon>
+  );
+}
+
+export function ArrowLeftIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M19 12H5m6-6-6 6 6 6" />
+    </Icon>
+  );
+}
+
 /** Lexly brand mark: a section sign (§) on a navy tile. */
 export function LexlyMark({ size = 28 }: { size?: number }) {
   return (

@@ -10,6 +10,16 @@ describe('errorMessage', () => {
     expect(errorMessage(new ApiError('RATE_LIMITED', 'x', 429))).toBe('Too many requests, try again shortly.');
   });
 
+  it('has copy for the tutor codes (F5a)', () => {
+    expect(errorMessage(new ApiError('QUOTA_EXCEEDED', 'x', 429))).toBe(
+      "You've used today's 10 questions. They reset at midnight India time.",
+    );
+    expect(errorMessage(new ApiError('AI_UNAVAILABLE', 'x', 503))).toBe(
+      "The tutor couldn't answer just now. Your question wasn't counted.",
+    );
+    expect(errorMessage(new ApiError('INDEX_RUN_IN_PROGRESS', 'x', 409))).toBe('A re-index is already running.');
+  });
+
   it('falls back by status, then to a generic sentence', () => {
     expect(errorMessage(new ApiError('SOMETHING_NEW', 'x', 503))).toBe(
       'Lexly is having trouble right now. Please try again in a moment.',
