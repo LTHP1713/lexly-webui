@@ -928,8 +928,15 @@ What changed:
   and the profile pill now contain those words).
 
 Notes:
-- Still open from before: signing out on `/profile` leaves `from: /profile`, so the next user lands
-  on their profile; the e2e helpers navigate explicitly.
+- **Fixed 2026-10-20:** signing out on `/profile` used to leave `from: /profile` behind, so the next
+  user on the tab landed on that page. A deliberate logout now sets `signedOut` in the session store
+  (`sessionStore.signOut()`), and `RequireAuth` then sends the visitor to `/login` with no "return
+  to" state; an expired session still returns the user to where they were. Test in
+  `LoginPage.test.tsx` ("signing out").
+- **Backend Phase 5a merged** to `lexly-backend` `main` on 2026-10-20 (PR #6, `f62b9f0`) after
+  `./mvnw test` passed locally (263 tests, 0 failures; the backend repo has no CI). The frontend
+  `master` no longer depends on unmerged backend code. Still owed for F5a: one Re-index and
+  `e2e/f5a-tutor.spec.ts`.
 
 ### 2026-10-20 — UR UI refresh: foundations and shell (UR.1, UR.2)
 

@@ -229,7 +229,7 @@ Frontend phases mirror the backend phases. **F*n* starts once backend Phase *n*'
 | F3 | Assessments & answering | Phase 3 | L | **Done** 2026-10-16 against backend `main` (`75a7c08`); F3.9 dropped |
 | F4 | Manual grading & student results | Phase 4 | M | Built 2026-10-18 against backend `feature/phase4` (`0e1174e`); Done once Phase 4 is merged |
 | F5 | AI evaluation UI | Phase 5 | S | *On hold* (backend Phase 5 on hold 2026-10-19) |
-| F5a | AI legal tutor | Phase 5a | M | In progress 2026-10-20 against backend `feature/phase5a` (`a4f2bee`) |
+| F5a | AI legal tutor | Phase 5a | M | Merged 2026-10-20 (PR #6); backend Phase 5a merged to `main` (`f62b9f0`). Done once re-indexed and `e2e/f5a-tutor.spec.ts` passes |
 | F6a | Rankings & statistics | Phase 6a | M | — |
 | F6b | AI analysis & admin chatbot | Phase 6b | — | To be planned |
 | F7 | Solo AI practice | Phase 7 | M | — |
