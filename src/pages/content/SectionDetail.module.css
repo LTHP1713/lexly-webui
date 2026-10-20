@@ -10,32 +10,32 @@
 
 .tonePlain {
   --tone: var(--lx-navy);
-  --tone-soft: #eef1f6;
+  --tone-soft: var(--lx-ivory);
 }
 
 .toneTerms {
-  --tone: #a06600;
-  --tone-soft: #fdf0cc;
+  --tone: var(--lx-cream-ink);
+  --tone-soft: var(--lx-cream);
 }
 
 .toneClauses {
-  --tone: #6a4bd6;
-  --tone-soft: #efeafd;
+  --tone: var(--lx-lavender-ink);
+  --tone-soft: var(--lx-lavender);
 }
 
 .toneIllustrations {
-  --tone: #1d74a8;
-  --tone-soft: #e2f1fa;
+  --tone: var(--lx-sky-ink);
+  --tone-soft: var(--lx-sky);
 }
 
 .toneExceptions {
-  --tone: #c2443a;
-  --tone-soft: #fde6e2;
+  --tone: var(--lx-wrong);
+  --tone-soft: var(--lx-danger-soft);
 }
 
 .toneSimple {
-  --tone: #17775f;
-  --tone-soft: #dcf3eb;
+  --tone: var(--lx-mint-ink);
+  --tone-soft: var(--lx-mint);
 }
 
 /* The act's sections, like a folder tree */
@@ -47,7 +47,7 @@
 .actTitle {
   margin: 0 0 0.5rem 0.6rem;
   color: var(--lx-navy);
-  font-family: var(--sd-serif);
+  font-family: var(--lx-sans);
   font-size: 0.95rem;
   font-weight: 650;
   line-height: 1.3;
@@ -78,13 +78,13 @@
   min-height: 2.1rem;
   padding: 0.25rem 0.6rem;
   border-radius: 0.5rem;
-  color: #4b5160;
+  color: #4a4e59;
   font-size: 0.84rem;
   text-decoration: none;
 }
 
 .actLink:hover {
-  background: #f1ede4;
+  background: var(--lx-divider);
   color: var(--lx-navy);
 }
 
@@ -92,7 +92,7 @@
   background: #fff;
   color: var(--lx-navy);
   font-weight: 650;
-  box-shadow: 0 0 0 1px #ece6d9, 0 1px 2px rgb(19 41 75 / 0.05);
+  box-shadow: 0 0 0 1px var(--lx-border), 0 1px 2px rgb(28 28 30 / 0.05);
 }
 
 .actNumber {
@@ -116,9 +116,9 @@
 .modeToggle {
   display: inline-flex;
   padding: 3px;
-  border: 1px solid #ece6d9;
+  border: 1px solid var(--lx-border);
   border-radius: 999px;
-  background: #f7f4ed;
+  background: var(--lx-ivory);
 }
 
 .modeToggle button {
@@ -137,7 +137,7 @@
 .modeToggle button[aria-pressed='true'] {
   background: #fff;
   color: var(--lx-navy);
-  box-shadow: 0 1px 3px rgb(19 41 75 / 0.12);
+  box-shadow: 0 1px 3px rgb(28 28 30 / 0.12);
 }
 
 /* Bare Act text */
@@ -166,7 +166,7 @@
 }
 
 .bareClauseLabel {
-  color: var(--lx-gold);
+  color: var(--lx-gold-ink);
   font-weight: 650;
 }
 
@@ -179,7 +179,7 @@
 .termMark {
   padding: 0.1em 0.12em;
   border-radius: 4px;
-  background: #fdf0cc;
+  background: var(--lx-cream);
   color: inherit;
   cursor: help;
   box-decoration-break: clone;
@@ -202,7 +202,7 @@
   width: max-content;
   max-width: min(18rem, calc(100vw - 24px));
   padding: 0.65rem 0.8rem;
-  border: 1px solid #ece6d9;
+  border: 1px solid var(--lx-border);
   border-radius: 0.65rem;
   background: #fff;
   color: var(--lx-muted);
@@ -213,7 +213,7 @@
   text-align: left;
   white-space: normal;
   transform: translateX(calc(-50% + var(--shift)));
-  box-shadow: 0 8px 24px rgb(19 41 75 / 0.14);
+  box-shadow: 0 8px 24px rgb(28 28 30 / 0.14);
 }
 
 .termTip[data-place='top'] {
@@ -281,8 +281,8 @@
 /* Illustrations — always the illustration colour, even inside Exceptions */
 
 .illustrationList {
-  --tone: #1d74a8;
-  --tone-soft: #e2f1fa;
+  --tone: var(--lx-sky-ink);
+  --tone-soft: var(--lx-sky);
 
   display: flex;
   flex-direction: column;
@@ -296,7 +296,7 @@
   padding: 0.9rem 1.05rem;
   border-left: 3px solid var(--tone);
   border-radius: 0 0.7rem 0.7rem 0;
-  background: #f5f9fc;
+  background: var(--lx-ivory);
 }
 
 .illustrationListNested {
@@ -326,10 +326,10 @@
 
 .tag {
   padding: 0.05rem 0.5rem;
-  border: 1px dashed #b98a2f;
+  border: 1px dashed var(--lx-gold);
   border-radius: 999px;
   background: #fff;
-  color: #7a5c22;
+  color: var(--lx-gold-ink);
   font-size: 0.72rem;
   font-weight: 700;
   line-height: 1.5;
@@ -374,21 +374,21 @@
 .term {
   min-width: 0;
   padding: 0.8rem 0.95rem;
-  border-left: 3px solid #e7b94b;
+  border-left: 3px solid var(--lx-cream-ink);
   border-radius: 0 0.6rem 0.6rem 0;
-  background: #fffaf0;
+  background: var(--lx-cream);
 }
 
 .term dt {
   color: var(--lx-navy);
-  font-family: var(--sd-serif);
+  font-family: var(--lx-sans);
   font-size: 1.05rem;
   font-weight: 700;
 }
 
 .term dd {
   margin: 0.15rem 0 0;
-  color: #555b68;
+  color: #4a4e59;
   font-size: 0.92rem;
   line-height: 1.55;
 }
@@ -421,18 +421,18 @@
   gap: 0.3rem;
   min-width: 0;
   padding: 0.85rem 1rem;
-  border: 1px solid #ece6d9;
+  border: 1px solid var(--lx-border);
   border-radius: 0.75rem;
   background: #fff;
   color: var(--lx-navy);
   text-decoration: none;
-  box-shadow: 0 1px 2px rgb(19 41 75 / 0.04);
+  box-shadow: 0 1px 2px rgb(28 28 30 / 0.04);
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
 .pagerLink:hover {
   border-color: var(--lx-gold);
-  box-shadow: 0 4px 14px rgb(19 41 75 / 0.08);
+  box-shadow: 0 4px 14px rgb(28 28 30 / 0.08);
 }
 
 .pagerNext {
@@ -451,7 +451,7 @@
   align-items: center;
   gap: 0.5rem;
   min-width: 0;
-  font-family: var(--sd-serif);
+  font-family: var(--lx-sans);
   font-size: 1.02rem;
   font-weight: 650;
 }
@@ -462,7 +462,7 @@
 
 .pagerNumber {
   flex-shrink: 0;
-  color: var(--lx-gold);
+  color: var(--lx-gold-ink);
 }
 
 .pagerName {

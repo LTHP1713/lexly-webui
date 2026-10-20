@@ -25,11 +25,8 @@
   z-index: 5;
   padding: 1.1rem 1rem 1.15rem;
   border-radius: var(--lx-radius);
-  background:
-    radial-gradient(120% 140% at 100% 0%, rgb(184 146 74 / 0.16), transparent 55%),
-    linear-gradient(160deg, var(--lx-navy-soft), var(--lx-navy) 70%);
-  color: #fff;
-  box-shadow: var(--lx-shadow);
+  background: var(--lx-sky);
+  color: var(--lx-ink);
 }
 
 .heroArt {
@@ -46,14 +43,14 @@
   top: -0.75rem;
   width: 9rem;
   height: 9rem;
-  color: var(--lx-gold);
-  opacity: 0.22;
+  color: var(--lx-sky-ink);
+  opacity: 0.12;
 }
 
 .heroDate {
   position: relative;
   margin: 0;
-  color: #d8c49a;
+  color: var(--lx-sky-ink);
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.1em;
@@ -63,9 +60,10 @@
 .greeting {
   position: relative;
   margin: 0.2rem 0 0;
-  font-family: var(--lx-serif);
+  font-family: var(--lx-sans);
   font-size: 1.55rem;
-  font-weight: 700;
+  font-weight: 800;
+  letter-spacing: -0.02em;
   line-height: 1.2;
   overflow-wrap: anywhere;
 }
@@ -73,7 +71,7 @@
 .heroPrompt {
   position: relative;
   margin: 0.15rem 0 0.9rem;
-  color: #c9d3e4;
+  color: var(--lx-sky-text);
   font-size: 0.95rem;
 }
 
@@ -150,7 +148,7 @@
   display: none;
   flex-shrink: 0;
   margin-left: auto;
-  color: var(--lx-gold);
+  color: var(--lx-gold-ink);
 }
 
 /* ---------- Cards ---------- */
@@ -188,7 +186,7 @@
   align-items: center;
   gap: 0.25rem 0.6rem;
   margin: 0;
-  font-family: var(--lx-serif);
+  font-family: var(--lx-sans);
   font-size: 1.2rem;
   font-weight: 700;
   line-height: 1.25;
@@ -206,7 +204,7 @@
   border: 1px dashed var(--lx-gold);
   border-radius: 999px;
   background: var(--lx-gold-soft);
-  color: #7a5c22;
+  color: var(--lx-gold-ink);
   font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
   font-size: 0.68rem;
   font-weight: 700;
@@ -271,7 +269,7 @@
   height: 2.5rem;
   border-radius: 10px;
   background: #fff;
-  color: var(--lx-gold);
+  color: var(--lx-gold-ink);
   border: 1px solid var(--lx-border);
 }
 
@@ -326,7 +324,7 @@
 }
 
 .actList > li + li {
-  border-top: 1px solid #f0ebe0;
+  border-top: 1px solid var(--lx-divider);
 }
 
 .actRow {
@@ -379,7 +377,7 @@
   right: 0.5rem;
   top: 50%;
   transform: translateY(-50%);
-  color: #a9a395;
+  color: #9ea1ab;
 }
 
 .showMore {
@@ -419,7 +417,7 @@
   height: 3rem;
   border-radius: 12px;
   background: var(--lx-navy);
-  color: var(--lx-gold);
+  color: var(--lx-gold-ink);
 }
 
 .continueText {
@@ -428,7 +426,7 @@
 
 .eyebrow {
   margin: 0;
-  color: #8a6a2c;
+  color: var(--lx-gold-ink);
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -437,7 +435,7 @@
 
 .continueTitle {
   margin: 0.1rem 0 0;
-  font-family: var(--lx-serif);
+  font-family: var(--lx-sans);
   font-size: 1.3rem;
   font-weight: 700;
   line-height: 1.25;
@@ -515,7 +513,7 @@
   }
 
   .quickTitle {
-    font-family: var(--lx-serif);
+    font-family: var(--lx-sans);
     font-size: 1.1rem;
   }
 
@@ -574,4 +572,46 @@
   .continueCard {
     grid-area: continue;
   }
+}
+
+/* ---------- Study hub search hero (UI spec UR.3) ---------- */
+
+.searchHero {
+  position: relative;
+  z-index: 5;
+  gap: 1rem;
+}
+
+.searchTitle {
+  margin: 0;
+  color: var(--lx-ink);
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.shortcut {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.25rem;
+  padding: 0 0.85rem;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--lx-ink);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.shortcut:hover {
+  background: var(--lx-ivory);
 }

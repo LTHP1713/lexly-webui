@@ -48,7 +48,7 @@
 .failedFiles {
   margin: 0.35rem 0 0;
   padding-left: 1.1rem;
-  color: #7d2c18;
+  color: var(--lx-danger-ink);
   font-size: 0.9rem;
   overflow-wrap: anywhere;
 }

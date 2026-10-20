@@ -148,7 +148,7 @@ function AnswerMessage({ message }: { message: TutorMessage }) {
                 key={citation.ref}
                 id={sourceId(citation.ref)}
                 tabIndex={-1}
-                className={`${tutorStyles.source} ${highlighted === citation.ref ? tutorStyles.sourceHighlighted : ''}`}
+                className={`${tutorStyles.source} ${tutorStyles[`source_${citation.sourceType}`]} ${highlighted === citation.ref ? tutorStyles.sourceHighlighted : ''}`}
               >
                 <span className={tutorStyles.sourceRef}>[{citation.ref}]</span>
                 <div className={tutorStyles.sourceBody}>

@@ -16,10 +16,16 @@
 .threadPane {
   min-width: 0;
   padding: 1rem;
-  border: 1px solid var(--lx-border);
   border-radius: var(--lx-radius);
+}
+
+.listPane {
+  background: var(--lx-ivory);
+}
+
+.threadPane {
+  padding: 0.25rem 0;
   background: var(--lx-card);
-  box-shadow: var(--lx-shadow);
 }
 
 @media (min-width: 1024px) {
@@ -43,7 +49,7 @@
 .threadTitle {
   margin: 0;
   color: var(--lx-navy);
-  font-family: var(--lx-serif);
+  font-family: var(--lx-sans);
   font-size: 1.1rem;
 }
 
@@ -78,12 +84,7 @@
 }
 
 .chatLink:hover {
-  background: var(--lx-ivory);
-}
-
-.chatLink[aria-current='page'] {
-  background: var(--lx-gold-soft);
-  box-shadow: inset 3px 0 0 var(--lx-gold);
+  background: rgb(255 255 255 / 0.7);
 }
 
 .chatTitle {
@@ -270,8 +271,9 @@
 .source {
   display: flex;
   gap: 0.5rem;
-  padding: 0.4rem 0.5rem;
-  border-radius: 0.5rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--lx-radius-sm);
+  background: var(--source-bg, var(--lx-ivory));
   transition: background-color 0.3s;
 }
 
@@ -387,10 +389,10 @@
 .failed {
   justify-self: stretch;
   padding: 0.75rem 1rem;
-  border: 1px solid #e3b9ad;
+  border: 1px solid var(--lx-danger-border);
   border-radius: 0.6rem;
-  background: #fbf0ec;
-  color: #7d2c18;
+  background: var(--lx-danger-soft);
+  color: var(--lx-danger-ink);
 }
 
 .failed p {
@@ -431,6 +433,7 @@
 
 .composerBar > * {
   margin: 0;
+  align-self: center;
 }
 
 .composerBar > :first-child {
@@ -455,12 +458,30 @@
   padding: 0.65rem 0.9rem;
   border: 1px solid #e8cf9c;
   border-radius: 0.6rem;
-  background: #fdf5e2;
-  color: #6b4b0f;
+  background: var(--lx-cream);
+  color: var(--lx-cream-ink);
 }
 
 .disclaimer {
   margin: 0.5rem 0 0;
   color: var(--lx-muted);
   font-size: 0.8rem;
+}
+
+/* Each source in the pastel of its kind (UI spec UR.4): section, case law, study material. */
+.source_SECTION {
+  --source-bg: var(--lx-lavender);
+}
+
+.source_CASE_LAW {
+  --source-bg: var(--lx-mint);
+}
+
+.source_FILE {
+  --source-bg: var(--lx-cream);
+}
+
+.chatLink[aria-current='page'] {
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(28 28 30 / 0.08);
 }

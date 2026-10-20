@@ -24,7 +24,7 @@ const GROUPS: { heading: string; states: StudentAssessmentState[] }[] = [
 ];
 
 /**
- * `/student` (UI spec F3.5): the college's published and closed assessments, grouped by the
+ * `/student/assessments` (UI spec F3.5; moved from `/student` by UR.3): the college's published and closed assessments, grouped by the
  * student's state and kept in the server's order inside each group (open ones by due date
  * first). The subject filter and page are in the URL.
  */

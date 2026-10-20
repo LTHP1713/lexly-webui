@@ -242,6 +242,54 @@ export function TrashIcon(props: IconProps) {
   );
 }
 
+export function RefreshIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v4.5h-4.5" />
+    </Icon>
+  );
+}
+
+export function PenIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M4 20h4L19 9l-4-4L4 16v4ZM13.5 6.5l4 4" />
+    </Icon>
+  );
+}
+
+export function CheckIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M5 12.5 9.5 17 19 7.5" />
+    </Icon>
+  );
+}
+
+export function LayersIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M12 4 3.5 8.5 12 13l8.5-4.5L12 4ZM3.5 12.5 12 17l8.5-4.5M3.5 16.5 12 21l8.5-4.5" />
+    </Icon>
+  );
+}
+
+export function GridIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z" />
+    </Icon>
+  );
+}
+
+export function ChevronLeftIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="m14.5 6-6 6 6 6" />
+    </Icon>
+  );
+}
+
 export function ArrowLeftIcon(props: IconProps) {
   return (
     <Icon {...props}>
@@ -254,7 +302,7 @@ export function ArrowLeftIcon(props: IconProps) {
 export function LexlyMark({ size = 28 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true" focusable="false">
-      <rect width="32" height="32" rx="8" fill="var(--lx-navy, #13294b)" />
+      <rect width="32" height="32" rx="8" fill="var(--lx-sidebar, #1c1c1e)" />
       <text
         x="16"
         y="22.5"
@@ -262,7 +310,7 @@ export function LexlyMark({ size = 28 }: { size?: number }) {
         fontFamily="Georgia, 'Times New Roman', serif"
         fontSize="20"
         fontWeight="700"
-        fill="var(--lx-gold, #b8924a)"
+        fill="var(--lx-cream, #f7efd3)"
       >
         §
       </text>

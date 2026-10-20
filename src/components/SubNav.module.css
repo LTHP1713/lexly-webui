@@ -26,11 +26,11 @@
 }
 
 .link:hover {
-  color: var(--lx-navy);
+  color: var(--lx-ink);
 }
 
 .link[aria-current='page'] {
-  color: var(--lx-navy);
+  color: var(--lx-ink);
 }
 
 .link[aria-current='page']::after {
@@ -41,5 +41,5 @@
   bottom: -1px;
   height: 3px;
   border-radius: 3px 3px 0 0;
-  background: var(--lx-gold);
+  background: var(--lx-sidebar);
 }

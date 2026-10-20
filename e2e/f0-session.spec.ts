@@ -54,9 +54,10 @@ test('a new solo student gets the student nav and is kept out of admin', async (
   await page.getByRole('button', { name: /create account/i }).click()
 
   await expect(page).toHaveURL(/\/dashboard$/)
-  await expect(page.getByRole('heading', { level: 1, name: /E2E/ })).toBeVisible()
-  const nav = page.getByRole('navigation', { name: 'Primary' })
-  await expect(nav.getByRole('link')).toHaveText(['Home', 'Bare Acts', 'Practice', 'Profile'])
+  await expect(page.getByRole('heading', { level: 1, name: 'Study hub' })).toBeVisible()
+  await expect(page.getByText(/, E2E$/)).toBeVisible()
+  // The phone tab bar (the sidebar adds the home item from 768px).
+  await expect(page.locator('nav[aria-label="Primary"]').last().getByRole('link', { includeHidden: true })).toHaveText(['Home', 'Bare Acts', 'Practice', 'Tutor', 'Profile'])
   await expectNoAxeViolations(page)
   await expectNoHorizontalScroll(page)
 

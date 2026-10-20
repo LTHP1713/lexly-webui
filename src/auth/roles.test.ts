@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canOpen, hasLibrarySubNav, homeFor, isNavItemActive, LIBRARY_HOME, navFor, ROLES, toRole } from '@/auth/roles';
+import { canOpen, hasLibrarySubNav, homeFor, isNavItemActive, LIBRARY_HOME, navFor, ROLES, sidebarFor, toRole } from '@/auth/roles';
 
 describe('toRole', () => {
   it('accepts the five P1 roles only', () => {
@@ -65,5 +65,20 @@ describe('navFor', () => {
   it('shows the Library sub-nav to every role but S_STUDENT', () => {
     expect(hasLibrarySubNav('S_STUDENT')).toBe(false);
     expect(hasLibrarySubNav('C_PROFESSOR')).toBe(true);
+  });
+});
+
+describe('sidebarFor', () => {
+  it('puts the role home first and keeps every nav item', () => {
+    expect(sidebarFor('C_ADMIN').map((i) => i.label)).toEqual(['Overview', 'Users', 'Subjects', 'Audit', 'Tutor', 'Library']);
+    expect(sidebarFor('S_STUDENT').map((i) => i.label)).toEqual(['Study hub', 'Bare Acts', 'Practice', 'Tutor', 'Profile']);
+    expect(sidebarFor(null).map((i) => i.label)).toEqual(['Library']);
+    for (const role of ROLES) for (const item of sidebarFor(role)) expect(canOpen(role, item.to)).toBe(true);
+  });
+
+  it('lights a home item only on the home itself', () => {
+    const [overview] = sidebarFor('SUPERADMIN');
+    expect(isNavItemActive(overview, '/admin')).toBe(true);
+    expect(isNavItemActive(overview, '/admin/colleges')).toBe(false);
   });
 });

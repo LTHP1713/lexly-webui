@@ -18,12 +18,12 @@
 
 .subtitle {
   margin: 0 0 1.5rem;
-  color: #666;
+  color: var(--lx-muted);
   font-size: 0.9rem;
 }
 
 .empty {
-  color: #666;
+  color: var(--lx-muted);
   font-size: 0.95rem;
 }
 
@@ -33,13 +33,13 @@
 }
 
 .breadcrumb a {
-  color: #555;
+  color: var(--lx-muted);
   font-weight: 600;
   text-decoration: none;
 }
 
 .breadcrumb a:hover {
-  color: #111;
+  color: var(--lx-ink);
   text-decoration: underline;
 }
 
@@ -59,15 +59,15 @@
   align-items: baseline;
   gap: 0.75rem;
   padding: 0.75rem 0.9rem;
-  border: 1px solid #e2e2e2;
+  border: 1px solid var(--lx-border);
   border-radius: 0.5rem;
-  color: #111;
+  color: var(--lx-ink);
   text-decoration: none;
 }
 
 .item:hover {
-  border-color: #bbb;
-  background: #fafafa;
+  border-color: var(--lx-border);
+  background: var(--lx-ivory);
 }
 
 .itemTitle {
@@ -76,7 +76,7 @@
 }
 
 .meta {
-  color: #666;
+  color: var(--lx-muted);
   font-size: 0.8rem;
   font-weight: 600;
   letter-spacing: 0.02em;
@@ -84,7 +84,7 @@
 
 .sectionNumber {
   min-width: 3rem;
-  color: #666;
+  color: var(--lx-muted);
   font-variant-numeric: tabular-nums;
   font-weight: 600;
 }
@@ -106,18 +106,18 @@
 .searchInput {
   font: inherit;
   padding: 0.6rem 0.75rem;
-  border: 1px solid #ccc;
+  border: 1px solid var(--lx-border);
   border-radius: 0.4rem;
 }
 
 .searchHelp {
-  color: #666;
+  color: var(--lx-muted);
   font-size: 0.8rem;
 }
 
 .resultSummary {
   margin: 0 0 0.75rem;
-  color: #555;
+  color: var(--lx-muted);
   font-size: 0.9rem;
 }
 
@@ -132,7 +132,7 @@
 }
 
 .snippet {
-  color: #555;
+  color: var(--lx-muted);
   font-size: 0.875rem;
   line-height: 1.5;
 }
@@ -153,7 +153,7 @@
 }
 
 .pageInfo {
-  color: #555;
+  color: var(--lx-muted);
   font-size: 0.875rem;
 }
 
@@ -162,10 +162,10 @@
   font-size: 0.875rem;
   font-weight: 600;
   padding: 0.4rem 0.8rem;
-  border: 1px solid #111;
+  border: 1px solid var(--lx-ink);
   border-radius: 0.4rem;
   background: #fff;
-  color: #111;
+  color: var(--lx-ink);
   cursor: pointer;
 }
 
@@ -180,9 +180,9 @@
   display: inline-flex;
   align-items: center;
   padding: 0.05rem 0.5rem;
-  border: 1px solid #ccc;
+  border: 1px solid var(--lx-border);
   border-radius: 999px;
-  color: #555;
+  color: var(--lx-muted);
   background: #fff;
   font-size: 0.72rem;
   font-weight: 700;
@@ -192,19 +192,19 @@
 }
 
 .importanceLandmark {
-  border-color: #b8924a;
-  background: #f3ead6;
-  color: #6b4f1a;
+  border-color: var(--lx-gold);
+  background: var(--lx-cream);
+  color: var(--lx-gold-ink);
 }
 
 .importanceImportant {
-  border-color: #13294b;
-  color: #13294b;
+  border-color: var(--lx-sidebar);
+  color: var(--lx-sidebar);
 }
 
 .actTag {
-  border-color: #c9d3e3;
-  background: #f2f5fa;
+  border-color: var(--lx-sky);
+  background: var(--lx-sky);
   color: #33415c;
   font-weight: 600;
   white-space: normal;
@@ -240,10 +240,10 @@
   font: inherit;
   min-height: 2.75rem;
   padding: 0.5rem 0.75rem;
-  border: 1px solid #ccc;
+  border: 1px solid var(--lx-border);
   border-radius: 0.4rem;
   background: #fff;
-  color: #111;
+  color: var(--lx-ink);
 }
 
 .filterNote {
@@ -252,7 +252,7 @@
   align-items: center;
   gap: 0.5rem;
   margin: -0.5rem 0 1rem;
-  color: #555;
+  color: var(--lx-muted);
   font-size: 0.875rem;
 }
 
@@ -260,7 +260,7 @@
   font: inherit;
   font-weight: 600;
   padding: 0.2rem 0.6rem;
-  border: 1px solid #ccc;
+  border: 1px solid var(--lx-border);
   border-radius: 0.4rem;
   background: #fff;
   cursor: pointer;

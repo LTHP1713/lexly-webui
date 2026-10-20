@@ -11,6 +11,7 @@ import {
   ClockIcon,
   CourthouseIcon,
   DocumentIcon,
+  GridIcon,
   HomeIcon,
   UserIcon,
   UsersIcon,
@@ -38,7 +39,7 @@ export const CHANGE_PASSWORD_PATH = '/change-password';
 /** Shared read-only content every role may open. Also the home of a user with an unknown role. */
 export const LIBRARY_HOME = '/acts';
 
-/** Each role's home (UI spec §0.7, F1.4). The professor and student homes are their assessment lists (F3). */
+/** Each role's home (UI spec §0.7, UR.3): Overview, Overview, Teaching desk, My studies, Study hub. */
 const HOMES: Record<Role, string> = {
   SUPERADMIN: '/admin',
   C_ADMIN: '/college',
@@ -77,6 +78,8 @@ export interface NavItem {
   icon: ComponentType<{ size?: number }>;
   /** Path prefixes that count as "in" this item. */
   matches: string[];
+  /** Only the paths in `matches` themselves, not what's under them (a home over its own area). */
+  exact?: boolean;
 }
 
 /** The AI tutor (F5a): every role, a shared route like the Library. */
@@ -110,8 +113,23 @@ const NAV: Record<Role, NavItem[]> = {
     TUTOR,
     LIBRARY,
   ],
-  C_PROFESSOR: [{ to: '/professor', label: 'Assessments', icon: ChecklistIcon, matches: ['/professor'] }, TUTOR, LIBRARY],
-  C_STUDENT: [{ to: '/student', label: 'Assessments', icon: ChecklistIcon, matches: ['/student'] }, TUTOR, LIBRARY],
+  C_PROFESSOR: [
+    { to: '/professor', label: 'Desk', icon: GridIcon, matches: ['/professor'], exact: true },
+    {
+      to: '/professor/assessments',
+      label: 'Assessments',
+      icon: ChecklistIcon,
+      matches: ['/professor/assessments', '/professor/answers'],
+    },
+    TUTOR,
+    LIBRARY,
+  ],
+  C_STUDENT: [
+    { to: '/student', label: 'Studies', icon: GridIcon, matches: ['/student'], exact: true },
+    { to: '/student/assessments', label: 'Assessments', icon: ChecklistIcon, matches: ['/student/assessments'] },
+    TUTOR,
+    LIBRARY,
+  ],
   S_STUDENT: [
     { to: '/dashboard', label: 'Home', icon: HomeIcon, matches: ['/dashboard'] },
     { to: '/acts', label: 'Bare Acts', icon: BookIcon, matches: ['/acts', '/sections'] },
@@ -126,7 +144,26 @@ export function navFor(role: Role | null): NavItem[] {
 }
 
 export function isNavItemActive(item: NavItem, pathname: string): boolean {
-  return item.matches.some((prefix) => inArea(pathname, prefix));
+  return item.matches.some((prefix) => (item.exact ? pathname === prefix : inArea(pathname, prefix)));
+}
+
+/** Each role's home as the first sidebar item (UI spec UR.2), named as its page's H1. */
+const HOME_ITEMS: Record<Role, NavItem> = {
+  SUPERADMIN: { to: '/admin', label: 'Overview', icon: GridIcon, matches: ['/admin'], exact: true },
+  C_ADMIN: { to: '/college', label: 'Overview', icon: GridIcon, matches: ['/college'], exact: true },
+  C_PROFESSOR: { to: '/professor', label: 'Teaching desk', icon: GridIcon, matches: ['/professor'], exact: true },
+  C_STUDENT: { to: '/student', label: 'My studies', icon: GridIcon, matches: ['/student'], exact: true },
+  S_STUDENT: { to: '/dashboard', label: 'Study hub', icon: GridIcon, matches: ['/dashboard'], exact: true },
+};
+
+/**
+ * The sidebar (from 768 px): the role's home, then its nav. It has room for more than the tab
+ * bar's 5, so nothing is dropped; an item going to the home itself is folded into the home item.
+ */
+export function sidebarFor(role: Role | null): NavItem[] {
+  if (!role) return navFor(role);
+  const home = HOME_ITEMS[role];
+  return [home, ...navFor(role).filter((item) => item.to !== home.to)];
 }
 
 /** Roles that see the Library sub-nav (Bare Acts · Case Laws · Search); S_STUDENT has its own tabs. */

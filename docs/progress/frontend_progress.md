@@ -886,6 +886,89 @@ while anonymous redirects back to `/login`. No console errors in any of it.
 
 ## In Progress
 
+### 2026-10-20 — UR UI refresh: role homes, auth, screens, clean-up (UR.3–UR.6)
+
+**Status:** Built on `feature/ui-refresh`, not committed yet. Lint (one pre-existing warning),
+`tsc -b`, the build and 261 unit tests pass. **Verified against the live backend** (backend
+`feature/phase5a`): e2e F0, F1, F2, F3 and F4 pass on desktop and phone (42 passed; the skips are
+the suites' own desktop-only / phone-only splits). F5a not run (it would re-index and spend AI
+quota). Axe finds no violations on ~40 screens across all five roles (sign-in, register, each home,
+every list, detail, form, the grading review, results, the Library, tutor, tutor admin, profile,
+change password, NotFound; phone and desktop).
+
+What changed:
+- **Role homes (UR.3):** shared `components/dashboard/` (`HeroCard`, `PlacardGroup` / `Placard`,
+  `ActionCard`, `SegmentBar`, `Legend`, `Sparkline`, `HomeTable` (table from 768 px, cards
+  below), `cardState`). SUPERADMIN **Overview** (`/admin`: AI spend + sparkline, active colleges,
+  people across colleges, last index run, colleges table, Re-index card); C_ADMIN **Overview**
+  (`/college`: people split, students / professors / subjects, last 7 days of audit, Import
+  card); C_PROFESSOR **Teaching desk** (`/professor`: grading progress bars, answers to grade →
+  first assessment with work, open assessments, next due, newest assessments, New assessment
+  card); C_STUDENT **My studies** (`/student`: due next with answer progress, open assessments,
+  results, tutor questions left, assessments, tutor card); S_STUDENT **Study hub** (`/dashboard`:
+  universal search + act shortcuts, acts, case-law count, tutor questions left, acts table, tutor
+  card; the flagged progress cards stay below). Each card loads and fails on its own. Only
+  existing endpoints; `queryKeys.library.*` added.
+- **Routes:** the lists moved to `/professor/assessments` and `/student/assessments` (breadcrumbs,
+  redirects and nav follow); the professor and student tab bars gain their home ("Desk",
+  "Studies").
+- **Auth (UR.4):** `AuthLayout` rebuilt: black frame with the logo tile, the hero line with
+  "Master it." in a pill and three pastel feature cards beside a white form panel; a black brand
+  band on phones. Form fields, tabs (black pill) and buttons restyled; `AuthIllustration` removed.
+- **Screens and clean-up (UR.4, UR.5):** the Library's per-content tones mapped to the pastels by
+  family; titles and labels in sans, statute / case-law / rich text in the serif; ~250 hard-coded
+  colours replaced with tokens (new `--lx-danger-*`, `--lx-sky-text`, `--lx-divider`); text that
+  used the accent now uses `--lx-gold-ink` (axe caught 4.0:1 on the pager); links default to ink;
+  tutor list on a grey panel and sources as pastel cards per type; `QuickActions` removed.
+- **Tests (UR.6):** `pages/home/homes.test.tsx` (each home's numbers and links, one failing card
+  doesn't blank the page), `test/homes.ts` (mocks for what each home loads), App / tutor tests
+  for the new homes, list tests on the new routes. e2e: `logOut` clicks the profile page's own
+  button (the sidebar has one too), tab-bar checks query the hidden bar from 768 px, lists
+  opened explicitly after sign-in, exact `Search` / `College` labels (the top bar's search button
+  and the profile pill now contain those words).
+
+Notes:
+- Still open from before: signing out on `/profile` leaves `from: /profile`, so the next user lands
+  on their profile; the e2e helpers navigate explicitly.
+
+### 2026-10-20 — UR UI refresh: foundations and shell (UR.1, UR.2)
+
+**Status:** Built on `feature/ui-refresh` (cut from `master` after PR #6); superseded by the entry
+above, which completes UR. Lint (one pre-existing
+warning), `tsc -b`, the build and 255 unit tests pass. Checked in headless Chromium against the
+live backend as SUPERADMIN (desktop collapsed and expanded, phone): axe finds no violations on
+`/admin/colleges`, `/acts` and `/admin/tutor?tab=spend` (phone).
+
+Decided by the user: the reference dashboard and the "Lexly UI refresh" design mock (approved);
+Manrope for the interface with the serif kept for legal reading text (new dependency
+`@fontsource-variable/manrope`, approved); bottom tabs on phones; **Overview** for SUPERADMIN and
+C_ADMIN, with Teaching desk / My studies / Study hub proposed for the others; mock first. No
+endpoint changes.
+
+What changed:
+- **Docs:** plan row and section UR; UI spec section UR (tokens, type, components, shell, the
+  five role homes with their endpoints, restyle rules).
+- **Tokens (`index.css`):** new palette on the existing names (navy → black, ivory → grey
+  surface, gold → blue accent) plus page, sidebar, sky, lavender, mint, cream, CTA, divider,
+  `--lx-sans`, `--lx-radius-sm`; `--lx-serif` is now Source Serif 4. Both fonts load from
+  `main.tsx`.
+- **Shared styles:** headings and numbers in Manrope 800; buttons, inputs, badges (pastel +
+  ink), tables (no frame, light dividers), stat tiles, tabs (black indicator), dialogs, toasts,
+  menus, link cards restyled; the Library and Home heroes turned light blue (the dark hero made
+  the Library sub-nav unreadable once "navy" became black).
+- **Shell (`AppLayout`):** from 768 px a black frame with a collapsible sidebar (`sidebarFor`:
+  the role home first, then the nav; collapsed rail by default, the choice kept in
+  `localStorage` `lexly.sidebar`) and a white panel with a top bar (college name, Library
+  search, notifications, profile pill "Profile: {name}"); below 768 px a top bar and a floating
+  black tab bar. `NavItem.exact` keeps a home item from lighting up on its sub-pages.
+- **Tests:** sidebar and tab bar per role, toggle + persistence, `sidebarFor` and exact matching.
+
+Notes:
+- The Library reading pages (section, case law, study panel) still carry their own hard-coded
+  colours and serif headings; they sit fine in the new shell and are restyled in UR.4 / UR.5.
+- The e2e specs haven't been re-run against the new shell yet; their nav selectors use link
+  names, which the sidebar keeps (labels are visually hidden, not removed).
+
 ### 2026-10-20 — F5a AI legal tutor (F5a.1–F5a.6)
 
 **Status:** Built on `feature/f5a-tutor` (cut from `master` after F4) and merged to `master` on

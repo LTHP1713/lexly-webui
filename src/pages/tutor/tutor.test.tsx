@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { apiError, HttpResponse, json, server } from '@/test/server';
 import { renderApp, signedInAs } from '@/test/renderApp';
+import { mockStudyHub } from '@/test/homes';
 import {
   answerMessage,
   askHandler,
@@ -285,8 +286,9 @@ describe('tutor access', () => {
 
   it('keeps a non-SUPERADMIN out of the tutor admin', async () => {
     signedInAs({ role: 'S_STUDENT', firstName: 'Priya' });
+    mockStudyHub();
     const router = await renderApp('/admin/tutor');
-    expect(await screen.findByRole('heading', { level: 1, name: /Priya/ })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Study hub' })).toBeInTheDocument();
     expect(router.state.location.pathname).toBe('/dashboard');
     expect(screen.queryByRole('heading', { name: 'Tutor admin' })).not.toBeInTheDocument();
   });

@@ -56,7 +56,7 @@ describe('professor assessments list (F3.1)', () => {
         json(page([assessment(), assessment({ id: 'a2', title: 'Draft one', status: 'DRAFT', dueAt: null })])),
       ),
     );
-    await renderApp('/professor');
+    await renderApp('/professor/assessments');
     expect(await screen.findByRole('link', { name: 'Moot problem' })).toHaveAttribute('href', '/professor/assessments/a1');
     expect(screen.getByRole('link', { name: 'Draft one' })).toHaveAttribute('href', '/professor/assessments/a2/edit');
     expect(screen.getByText('2 assessments')).toBeInTheDocument();
@@ -69,7 +69,7 @@ describe('professor assessments list (F3.1)', () => {
       http.get(`${API}/college/subjects`, () => json([])),
       http.get(`${API}/professor/assessments`, () => json(page([]))),
     );
-    await renderApp('/professor');
+    await renderApp('/professor/assessments');
     expect(await screen.findByText(/You haven.t been assigned any subjects yet/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'New assessment' })).toBeDisabled();
   });
@@ -205,7 +205,7 @@ describe('failed background refreshes (review fixes)', () => {
       http.get(`${API}/college/subjects`, () => apiError(500, 'INTERNAL_ERROR')),
       http.get(`${API}/professor/assessments`, () => json(page([assessment()]))),
     );
-    await renderApp('/professor');
+    await renderApp('/professor/assessments');
     expect(await screen.findByText(/Subjects couldn.t be loaded\./)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Moot problem' })).toBeInTheDocument();

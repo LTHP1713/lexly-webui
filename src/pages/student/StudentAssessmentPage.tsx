@@ -57,7 +57,7 @@ export function StudentAssessmentPage() {
   return (
     <>
       <nav aria-label="Breadcrumb" className={styles.breadcrumb}>
-        <Link to="/student">Assessments</Link>
+        <Link to="/student/assessments">Assessments</Link>
         {assessment && <span aria-current="page"> / {assessment.title}</span>}
       </nav>
       {query.status === 'loading' && (

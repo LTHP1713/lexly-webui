@@ -102,6 +102,10 @@ export const queryKeys = {
     /** Under the detail, so refreshing an assessment refreshes its results too. */
     results: (id: string) => ['student', 'assessments', 'detail', id, 'results'] as const,
   },
+  library: {
+    acts: ['library', 'acts'] as const,
+    caseLawCount: ['library', 'caselaws', 'count'] as const,
+  },
   tutor: {
     quota: ['tutor', 'quota'] as const,
     conversations: ['tutor', 'conversations'] as const,

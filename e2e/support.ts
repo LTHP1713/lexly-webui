@@ -56,7 +56,8 @@ export async function superadminSignIn(page: Page) {
 
 export async function logOut(page: Page) {
   await page.goto('/profile')
-  await page.getByRole('button', { name: 'Log out' }).click()
+  // The sidebar has a Log out too; this is the profile page's own button.
+  await page.getByRole('main').getByRole('button', { name: 'Log out' }).click()
   await expect(page).toHaveURL(/\/login$/)
 }
 

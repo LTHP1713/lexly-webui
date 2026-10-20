@@ -19,7 +19,7 @@
 .skeleton {
   height: 3rem;
   border-radius: 0.5rem;
-  background: linear-gradient(90deg, #eee 25%, #f6f6f6 50%, #eee 75%);
+  background: linear-gradient(90deg, var(--lx-ivory) 25%, var(--lx-ivory) 50%, var(--lx-ivory) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.2s ease-in-out infinite;
 }
@@ -40,9 +40,9 @@
 }
 
 .error {
-  border: 1px solid #f3c2c2;
-  background: #fdecea;
-  color: #9c1c1c;
+  border: 1px solid var(--lx-danger-border);
+  background: var(--lx-danger-soft);
+  color: var(--lx-danger-ink);
   border-radius: 0.4rem;
   padding: 0.75rem 0.9rem;
 }
@@ -58,10 +58,10 @@
   font-size: 0.875rem;
   font-weight: 600;
   padding: 0.35rem 0.75rem;
-  border: 1px solid #9c1c1c;
+  border: 1px solid var(--lx-danger-ink);
   border-radius: 0.4rem;
   background: #fff;
-  color: #9c1c1c;
+  color: var(--lx-danger-ink);
   cursor: pointer;
 }
 

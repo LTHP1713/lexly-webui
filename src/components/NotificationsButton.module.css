@@ -11,8 +11,8 @@
   padding: 0;
   border: 0;
   border-radius: 50%;
-  background: transparent;
-  color: var(--lx-navy);
+  background: var(--lx-ivory);
+  color: var(--lx-ink);
   cursor: pointer;
 }
 
@@ -31,7 +31,7 @@
   border: 1px solid var(--lx-border);
   border-radius: var(--lx-radius);
   background: var(--lx-card);
-  box-shadow: 0 10px 30px rgb(19 41 75 / 0.14);
+  box-shadow: 0 10px 30px rgb(28 28 30 / 0.14);
 }
 
 .panel[hidden] {
@@ -40,7 +40,7 @@
 
 .title {
   margin: 0 0 0.75rem;
-  font-family: var(--lx-serif);
+  font-family: var(--lx-sans);
   font-size: 1.05rem;
   font-weight: 700;
   color: var(--lx-navy);

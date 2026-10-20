@@ -65,7 +65,7 @@ export function AnswerReviewPage() {
   return (
     <>
       <nav aria-label="Breadcrumb" className={styles.breadcrumb}>
-        <Link to="/professor">Assessments</Link>
+        <Link to="/professor/assessments">Assessments</Link>
         {review && (
           <>
             {' / '}
