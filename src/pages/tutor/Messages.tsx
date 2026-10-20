@@ -4,7 +4,7 @@ import type { TutorCitation, TutorMessage } from '@/api/tutor';
 import { AlertIcon, LightbulbIcon } from '@/components/icons/Icons';
 import { TABLE_QUERY, useMediaQuery } from '@/hooks/useMediaQuery';
 import type { PendingQuestion } from './TutorPage';
-import { parseMarkers, splitParagraphs } from './tutorFormat';
+import { MAYBE_ANSWERED, NOT_COUNTED, parseMarkers, splitParagraphs } from './tutorFormat';
 import styles from '@/components/ui.module.css';
 import tutorStyles from './Tutor.module.css';
 
@@ -51,7 +51,7 @@ export function MessageList({
               <div role="alert" className={tutorStyles.failed}>
                 <p>
                   <AlertIcon size={18} />
-                  The tutor couldn&rsquo;t answer just now. Your question wasn&rsquo;t counted.
+                  {pending.maybeAnswered ? MAYBE_ANSWERED : NOT_COUNTED}
                 </p>
                 <div className={tutorStyles.failedActions}>
                   <button type="button" className={styles.primaryButton} onClick={() => onRetry(pending)}>

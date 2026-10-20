@@ -47,8 +47,9 @@ export function SpendTab() {
     { enabled: !error },
   );
   const data = usage.status === 'success' ? usage.data : usage.status === 'loading' ? usage.staleData : undefined;
-  const serverRangeError = usage.status === 'error' && hasCode(usage.error, 'VALIDATION_ERROR');
-  const shownRangeError = error ?? (serverRangeError ? 'Choose a valid date range of at most 366 days.' : null);
+  // The dates are checked above, so a server VALIDATION_ERROR means another filter (a bad URL).
+  const serverValidation = usage.status === 'error' && hasCode(usage.error, 'VALIDATION_ERROR');
+  const shownRangeError = error;
 
   function update(next: Partial<Record<FilterKey, string>>) {
     const merged = new URLSearchParams(params);
@@ -139,7 +140,18 @@ export function SpendTab() {
           This college no longer exists.
         </EmptyState>
       )}
-      {usage.status === 'error' && !serverRangeError && !hasCode(usage.error, 'NOT_FOUND') && (
+      {serverValidation && (
+        <EmptyState
+          actions={
+            <button type="button" className={styles.secondaryButton} onClick={clearFilters}>
+              Clear filters
+            </button>
+          }
+        >
+          These filters can&rsquo;t be used. Clear them and try again.
+        </EmptyState>
+      )}
+      {usage.status === 'error' && !serverValidation && !hasCode(usage.error, 'NOT_FOUND') && (
         <ErrorState error={usage.error} onRetry={usage.retry} />
       )}
       {!error && data && usage.status !== 'error' && (

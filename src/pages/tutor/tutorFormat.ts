@@ -104,6 +104,13 @@ export function formatUsd(value: number): string {
 /** Client checks mirroring `TutorAskRequest` (`@NotBlank`, `@Size(max = 2000)`). */
 export function questionError(question: string): string | null {
   if (!question.trim()) return 'Type a question first.';
-  if (question.length > QUESTION_MAX) return 'Questions can be at most 2,000 characters.';
+  // The page sends the trimmed question, so that is what the server's limit applies to.
+  if (question.trim().length > QUESTION_MAX) return 'Questions can be at most 2,000 characters.';
   return null;
 }
+
+/** `AI_UNAVAILABLE`: nothing was stored or counted (contract §11a.2). */
+export const NOT_COUNTED = 'The tutor couldn’t answer just now. Your question wasn’t counted.';
+/** A lost connection or another error: the server may have answered and counted it. */
+export const MAYBE_ANSWERED =
+  'The answer didn’t reach you. The tutor may still have answered, so check Your chats before trying again.';

@@ -2,7 +2,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { apiError, json, server } from '@/test/server';
+import { apiError, HttpResponse, json, server } from '@/test/server';
 import { renderApp, signedInAs } from '@/test/renderApp';
 import {
   answerMessage,
@@ -172,6 +172,27 @@ describe('tutor (F5a.3)', () => {
       { conversationId: null, question: QUESTION },
       { conversationId: null, question: QUESTION },
     ]);
+  });
+
+  it('after a lost connection, says the tutor may have answered and refreshes the chats', async () => {
+    let listCalls = 0;
+    server.use(
+      conversationsHandler(() => {
+        listCalls += 1;
+        return json([]);
+      }),
+      askHandler(() => HttpResponse.error()),
+    );
+    await renderApp('/tutor');
+    const ui = userEvent.setup();
+    await screen.findByText(/questions left today/);
+    const before = listCalls;
+    await ui.type(composer(), QUESTION);
+    await ui.keyboard('{Enter}');
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'The answer didn’t reach you. The tutor may still have answered, so check Your chats before trying again.',
+    );
+    await waitFor(() => expect(listCalls).toBeGreaterThan(before));
   });
 
   it('Edit question puts a failed question back in the composer', async () => {

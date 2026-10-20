@@ -1134,7 +1134,8 @@ Contract: §11a (TDD §10a). Every role may use the tutor. The browser calls onl
 - Messages oldest first as an ordered list (`aria-label` "Conversation"). `USER`: right-aligned bubble, label "You" (visually hidden), the text with line breaks kept. `ASSISTANT`: full width, label "Tutor" (visually hidden), the answer, then its sources.
 - **Pending message.** On send the question appears at once as a `USER` message, followed by a status row "Answering… this can take up to a minute" (a spinner + text) in a polite live region. One question in flight: **Send** and **New chat** are disabled until it settles. Navigating to another chat while it runs is allowed; the answer is still saved into its conversation, and a new chat's answer only moves the URL if the user is still on `/tutor`.
 - **On success:** the pending message is replaced by the server's `question` and `answer`; a new chat replaces the URL with `/tutor/{conversation.id}` (replace, not push); the quota line takes `quota` from the response; the chat list refreshes; focus stays in the composer and the live region announces "Answer received."
-- **Failure** (`AI_UNAVAILABLE`, `NETWORK_ERROR`, `INTERNAL_ERROR` and anything not listed below): the pending question stays, marked with an alert "The tutor couldn't answer just now. Your question wasn't counted." and two buttons: **Try again** (resends the same question to the same conversation) and **Edit question** (puts the text back in the composer and removes the pending message). Nothing was stored server-side.
+- **Failure** (`AI_UNAVAILABLE`, `NETWORK_ERROR`, `INTERNAL_ERROR` and anything not listed below): the pending question stays, marked with an alert and two buttons: **Try again** (resends the same question to the same conversation) and **Edit question** (puts the text back in the composer and removes the pending message). For `AI_UNAVAILABLE` the alert reads "The tutor couldn't answer just now. Your question wasn't counted." (nothing was stored). For anything else the server may have answered and counted it, so the alert reads "The answer didn't reach you. The tutor may still have answered, so check Your chats before trying again." and the chat list, the open chat and the quota are refetched.
+- **Daily reset:** with `remaining` 0, the quota is refetched just after `resetsAt`, so an open tab unblocks at midnight India time.
 
 **Answer rendering** (plain text only, built from text nodes; never `dangerouslySetInnerHTML`)
 - Paragraphs split on blank lines; single line breaks are kept.
@@ -1161,7 +1162,8 @@ Contract: §11a (TDD §10a). Every role may use the tutor. The browser calls onl
 | Error | Where | Copy |
 |---|---|---|
 | `QUOTA_EXCEEDED` | Quota banner; composer disabled; the question back in the composer | See above |
-| `AI_UNAVAILABLE`, `NETWORK_ERROR`, 5xx | On the pending message, with **Try again** / **Edit question** | The tutor couldn't answer just now. Your question wasn't counted. |
+| `AI_UNAVAILABLE` | On the pending message, with **Try again** / **Edit question** | The tutor couldn't answer just now. Your question wasn't counted. |
+| `NETWORK_ERROR`, 5xx | On the pending message, with **Try again** / **Edit question**; chats and quota refetched | The answer didn't reach you. The tutor may still have answered, so check Your chats before trying again. |
 | `NOT_FOUND` on send with a `conversationId` | Go to `/tutor`; notice above the composer; the question back in the composer; the chat list refreshes | This conversation has expired or was deleted. Your question is still below; send it to start a new chat. |
 | `VALIDATION_ERROR` `question` | Field error; the question back in the composer | "Type a question first." / "Questions can be at most 2,000 characters." |
 
@@ -1189,7 +1191,7 @@ Contract: §11a (TDD §10a). Every role may use the tutor. The browser calls onl
 - **Stat tiles** from `totals`: Cost ("$0.6447": USD with 2–4 decimals), Questions, Index runs, Input tokens, Output tokens, Embedding tokens.
 - **Daily cost chart** (heading "Daily cost"): a bar per day in `days` (oldest first), drawn in plain SVG (no chart library). The y-axis starts at 0 with 3–4 gridlines labelled in USD; the x-axis labels a few dates ("19 Oct"). Bars in `--lx-accent`. Hovering a bar, or focusing the chart and moving with ←/→ (Home/End for the ends), shows a tooltip "{date} · ${cost} · {questions} questions" and highlights the bar. The SVG has `role="img"` and the label "Daily AI cost from {from} to {to}, total ${cost}". All-zero range: the bars are flat, and the note "No AI use in this range." **Show as table** / **Hide table** toggles a table with Date · Questions · Index runs · Input tokens · Output tokens · Embedding tokens · Cost.
 - **Footnotes** (muted): "Rates now: ${input} / ${output} / ${embedding} per million input / output / embedding tokens. Past days keep the rate of their time." With a college or role filter: "Index runs aren't tied to a college or role, so they're excluded."
-- Loading: skeleton tiles; a refetch keeps the previous data with `aria-busy`. Error: `ErrorState` with **Try again**. `400 VALIDATION_ERROR`: the error under the dates. `404` for an unknown `collegeId`: "This college no longer exists." with **Clear filters**.
+- Loading: skeleton tiles; a refetch keeps the previous data with `aria-busy`. Error: `ErrorState` with **Try again**. `400 VALIDATION_ERROR` (the dates are checked first, so it means another filter): "These filters can't be used. Clear them and try again." with **Clear filters**. `404` for an unknown `collegeId`: "This college no longer exists." with **Clear filters**.
 
 ### F5a audit summaries
 

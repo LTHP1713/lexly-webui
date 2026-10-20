@@ -24,7 +24,7 @@ import { useNow } from '@/lib/deadline';
 import { formatCount, formatInstant } from '@/lib/format';
 import { queryKeys } from '@/lib/queryClient';
 import { MessageList } from './Messages';
-import { formatExpiresIn, formatResetsAt, questionError } from './tutorFormat';
+import { formatExpiresIn, formatResetsAt, MAYBE_ANSWERED, NOT_COUNTED, questionError } from './tutorFormat';
 import styles from '@/components/ui.module.css';
 import tutorStyles from './Tutor.module.css';
 
@@ -34,6 +34,11 @@ export interface PendingQuestion {
   conversationId: string | null;
   question: string;
   status: 'sending' | 'failed';
+  /**
+   * Only `AI_UNAVAILABLE` guarantees nothing was stored or counted. After a lost connection or
+   * another server error the answer may have been saved, so the copy says so (contract §11a.2).
+   */
+  maybeAnswered?: boolean;
 }
 
 const EXAMPLES = [
@@ -81,9 +86,17 @@ export function TutorPage() {
     };
   }, []);
 
-  const quota = useCachedQuery(queryKeys.tutor.quota, (signal) => getTutorQuota(signal));
+  const quota = useCachedQuery(queryKeys.tutor.quota, (signal) => getTutorQuota(signal), {
+    // Once today's questions are used, reload the quota just after it resets, so an open tab unblocks.
+    refetchInterval: (data) => {
+      if (!data || data.remaining > 0 || !data.resetsAt) return false;
+      const left = new Date(data.resetsAt).getTime() - Date.now();
+      return Number.isNaN(left) ? false : Math.max(left + 1000, 5000);
+    },
+  });
   const quotaData = quota.status === 'success' ? quota.data : null;
-  const exhausted = quotaBlocked || (quotaData !== null && quotaData.remaining <= 0);
+  // The server's quota decides; the flag only covers a quota that never loaded.
+  const exhausted = quotaData !== null ? quotaData.remaining <= 0 : quotaBlocked;
   const sending = pending?.status === 'sending';
 
   /** Puts a question back in the composer without losing anything typed since. */
@@ -98,10 +111,19 @@ export function TutorPage() {
     try {
       const result = await askTutor(target, question);
       const id = result.conversation.id;
-      queryClient.setQueryData<TutorConversationDetail>(queryKeys.tutor.conversation(id), (previous) => ({
-        ...result.conversation,
-        messages: [...(previous?.messages ?? []), result.question, result.answer],
-      }));
+      const detailKey = queryKeys.tutor.conversation(id);
+      // A load started before the answer was stored would overwrite the appended messages.
+      await queryClient.cancelQueries({ queryKey: detailKey });
+      const previous = queryClient.getQueryData<TutorConversationDetail>(detailKey);
+      if (target === null || previous) {
+        queryClient.setQueryData<TutorConversationDetail>(detailKey, {
+          ...result.conversation,
+          messages: [...(previous?.messages ?? []), result.question, result.answer],
+        });
+      } else {
+        // The earlier messages were never loaded, so appending would show a truncated chat.
+        void queryClient.invalidateQueries({ queryKey: detailKey });
+      }
       queryClient.setQueryData<TutorQuota>(queryKeys.tutor.quota, result.quota);
       void queryClient.invalidateQueries({ queryKey: queryKeys.tutor.conversations });
       setPending(null);
@@ -113,6 +135,9 @@ export function TutorPage() {
       if (hasCode(err, 'QUOTA_EXCEEDED')) {
         setPending(null);
         restoreDraft(question);
+        queryClient.setQueryData<TutorQuota>(queryKeys.tutor.quota, (previous) =>
+          previous ? { ...previous, used: Math.max(previous.used, previous.limit), remaining: 0 } : previous,
+        );
         setQuotaBlocked(true);
         setAnnouncement('');
         void queryClient.invalidateQueries({ queryKey: queryKeys.tutor.quota });
@@ -130,8 +155,15 @@ export function TutorPage() {
         setDraftError(questionError(question) ?? 'Type a question first.');
         setAnnouncement('');
       } else {
-        setPending({ conversationId: target, question, status: 'failed' });
-        setAnnouncement("The tutor couldn't answer just now. Your question wasn't counted.");
+        const maybeAnswered = !hasCode(err, 'AI_UNAVAILABLE');
+        setPending({ conversationId: target, question, status: 'failed', maybeAnswered });
+        setAnnouncement(maybeAnswered ? MAYBE_ANSWERED : NOT_COUNTED);
+        if (maybeAnswered) {
+          // If the server did answer, the chat and the spent question show up here.
+          void queryClient.invalidateQueries({ queryKey: queryKeys.tutor.conversations });
+          void queryClient.invalidateQueries({ queryKey: queryKeys.tutor.quota });
+          if (target !== null) void queryClient.invalidateQueries({ queryKey: queryKeys.tutor.conversation(target) });
+        }
       }
     }
   }
@@ -162,7 +194,10 @@ export function TutorPage() {
       currentId={conversationId}
       busy={sending}
       onNewChat={startNewChat}
-      onOpen={() => setShowList(false)}
+      onOpen={() => {
+        setShowList(false);
+        setNotice(null);
+      }}
       onDeleted={(id) => {
         toast.show('Chat deleted.');
         if (id === conversationId) navigate('/tutor');

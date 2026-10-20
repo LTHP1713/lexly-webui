@@ -233,15 +233,6 @@ export function ChatIcon(props: IconProps) {
   );
 }
 
-export function SendIcon(props: IconProps) {
-  return (
-    <Icon {...props}>
-      <path d="M4 12 20 4l-4.5 16-3.5-6.5L4 12Z" />
-      <path d="m12 13.5 8-9.5" />
-    </Icon>
-  );
-}
-
 export function TrashIcon(props: IconProps) {
   return (
     <Icon {...props}>
