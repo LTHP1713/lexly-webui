@@ -28,6 +28,12 @@ export const ErrorCode = {
   INVALID_FILE: 'INVALID_FILE',
   INVALID_MARKS: 'INVALID_MARKS',
   GRADE_PUBLISHED: 'GRADE_PUBLISHED',
+  /** 429; for the tutor, today's 10 questions are used (contract §11a.2). */
+  QUOTA_EXCEEDED: 'QUOTA_EXCEEDED',
+  /** 503; the AI service or model failed or timed out. Nothing was stored or counted. */
+  AI_UNAVAILABLE: 'AI_UNAVAILABLE',
+  /** 409; a tutor index run is already running. */
+  INDEX_RUN_IN_PROGRESS: 'INDEX_RUN_IN_PROGRESS',
   /** Client-side: the request never reached the server. */
   NETWORK_ERROR: 'NETWORK_ERROR',
   /** Client-side: an upload or download was cancelled through its `AbortSignal`. */
@@ -56,6 +62,9 @@ const MESSAGES: Partial<Record<string, string>> = {
   ANSWER_LOCKED: 'This answer was already submitted.',
   INVALID_MARKS: "Enter marks within the question's range, in whole or half marks.",
   GRADE_PUBLISHED: "This grade has already been published, so it can't be changed.",
+  QUOTA_EXCEEDED: "You've used today's 10 questions. They reset at midnight India time.",
+  AI_UNAVAILABLE: "The tutor couldn't answer just now. Your question wasn't counted.",
+  INDEX_RUN_IN_PROGRESS: 'A re-index is already running.',
 };
 
 const SERVER_TROUBLE = 'Lexly is having trouble right now. Please try again in a moment.';

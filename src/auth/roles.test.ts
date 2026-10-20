@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canOpen, hasLibrarySubNav, homeFor, LIBRARY_HOME, navFor, ROLES, toRole } from '@/auth/roles';
+import { canOpen, hasLibrarySubNav, homeFor, isNavItemActive, LIBRARY_HOME, navFor, ROLES, toRole } from '@/auth/roles';
 
 describe('toRole', () => {
   it('accepts the five P1 roles only', () => {
@@ -40,10 +40,17 @@ describe('canOpen', () => {
 
 describe('navFor', () => {
   it('keeps S_STUDENT’s existing tabs and gives other roles the Library', () => {
-    expect(navFor('S_STUDENT').map((i) => i.label)).toEqual(['Home', 'Bare Acts', 'Practice', 'Profile']);
+    expect(navFor('S_STUDENT').map((i) => i.label)).toEqual(['Home', 'Bare Acts', 'Practice', 'Tutor', 'Profile']);
     for (const role of ROLES.filter((r) => r !== 'S_STUDENT')) {
       expect(navFor(role).map((i) => i.label)).toContain('Library');
     }
+  });
+
+  it('gives every role the Tutor; SUPERADMIN’s also covers the tutor admin', () => {
+    for (const role of ROLES) expect(navFor(role).map((i) => i.to)).toContain('/tutor');
+    const tutor = navFor('SUPERADMIN').find((i) => i.to === '/tutor');
+    expect(tutor && isNavItemActive(tutor, '/admin/tutor')).toBe(true);
+    expect(navFor(null).map((i) => i.label)).toEqual(['Library']);
     expect(navFor(null).map((i) => i.label)).toEqual(['Library']);
   });
 

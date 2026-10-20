@@ -84,11 +84,11 @@ describe('role areas', () => {
     expect(router.state.location.pathname).toBe('/dashboard');
   });
 
-  it('gives the super admin Colleges, Content, Audit and Library', async () => {
+  it('gives the super admin Colleges, Content, Audit, Tutor and Library', async () => {
     signedInAs({ role: 'SUPERADMIN' });
     await renderAt('/');
     const nav = (await screen.findAllByRole('navigation', { name: 'Primary' }))[0];
-    expect(within(nav).getAllByRole('link').map((l) => l.textContent)).toEqual(['Colleges', 'Content', 'Audit', 'Library']);
+    expect(within(nav).getAllByRole('link').map((l) => l.textContent)).toEqual(['Colleges', 'Content', 'Audit', 'Tutor', 'Library']);
   });
 
   it.each([
@@ -103,13 +103,13 @@ describe('role areas', () => {
     await waitFor(() => expect(router.state.location.pathname).toBe(home));
   });
 
-  it('gives the college admin Users, Subjects, Audit and Library, and a hub naming the college', async () => {
+  it('gives the college admin Users, Subjects, Audit, Tutor and Library, and a hub naming the college', async () => {
     signedInAs({ role: 'C_ADMIN', college: { id: 'c', code: 'NLSIU', name: 'National Law School' } });
     await renderAt('/');
     expect(await screen.findByRole('heading', { level: 1, name: 'National Law School' })).toBeInTheDocument();
     expect(screen.getByText('NLSIU')).toBeInTheDocument();
     const nav = screen.getAllByRole('navigation', { name: 'Primary' })[0];
-    expect(within(nav).getAllByRole('link').map((l) => l.textContent)).toEqual(['Users', 'Subjects', 'Audit', 'Library']);
+    expect(within(nav).getAllByRole('link').map((l) => l.textContent)).toEqual(['Users', 'Subjects', 'Audit', 'Tutor', 'Library']);
   });
 
   it('shows the Library sub-nav to college roles only', async () => {

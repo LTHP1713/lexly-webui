@@ -5,6 +5,7 @@ const CARDS = [
   { to: '/admin/colleges', title: 'Colleges', text: 'Add colleges and their admins' },
   { to: '/admin/acts', title: 'Content', text: 'Acts, sections, case laws and imports' },
   { to: '/admin/audit', title: 'Audit log', text: 'Who did what, last 30 days' },
+  { to: '/admin/tutor', title: 'Tutor', text: 'Re-index the tutor and see AI spend' },
 ];
 
 /** `/admin`: the SUPERADMIN home (UI spec F1.4). F7 adds a Solo practice card. */

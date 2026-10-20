@@ -22,7 +22,9 @@ function isWidePath(pathname: string): boolean {
     (pathname.startsWith('/college/') && pathname !== '/college/users/import') ||
     pathname.startsWith('/admin/') ||
     pathname === '/professor' ||
-    pathname.startsWith('/professor/')
+    pathname.startsWith('/professor/') ||
+    pathname === '/tutor' ||
+    pathname.startsWith('/tutor/')
   );
 }
 

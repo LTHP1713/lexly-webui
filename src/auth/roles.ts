@@ -6,6 +6,7 @@
 import type { ComponentType } from 'react';
 import {
   BookIcon,
+  ChatIcon,
   ChecklistIcon,
   ClockIcon,
   CourthouseIcon,
@@ -78,6 +79,9 @@ export interface NavItem {
   matches: string[];
 }
 
+/** The AI tutor (F5a): every role, a shared route like the Library. */
+const TUTOR: NavItem = { to: '/tutor', label: 'Tutor', icon: ChatIcon, matches: ['/tutor'] };
+
 const LIBRARY: NavItem = {
   to: LIBRARY_HOME,
   label: 'Library',
@@ -96,20 +100,23 @@ const NAV: Record<Role, NavItem[]> = {
       matches: ['/admin/acts', '/admin/sections', '/admin/caselaws', '/admin/import'],
     },
     { to: '/admin/audit', label: 'Audit', icon: ClockIcon, matches: ['/admin/audit'] },
+    { ...TUTOR, matches: ['/tutor', '/admin/tutor'] },
     LIBRARY,
   ],
   C_ADMIN: [
     { to: '/college/users', label: 'Users', icon: UsersIcon, matches: ['/college/users'] },
     { to: '/college/subjects', label: 'Subjects', icon: DocumentIcon, matches: ['/college/subjects'] },
     { to: '/college/audit', label: 'Audit', icon: ClockIcon, matches: ['/college/audit'] },
+    TUTOR,
     LIBRARY,
   ],
-  C_PROFESSOR: [{ to: '/professor', label: 'Assessments', icon: ChecklistIcon, matches: ['/professor'] }, LIBRARY],
-  C_STUDENT: [{ to: '/student', label: 'Assessments', icon: ChecklistIcon, matches: ['/student'] }, LIBRARY],
+  C_PROFESSOR: [{ to: '/professor', label: 'Assessments', icon: ChecklistIcon, matches: ['/professor'] }, TUTOR, LIBRARY],
+  C_STUDENT: [{ to: '/student', label: 'Assessments', icon: ChecklistIcon, matches: ['/student'] }, TUTOR, LIBRARY],
   S_STUDENT: [
     { to: '/dashboard', label: 'Home', icon: HomeIcon, matches: ['/dashboard'] },
     { to: '/acts', label: 'Bare Acts', icon: BookIcon, matches: ['/acts', '/sections'] },
     { to: '/practice', label: 'Practice', icon: ChecklistIcon, matches: ['/practice'] },
+    TUTOR,
     { to: '/profile', label: 'Profile', icon: UserIcon, matches: ['/profile'] },
   ],
 };
