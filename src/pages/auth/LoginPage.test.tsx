@@ -1,9 +1,10 @@
 /** F1.1 two-mode login and F1 session rules, through the real routes (F1.11). */
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { API, apiError, http, HttpResponse, json, me, server } from '@/test/server';
-import { renderApp, signedOut } from '@/test/renderApp';
+import { renderApp, signedInAs, signedOut } from '@/test/renderApp';
+import { mockAdminOverview } from '@/test/homes';
 
 function authResponse(role: string, mustChangePassword = false) {
   return { userId: 'u1', email: 'x@y.in', fullName: 'X', role, mustChangePassword, accessToken: 'fresh' };
@@ -140,5 +141,29 @@ describe('session end reasons on the login screen', () => {
     await renderApp('/login');
     await screen.findByRole('heading', { name: 'Welcome back' });
     expect(screen.queryByText(/Your session has ended/)).not.toBeInTheDocument();
+  });
+});
+
+describe('signing out', () => {
+  it('sends the next user on this tab to their own home, not the page the last one left', async () => {
+    signedInAs({ role: 'S_STUDENT', firstName: 'Priya' });
+    mockAdminOverview();
+    server.use(
+      http.post(`${API}/auth/logout`, () => new HttpResponse(null, { status: 204 })),
+      http.post(`${API}/auth/login`, () => json(authResponse('SUPERADMIN'))),
+    );
+    const router = await renderApp('/profile');
+    const user = userEvent.setup();
+    // The profile page's own button (the sidebar has one too).
+    await screen.findByRole('heading', { level: 1, name: 'Profile' });
+    await user.click(within(screen.getByRole('main')).getByRole('button', { name: 'Log out' }));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/login'));
+    expect(router.state.location.state).toBeNull();
+
+    server.use(http.get(`${API}/users/me`, () => json(me({ role: 'SUPERADMIN' }))));
+    await user.type(await screen.findByRole('textbox', { name: 'Email' }), 'admin@lexly.local');
+    await user.type(screen.getByLabelText('Password'), 'secret-pass');
+    await user.click(screen.getByRole('button', { name: 'Sign In' }));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/admin'));
   });
 });

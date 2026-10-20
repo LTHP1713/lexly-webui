@@ -158,7 +158,7 @@ export async function logoutSession(): Promise<void> {
     // Ignored: the local session is cleared regardless.
   } finally {
     bypassHttpCacheForNextUser();
-    sessionStore.clear();
+    sessionStore.signOut();
   }
 }
 

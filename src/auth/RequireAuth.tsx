@@ -14,7 +14,7 @@ export interface LoginLocationState {
  * `/change-password` (contract §1.6), whatever URL is typed.
  */
 export function RequireAuth({ children }: { children: ReactNode }) {
-  const { status, user } = useAuth();
+  const { status, user, signedOut } = useAuth();
   const location = useLocation();
 
   // Wait for the bootstrap refresh: a reload or deep link must not bounce to /login.
@@ -22,6 +22,8 @@ export function RequireAuth({ children }: { children: ReactNode }) {
     return <SessionPending />;
   }
   if (status === 'anonymous') {
+    // After a deliberate sign-out the page being left is the previous user's, not a destination.
+    if (signedOut) return <Navigate to="/login" replace />;
     const { pathname, search, hash } = location;
     return <Navigate to="/login" replace state={{ from: { pathname, search, hash } } satisfies LoginLocationState} />;
   }

@@ -49,10 +49,16 @@ export interface SessionSnapshot {
   status: SessionStatus;
   user: SessionUser | null;
   endReason: SessionEndReason;
+  /**
+   * The user signed out on purpose. The guards then send the next visitor to the login screen
+   * without a "return to" page, so whoever signs in next on this device lands on their own home,
+   * not on the page the previous user left from.
+   */
+  signedOut: boolean;
 }
 
 let accessToken: string | null = null;
-let snapshot: SessionSnapshot = { status: 'loading', user: null, endReason: null };
+let snapshot: SessionSnapshot = { status: 'loading', user: null, endReason: null, signedOut: false };
 
 const listeners = new Set<() => void>();
 
@@ -78,7 +84,7 @@ export const sessionStore = {
   /** After sign-in, or once the bootstrap refresh has loaded the user. */
   setAuthenticated(next: { accessToken: string; user: SessionUser }) {
     accessToken = next.accessToken;
-    publish({ status: 'authenticated', user: next.user, endReason: null });
+    publish({ status: 'authenticated', user: next.user, endReason: null, signedOut: false });
   },
 
   /**
@@ -96,10 +102,16 @@ export const sessionStore = {
     }
   },
 
-  /** Logout, or a failed refresh: drop everything and show the login screen. */
+  /** A failed refresh or a session that never existed: drop everything and show the login screen. */
   clear(endReason: SessionEndReason = null) {
     accessToken = null;
-    publish({ status: 'anonymous', user: null, endReason });
+    publish({ status: 'anonymous', user: null, endReason, signedOut: false });
+  },
+
+  /** A deliberate logout (see `signedOut`). */
+  signOut() {
+    accessToken = null;
+    publish({ status: 'anonymous', user: null, endReason: null, signedOut: true });
   },
 
   /** The login screen has shown the reason; don't show it again. */
