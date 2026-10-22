@@ -886,6 +886,64 @@ while anonymous redirects back to `/login`. No console errors in any of it.
 
 ## In Progress
 
+### 2026-10-21 — UR brand: Lexly logo and the "Knowledge is power" motto
+
+**Status:** Built on `feature/ui-refresh`, not committed yet. `tsc -b`, the build, lint (one
+pre-existing warning) and 262 unit tests pass. Checked in the browser against the live local
+backend: sign-in (1440 / 390 px), register (800 px), and the Study hub of a fresh S_STUDENT with
+the sidebar collapsed, expanded and on a phone.
+
+What changed:
+- **Logo:** the master file is `docs/brand/lexly-logo.png`. `components/brand/Logo.tsx` draws it
+  in code: `LexlyWordmark` (Manrope 800, tight tracking, the spark top right of the "y"),
+  `LexlySpark` and `LexlyMark` (a white "L" and the spark on a black tile). New tokens
+  `--lx-brand-black` (#0b0b0d) and `--lx-spark` (#9d8cff, decorative only). `LexlyMark` moved out
+  of `Icons.tsx`.
+- **Everywhere the "§" tile was:** sidebar (the mark when collapsed, the wordmark and college code
+  when expanded), the phone top bar (the wordmark), the auth frame, the session splash. The
+  favicon (it was still Vite's) is now the mark; `theme-color` is #0b0b0d, and there is a meta
+  description.
+- **Sign-in / register / change password (`AuthLayout`):** the hero is now the motto "Knowledge
+  is *power.*", with the spark on the pill, shown at every width (on phones under the logo,
+  without the tagline). The auth frame uses the brand black.
+- **Brand pass 2 (same day):**
+  - **The spark means AI.** Outside the logo it marks only the tutor: `SparkIcon` (an outline
+    spark in the line-icon set) replaces `ChatIcon` in the nav, the tutor placards and the auth
+    feature card. The tutor page eyebrow, the new-chat intro and a visible "Lexly tutor" label on
+    every answer carry the spark (the label replaces the hidden "Tutor:" prefix). The tutor action
+    cards on the Study hub, My studies and the SUPERADMIN Overview pass `ai` to `ActionCard`, which
+    puts the spark on the pill's corner and in the button. The first pass's spark on the home
+    greeting and the hero-card watermark were removed, because they weren't AI.
+  - **The pulsing spark is the AI's working state.** It replaces the spinner on the tutor's
+    "Answering…" line, and `LexlyMark pulse` animates the spark on the session splash. It is
+    still under `prefers-reduced-motion`. The in-button spinners stay (they aren't AI).
+  - **Legal maxims** (`components/brand/Maxim`, Latin marked `lang="la"`, in the serif): the 404
+    has "Ignorantia juris non excusat", and the professor's grade form has "Audi alteram partem".
+    `EmptyState` takes an optional `title`; the four truly empty assessment lists (the professor's
+    Teaching desk and list, the student's My studies and list) open with "Nothing on the docket
+    yet."
+  - **Sidebar in the logo black:** `--lx-sidebar` is now #0b0b0d (the frame and the dark action
+    cards follow).
+  - Checked in the browser against the live backend: the Study hub, the tutor and the 404 for a
+    fresh S_STUDENT. The "Answering…" state was not seen live (it would spend AI quota); a unit
+    test covers its text.
+- **Homes fit one screen (same day):** the home tables show 3 rows instead of 5 (SUPERADMIN
+  colleges, C_ADMIN recent activity — now fetched with `size: 3` — the professor's and student's
+  assessments, the Study hub's bare acts); "see all" links stay. The dark `ActionCard` (the tutor
+  card, and the import / new-assessment cards that share it) is compact: no 15rem min-height,
+  smaller padding and title, it no longer stretches to the table's height, max width 22rem.
+  The black frame now fills the window: the shell margin round it is 0.5rem (was 1rem, 1.75rem
+  from 1280 px), the frame padding 0.5rem, and the top bar and main padding are tighter. Home
+  tables use `compactTable` (0.5rem row padding), the home's section gap is 1.1rem and the H1 is
+  1.9rem from 768 px. The build, lint and 262 unit tests pass. Measured with a throwaway
+  Playwright script against the live backend: none of the five homes (SUPERADMIN, C_ADMIN,
+  professor, college student, S_STUDENT) scrolls at 1280×720, 1366×768, 1440×900 or 1920×1080.
+  The professor and student homes had no assessments, so their tables were the empty state.
+  From 768 px `.main` is a flex column that fills the panel, the home's `.page` grows into it, and
+  the second row (`.row + .row`) has `margin-top: auto`, so the table and action card sit at the
+  bottom of the screen. Checked in the browser: the homes still don't scroll, and
+  `/admin/colleges` and `/tutor` look as before.
+
 ### 2026-10-20 — UR UI refresh: role homes, auth, screens, clean-up (UR.3–UR.6)
 
 **Status:** Built on `feature/ui-refresh`, not committed yet. Lint (one pre-existing warning),

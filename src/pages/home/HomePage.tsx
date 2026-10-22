@@ -14,7 +14,7 @@ import {
   RowChip,
 } from '@/components/dashboard/Dashboard';
 import { cardState } from '@/components/dashboard/cardState';
-import { BookIcon, ChatIcon, ScalesIcon } from '@/components/icons/Icons';
+import { BookIcon, ScalesIcon, SparkIcon } from '@/components/icons/Icons';
 import { backendFeatures, homeMockMode } from '@/config/features';
 import { useCachedQuery } from '@/hooks/useCachedQuery';
 import { formatCount } from '@/lib/format';
@@ -88,7 +88,7 @@ export function HomePage() {
             value={quota.status === 'success' ? `${formatCount(quota.data.remaining)} of ${formatCount(quota.data.limit)}` : ''}
             label="Tutor questions left today"
             action="Tutor"
-            icon={ChatIcon}
+            icon={SparkIcon}
             state={cardState(quota)}
           />
         </PlacardGroup>
@@ -103,7 +103,7 @@ export function HomePage() {
               <EmptyState>No acts have been added yet.</EmptyState>
             ) : (
               <div className={styles.tableWrap}>
-                <table className={styles.table}>
+                <table className={`${styles.table} ${dash.compactTable}`}>
                   <caption className={styles.visuallyHidden}>Bare acts</caption>
                   <thead>
                     <tr>
@@ -114,7 +114,7 @@ export function HomePage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {actList.slice(0, 5).map((act) => (
+                    {actList.slice(0, 3).map((act) => (
                       <tr key={act.id}>
                         <th scope="row">
                           <span className={dash.nameCell}>
@@ -139,6 +139,7 @@ export function HomePage() {
         </DashboardSection>
 
         <ActionCard
+          ai
           id="home-tutor"
           before="Learn with the"
           pill="tutor"

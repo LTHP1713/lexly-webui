@@ -167,6 +167,7 @@ export function ProfessorAssessmentsPage() {
               </EmptyState>
             ) : (
               <EmptyState
+                title="Nothing on the docket yet."
                 actions={
                   <Link to="/professor/assessments/new" className={styles.primaryButton}>
                     New assessment

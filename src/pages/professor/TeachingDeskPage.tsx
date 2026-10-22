@@ -132,6 +132,7 @@ export function TeachingDeskPage() {
           {list.status === 'success' &&
             (assessments.length === 0 ? (
               <EmptyState
+                title="Nothing on the docket yet."
                 actions={
                   <Link to="/professor/assessments/new" className={styles.primaryButton}>
                     New assessment
@@ -143,7 +144,7 @@ export function TeachingDeskPage() {
             ) : (
               <HomeTable
                 caption="Your newest assessments"
-                rows={assessments.slice(0, 5)}
+                rows={assessments.slice(0, 3)}
                 rowKey={(a) => a.id}
                 leadHeader="Assessment"
                 lead={(a) => ({

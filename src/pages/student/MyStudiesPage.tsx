@@ -16,7 +16,7 @@ import {
 } from '@/components/dashboard/Dashboard';
 import { cardState } from '@/components/dashboard/cardState';
 import { HomeTable } from '@/components/dashboard/HomeTable';
-import { ChatIcon, CheckIcon, ChecklistIcon } from '@/components/icons/Icons';
+import { CheckIcon, ChecklistIcon, SparkIcon } from '@/components/icons/Icons';
 import { useCachedQuery } from '@/hooks/useCachedQuery';
 import { timeLeft, useNow } from '@/lib/deadline';
 import { formatCount, formatInstant } from '@/lib/format';
@@ -126,7 +126,7 @@ export function MyStudiesPage() {
             value={quota.status === 'success' ? `${formatCount(quota.data.remaining)} of ${formatCount(quota.data.limit)}` : ''}
             label="Tutor questions left today"
             action="Tutor"
-            icon={ChatIcon}
+            icon={SparkIcon}
             state={cardState(quota)}
           />
         </PlacardGroup>
@@ -138,11 +138,11 @@ export function MyStudiesPage() {
           {list.status === 'error' && <ErrorState error={list.error} onRetry={list.retry} />}
           {list.status === 'success' &&
             (assessments.length === 0 ? (
-              <EmptyState>No assessments yet. They appear here when your professors publish them.</EmptyState>
+              <EmptyState title="Nothing on the docket yet.">No assessments yet. They appear here when your professors publish them.</EmptyState>
             ) : (
               <HomeTable
                 caption="Your assessments, open ones first"
-                rows={byDue.slice(0, 5)}
+                rows={byDue.slice(0, 3)}
                 rowKey={(a) => a.id}
                 leadHeader="Assessment"
                 lead={(a) => ({
@@ -165,6 +165,7 @@ export function MyStudiesPage() {
         </DashboardSection>
 
         <ActionCard
+          ai
           id="home-ask"
           before="Stuck on a"
           pill="section"

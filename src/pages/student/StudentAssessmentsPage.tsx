@@ -92,7 +92,7 @@ export function StudentAssessmentsPage() {
                 No assessments for this subject yet.
               </EmptyState>
             ) : (
-              <EmptyState>No assessments yet. When your professors publish one, it appears here.</EmptyState>
+              <EmptyState title="Nothing on the docket yet.">No assessments yet. When your professors publish one, it appears here.</EmptyState>
             )
           ) : (
             <>

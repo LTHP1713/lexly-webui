@@ -6,13 +6,13 @@
 import type { ComponentType } from 'react';
 import {
   BookIcon,
-  ChatIcon,
   ChecklistIcon,
   ClockIcon,
   CourthouseIcon,
   DocumentIcon,
   GridIcon,
   HomeIcon,
+  SparkIcon,
   UserIcon,
   UsersIcon,
 } from '@/components/icons/Icons';
@@ -83,7 +83,7 @@ export interface NavItem {
 }
 
 /** The AI tutor (F5a): every role, a shared route like the Library. */
-const TUTOR: NavItem = { to: '/tutor', label: 'Tutor', icon: ChatIcon, matches: ['/tutor'] };
+const TUTOR: NavItem = { to: '/tutor', label: 'Tutor', icon: SparkIcon, matches: ['/tutor'] };
 
 const LIBRARY: NavItem = {
   to: LIBRARY_HOME,

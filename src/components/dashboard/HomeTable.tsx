@@ -65,7 +65,7 @@ export function HomeTable<T>({
 
   return (
     <div className={styles.tableWrap}>
-      <table className={styles.table}>
+      <table className={`${styles.table} ${dash.compactTable}`}>
         <caption className={styles.visuallyHidden}>{caption}</caption>
         <thead>
           <tr>

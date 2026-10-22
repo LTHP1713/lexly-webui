@@ -1,6 +1,7 @@
 import { Suspense, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/auth/AuthContext';
+import { LexlyMark, LexlyWordmark } from '@/components/brand/Logo';
 import { CHANGE_PASSWORD_PATH, homeFor, isNavItemActive, navFor, sidebarFor, type NavItem } from '@/auth/roles';
 import { ChevronLeftIcon, ChevronRightIcon, LogOutIcon, SearchIcon } from '@/components/icons/Icons';
 import { useFlash } from '@/components/flash';
@@ -92,14 +93,13 @@ export function AppLayout() {
           <nav aria-label="Primary" className={`${styles.sidebar} ${expanded ? styles.sidebarExpanded : ''}`}>
             <div className={styles.sidebarTop}>
               <Link to={home} className={styles.brand} aria-label="Lexly home">
-                <span className={styles.logoTile} aria-hidden="true">
-                  §
-                </span>
-                {expanded && (
+                {expanded ? (
                   <span className={styles.brandText}>
-                    <span className={styles.brandName}>Lexly</span>
+                    <LexlyWordmark size="1.85rem" />
                     {user?.college?.code && <span className={styles.brandSub}>{user.college.code}</span>}
                   </span>
+                ) : (
+                  <LexlyMark size="3rem" />
                 )}
               </Link>
               <ul className={styles.sideList}>
@@ -139,9 +139,7 @@ export function AppLayout() {
         <div className={styles.panel}>
           <header className={styles.topBar}>
             <Link to={home} className={styles.phoneBrand} aria-label="Lexly home">
-              <span className={styles.logoTile} aria-hidden="true">
-                §
-              </span>
+              <LexlyWordmark size="1.6rem" />
             </Link>
             {context && <p className={styles.context}>{context}</p>}
             <div className={styles.actions}>

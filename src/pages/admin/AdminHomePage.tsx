@@ -139,7 +139,7 @@ export function AdminHomePage() {
             ) : (
               <HomeTable
                 caption="Colleges, first 5 by name"
-                rows={collegeList.slice(0, 5)}
+                rows={collegeList.slice(0, 3)}
                 rowKey={(c) => c.id}
                 leadHeader="College"
                 lead={(c) => ({
@@ -164,6 +164,7 @@ export function AdminHomePage() {
         </DashboardSection>
 
         <ActionCard
+          ai
           id="home-reindex"
           before="Keep the"
           pill="tutor"

@@ -8,8 +8,11 @@
    * screens not yet restyled follow along: "navy" is now the black, "ivory" the subtle grey surface
    * and "gold" the blue accent. Pastels mark categories; each pairs only with its own -ink.
    */
+  /* Brand (docs/brand/lexly-logo.png): the logo black and the spark lavender. The spark is decorative only, never text. */
+  --lx-brand-black: #0b0b0d;
+  --lx-spark: #9d8cff;
   --lx-page: #e6effb;
-  --lx-sidebar: #1c1c1e;
+  --lx-sidebar: #0b0b0d;
   --lx-sidebar-text: #c9cbd3;
   --lx-ivory: #f2f4f8;
   --lx-ivory-deep: #e3e6ec;

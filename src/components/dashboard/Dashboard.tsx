@@ -7,6 +7,8 @@ import type { ComponentType, ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import type { CardState } from './cardState';
 import { errorMessage } from '@/api/errors';
+import { LexlySpark } from '@/components/brand/Logo';
+import { SparkIcon } from '@/components/icons/Icons';
 import styles from './Dashboard.module.css';
 
 export type PlacardTone = 'lavender' | 'mint' | 'cream';
@@ -171,7 +173,10 @@ export function DashboardSection({
   );
 }
 
-/** The dark card with the role's main call to action; `pill` is the word drawn in an outlined pill. */
+/**
+ * The dark card with the role's main call to action; `pill` is the word drawn in an outlined pill.
+ * `ai` marks a tutor card: the spark on the pill's corner and in the button.
+ */
 export function ActionCard({
   id,
   before,
@@ -180,6 +185,7 @@ export function ActionCard({
   text,
   to,
   label,
+  ai = false,
 }: {
   id: string;
   before: string;
@@ -188,15 +194,21 @@ export function ActionCard({
   text: string;
   to: string;
   label: string;
+  ai?: boolean;
 }) {
   return (
     <section className={styles.action} aria-labelledby={id}>
       <h2 id={id} className={styles.actionTitle}>
-        {before} <span className={styles.actionPill}>{pill}</span>
+        {before}{' '}
+        <span className={styles.actionPill}>
+          {pill}
+          {ai && <LexlySpark size="0.55em" className={styles.pillSpark} />}
+        </span>
         {after ? (/^[?!.,]/.test(after) ? after : ` ${after}`) : ''}
       </h2>
       <p className={styles.actionText}>{text}</p>
       <Link to={to} className={styles.actionButton}>
+        {ai && <SparkIcon size={18} />}
         {label}
       </Link>
       <svg className={styles.actionArt} width="170" height="120" viewBox="0 0 170 120" aria-hidden="true">

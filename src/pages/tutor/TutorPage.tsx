@@ -15,7 +15,8 @@ import {
 } from '@/api/tutor';
 import { useAuth } from '@/auth/AuthContext';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
-import { ArrowLeftIcon, ChatIcon, TrashIcon } from '@/components/icons/Icons';
+import { LexlySpark } from '@/components/brand/Logo';
+import { ArrowLeftIcon, TrashIcon } from '@/components/icons/Icons';
 import { EmptyState, ErrorState, LoadingState } from '@/components/QueryStates';
 import { useToast } from '@/components/Toast';
 import { useCachedQuery } from '@/hooks/useCachedQuery';
@@ -209,7 +210,10 @@ export function TutorPage() {
     <>
       <div className={styles.titleRow}>
         <div>
-          <p className={styles.eyebrow}>Lexly tutor</p>
+          <p className={`${styles.eyebrow} ${tutorStyles.aiEyebrow}`}>
+            <LexlySpark size="0.95em" />
+            Lexly tutor
+          </p>
           <h1 className={styles.title}>Ask the tutor</h1>
         </div>
         {user?.role === 'SUPERADMIN' && (
@@ -433,7 +437,7 @@ function NewChatThread({ pending, onRetry, onEdit, onExample }: ThreadActions & 
         <MessageList messages={[]} pending={pending} onRetry={onRetry} onEdit={onEdit} />
       ) : (
         <div className={tutorStyles.intro}>
-          <ChatIcon size={28} className={tutorStyles.introIcon} />
+          <LexlySpark size={28} />
           <p>
             Ask about any act, section or case law in Lexly. Answers cite their sources, so you can read the law
             itself.

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { TutorCitation, TutorMessage } from '@/api/tutor';
+import { LexlySpark } from '@/components/brand/Logo';
 import { AlertIcon, LightbulbIcon } from '@/components/icons/Icons';
 import { TABLE_QUERY, useMediaQuery } from '@/hooks/useMediaQuery';
 import type { PendingQuestion } from './TutorPage';
@@ -44,7 +45,7 @@ export function MessageList({
             <UserMessage text={pending.question} />
             {pending.status === 'sending' ? (
               <p className={tutorStyles.answering}>
-                <span className={tutorStyles.spinner} aria-hidden="true" />
+                <LexlySpark size={18} pulse />
                 Answering… this can take up to a minute
               </p>
             ) : (
@@ -71,6 +72,16 @@ export function MessageList({
   );
 }
 
+/** Who wrote the answer, led by the AI spark. Also tells a screen reader who is speaking. */
+function TutorLabel() {
+  return (
+    <p className={tutorStyles.answerLabel}>
+      <LexlySpark size={14} />
+      Lexly tutor
+    </p>
+  );
+}
+
 function UserMessage({ text }: { text: string }) {
   return (
     <div className={tutorStyles.userBubble}>
@@ -93,7 +104,7 @@ function AnswerMessage({ message }: { message: TutorMessage }) {
   if (message.notFound) {
     return (
       <div className={tutorStyles.notFound}>
-        <span className={styles.visuallyHidden}>Tutor: </span>
+        <TutorLabel />
         <p className={tutorStyles.notFoundText}>
           <LightbulbIcon size={18} />
           {message.content}
@@ -118,7 +129,7 @@ function AnswerMessage({ message }: { message: TutorMessage }) {
 
   return (
     <div className={tutorStyles.answer}>
-      <span className={styles.visuallyHidden}>Tutor: </span>
+      <TutorLabel />
       {paragraphs.map((paragraph, i) => (
         <p key={i} className={tutorStyles.answerParagraph}>
           {parseMarkers(paragraph, refs).map((segment, j) => {

@@ -15,7 +15,7 @@
 .page {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.1rem;
 }
 
 .header {
@@ -116,6 +116,7 @@
   border-radius: var(--lx-radius);
   background: var(--lx-sky);
 }
+
 
 .heroHead {
   display: flex;
@@ -378,6 +379,13 @@
   min-width: 0;
 }
 
+/* Home tables are a short preview: tighter rows than the full lists, so a home fits one screen. */
+table.compactTable th,
+table.compactTable td {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
 .rowChip {
   display: inline-flex;
   flex: none;
@@ -431,9 +439,8 @@ a.nameLink:hover {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
-  min-height: 15rem;
-  padding: 1.75rem;
+  gap: 0.6rem;
+  padding: 1.25rem 1.35rem;
   overflow: hidden;
   border-radius: var(--lx-radius);
   background: var(--lx-sidebar);
@@ -441,31 +448,39 @@ a.nameLink:hover {
 }
 
 .row > .action {
-  flex: 1 1 18rem;
-  max-width: 26rem;
+  flex: 1 1 16rem;
+  align-self: flex-start;
+  max-width: 22rem;
 }
 
 .actionTitle {
   position: relative;
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   font-weight: 800;
   line-height: 1.3;
 }
 
 .actionPill {
+  position: relative;
   display: inline-block;
   padding: 0 0.6rem;
   border: 2px solid #fff;
   border-radius: 999px;
 }
 
+.pillSpark {
+  position: absolute;
+  top: -0.3em;
+  right: -0.3em;
+}
+
 .actionText {
   position: relative;
   margin: 0;
   color: var(--lx-sidebar-text);
-  font-size: 0.9rem;
-  line-height: 1.55;
+  font-size: 0.85rem;
+  line-height: 1.5;
 }
 
 .actionButton {
@@ -473,9 +488,10 @@ a.nameLink:hover {
   align-self: flex-start;
   display: inline-flex;
   align-items: center;
+  gap: 0.45rem;
   min-height: 44px;
-  margin-top: auto;
-  padding: 0 1.35rem;
+  margin-top: 0.25rem;
+  padding: 0 1.1rem;
   border-radius: var(--lx-radius-sm);
   background: var(--lx-cta);
   color: var(--lx-ink);
@@ -553,7 +569,16 @@ a.nameLink:hover {
 
 @media (min-width: 768px) {
   .title {
-    font-size: 2.125rem;
+    font-size: 1.9rem;
+  }
+
+  /* The home fills the panel and its second row sits at the bottom, using the spare height. */
+  .page {
+    flex: 1 0 auto;
+  }
+
+  .row + .row {
+    margin-top: auto;
   }
 }
 

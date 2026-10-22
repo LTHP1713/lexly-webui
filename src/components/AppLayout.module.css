@@ -63,6 +63,8 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  /* The mark (collapsed) and the wordmark (expanded) take the same height, so the nav doesn't jump. */
+  min-height: 3.7rem;
   margin: 0 0 1.1rem;
   padding: 0.35rem;
   border-radius: 1rem;
@@ -70,31 +72,16 @@
   text-decoration: none;
 }
 
-.logoTile {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  width: 3rem;
-  height: 3rem;
-  border-radius: 0.9rem;
-  background: var(--lx-cream);
-  color: var(--lx-sidebar);
-  font-family: Georgia, 'Times New Roman', serif;
-  font-size: 1.6rem;
-  font-weight: 700;
-  line-height: 1;
+.brand:hover {
+  color: #fff;
 }
 
 .brandText {
   display: flex;
   flex-direction: column;
+  gap: 0.3rem;
   min-width: 0;
-}
-
-.brandName {
-  font-size: 1.25rem;
-  font-weight: 800;
+  padding-left: 0.25rem;
 }
 
 .brandSub {
@@ -189,17 +176,15 @@
 
 .phoneBrand {
   display: inline-flex;
-  border-radius: 0.9rem;
+  flex: none;
+  padding: 0.2rem 0.1rem;
+  border-radius: 0.6rem;
+  color: var(--lx-brand-black);
   text-decoration: none;
 }
 
-.phoneBrand .logoTile {
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 0.75rem;
-  background: var(--lx-sidebar);
-  color: var(--lx-cream);
-  font-size: 1.35rem;
+.phoneBrand:hover {
+  color: var(--lx-brand-black);
 }
 
 .context {
@@ -373,14 +358,15 @@
 /* ---------- From 768px: frame, sidebar, panel ---------- */
 
 @media (min-width: 768px) {
+  /* A thin margin round the frame, so it fills the window and a home fits without scrolling. */
   .shell {
-    padding: 1rem;
+    padding: 0.5rem;
     background: var(--lx-page);
   }
 
   .frame {
-    min-height: calc(100dvh - 2rem);
-    padding: 0.75rem;
+    min-height: calc(100dvh - 1rem);
+    padding: 0.5rem;
     border-radius: 2.1rem;
     background: var(--lx-sidebar);
     box-shadow: 0 24px 60px rgb(28 28 30 / 0.16);
@@ -388,14 +374,14 @@
 
   .sidebar {
     position: sticky;
-    top: 1.75rem;
+    top: 1rem;
     display: flex;
     flex: none;
     flex-direction: column;
     justify-content: space-between;
     gap: 1.5rem;
     width: 4.75rem;
-    max-height: calc(100dvh - 3.5rem);
+    max-height: calc(100dvh - 2rem);
     padding: 0.6rem 0.15rem 0.85rem;
     overflow-y: auto;
     transition: width 0.18s ease;
@@ -410,7 +396,7 @@
   }
 
   .topBar {
-    padding: 1.4rem 2rem 0.5rem;
+    padding: 0.75rem 2rem 0.25rem;
     border-radius: 1.6rem 1.6rem 0 0;
   }
 
@@ -422,9 +408,13 @@
     display: inline;
   }
 
+  /* Fills the panel's height, so a page (the role homes) can spread its rows over the screen. */
   .main {
+    display: flex;
+    flex: 1 0 auto;
+    flex-direction: column;
     max-width: 52rem;
-    padding: 0.75rem 2rem 2.5rem;
+    padding: 0.5rem 2rem 1.25rem;
   }
 
   .mainWide {
@@ -437,16 +427,8 @@
 }
 
 @media (min-width: 1280px) {
-  .shell {
-    padding: 1.75rem;
-  }
-
-  .frame {
-    min-height: calc(100dvh - 3.5rem);
-  }
-
   .main {
-    padding: 0.75rem 2.25rem 2.75rem;
+    padding: 0.5rem 2.25rem 1.25rem;
   }
 }
 

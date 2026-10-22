@@ -224,6 +224,15 @@ export function LightbulbIcon(props: IconProps) {
   );
 }
 
+/** The AI mark (the logo's spark) as a line icon: the tutor's icon in nav and cards. */
+export function SparkIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M12 3c.4 5.6 2.3 8.5 9 9-6.7.5-8.6 3.4-9 9-.4-5.6-2.3-8.5-9-9 6.7-.5 8.6-3.4 9-9Z" />
+    </Icon>
+  );
+}
+
 export function ChatIcon(props: IconProps) {
   return (
     <Icon {...props}>
@@ -295,25 +304,5 @@ export function ArrowLeftIcon(props: IconProps) {
     <Icon {...props}>
       <path d="M19 12H5m6-6-6 6 6 6" />
     </Icon>
-  );
-}
-
-/** Lexly brand mark: a section sign (§) on a navy tile. */
-export function LexlyMark({ size = 28 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true" focusable="false">
-      <rect width="32" height="32" rx="8" fill="var(--lx-sidebar, #1c1c1e)" />
-      <text
-        x="16"
-        y="22.5"
-        textAnchor="middle"
-        fontFamily="Georgia, 'Times New Roman', serif"
-        fontSize="20"
-        fontWeight="700"
-        fill="var(--lx-cream, #f7efd3)"
-      >
-        §
-      </text>
-    </svg>
   );
 }

@@ -144,10 +144,6 @@
   margin: 0.5rem 0;
 }
 
-.introIcon {
-  color: var(--lx-gold-ink);
-}
-
 .introTitle {
   margin: 1rem 0 0.5rem;
   color: var(--lx-navy);
@@ -208,6 +204,22 @@
 
 .answerItem {
   min-width: 0;
+}
+
+.aiEyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.answerLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0 0 0.4rem;
+  color: var(--lx-muted);
+  font-size: 0.8rem;
+  font-weight: 800;
 }
 
 .answer {
@@ -363,27 +375,6 @@
   justify-self: start;
   margin: 0;
   color: var(--lx-muted);
-}
-
-.spinner {
-  width: 1rem;
-  height: 1rem;
-  border: 2px solid var(--lx-border);
-  border-top-color: var(--lx-navy);
-  border-radius: 50%;
-  animation: spin 0.9s linear infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .spinner {
-    animation-duration: 3s;
-  }
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 .failed {

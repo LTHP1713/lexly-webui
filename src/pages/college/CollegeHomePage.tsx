@@ -55,7 +55,7 @@ export function CollegeHomePage() {
   const since = new Date();
   since.setHours(0, 0, 0, 0);
   since.setDate(since.getDate() - (ACTIVITY_DAYS - 1));
-  const activityQuery = { from: since.toISOString(), page: 0, size: 5 };
+  const activityQuery = { from: since.toISOString(), page: 0, size: 3 };
   const activity = useCachedQuery(queryKeys.audit.list({ scope: 'home', ...activityQuery }), () => listAudit(activityQuery));
 
   const studentCount = students.status === 'success' ? students.data.totalElements : 0;

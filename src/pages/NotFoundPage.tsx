@@ -3,6 +3,7 @@ import { useAuth } from '@/auth/AuthContext';
 import { CHANGE_PASSWORD_PATH, homeFor } from '@/auth/roles';
 import { SessionPending } from '@/auth/SessionPending';
 import { AppLayout } from '@/components/AppLayout';
+import { Maxim } from '@/components/brand/Maxim';
 import { AlertIcon } from '@/components/icons/Icons';
 import { AuthLayout } from '@/pages/auth/AuthLayout';
 import styles from './SimplePage.module.css';
@@ -21,6 +22,7 @@ export function NotFoundPage() {
         <span className={styles.panelIcon}>
           <AlertIcon size={32} />
         </span>
+        <Maxim latin="Ignorantia juris non excusat." meaning="Ignorance of the law is no excuse. A missing page, though, is excused." />
         <p className={styles.panelText}>This page doesn&rsquo;t exist, or you don&rsquo;t have access to it.</p>
         <div className={styles.actions}>
           <Link to={signedIn ? homeFor(user?.role ?? null) : '/login'} className={styles.primaryButton}>
