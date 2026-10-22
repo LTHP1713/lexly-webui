@@ -233,15 +233,6 @@ export function SparkIcon(props: IconProps) {
   );
 }
 
-export function ChatIcon(props: IconProps) {
-  return (
-    <Icon {...props}>
-      <path d="M5 5.5h14a1.5 1.5 0 0 1 1.5 1.5v8.5A1.5 1.5 0 0 1 19 17h-8l-4.5 3.5V17H5a1.5 1.5 0 0 1-1.5-1.5V7A1.5 1.5 0 0 1 5 5.5Z" />
-      <path d="M8 10h8M8 13h5" />
-    </Icon>
-  );
-}
-
 export function TrashIcon(props: IconProps) {
   return (
     <Icon {...props}>

@@ -104,7 +104,10 @@ export function PlacardGroup({ id, title, children }: { id: string; title: strin
   );
 }
 
-/** A pastel card that is one link to a screen. Must sit inside a `PlacardGroup`. */
+/**
+ * A pastel card that is one link to a screen. Must sit inside a `PlacardGroup`. After an error it
+ * is not a link, because its Try again button must not sit inside an anchor (or navigate away).
+ */
 export function Placard({
   to,
   tone,
@@ -122,24 +125,34 @@ export function Placard({
   icon: ComponentType<{ size?: number }>;
   state?: CardState;
 }) {
+  const className = `${styles.placard} ${styles[`placard_${tone}`]}`;
+  const content = (
+    <>
+      {state.status === 'ready' ? (
+        <span className={styles.placardValue}>{value}</span>
+      ) : (
+        <CardProblem state={state} label={label} />
+      )}
+      <span className={styles.placardLabel}>{label}</span>
+      <span className={styles.placardFoot}>
+        <span className={styles.iconChip} aria-hidden="true">
+          <PlacardIcon size={20} />
+        </span>
+        <span className={styles.placardAction}>
+          {action} <span aria-hidden="true">→</span>
+        </span>
+      </span>
+    </>
+  );
   return (
     <li className={styles.placardItem}>
-      <Link to={to} className={`${styles.placard} ${styles[`placard_${tone}`]}`}>
-        {state.status === 'ready' ? (
-          <span className={styles.placardValue}>{value}</span>
-        ) : (
-          <CardProblem state={state} label={label} />
-        )}
-        <span className={styles.placardLabel}>{label}</span>
-        <span className={styles.placardFoot}>
-          <span className={styles.iconChip} aria-hidden="true">
-            <PlacardIcon size={20} />
-          </span>
-          <span className={styles.placardAction}>
-            {action} <span aria-hidden="true">→</span>
-          </span>
-        </span>
-      </Link>
+      {state.status === 'error' ? (
+        <div className={className}>{content}</div>
+      ) : (
+        <Link to={to} className={className}>
+          {content}
+        </Link>
+      )}
     </li>
   );
 }

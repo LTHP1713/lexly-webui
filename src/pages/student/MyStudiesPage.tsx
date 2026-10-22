@@ -77,7 +77,13 @@ export function MyStudiesPage() {
           {next && (
             <>
               <p className={dash.heroNote}>
-                <strong>Due {left?.text ?? formatInstant(next.dueAt)}</strong> · {formatInstant(next.dueAt)}
+                {next.dueAt ? (
+                  <>
+                    <strong>Due {left?.text ?? formatInstant(next.dueAt)}</strong> · {formatInstant(next.dueAt)}
+                  </>
+                ) : (
+                  <strong>No due date</strong>
+                )}
               </p>
               <div className={dash.barRow}>
                 <div className={dash.barRowHead}>

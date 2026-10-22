@@ -138,7 +138,7 @@ export function AdminHomePage() {
               </EmptyState>
             ) : (
               <HomeTable
-                caption="Colleges, first 5 by name"
+                caption="Colleges, first 3 by name"
                 rows={collegeList.slice(0, 3)}
                 rowKey={(c) => c.id}
                 leadHeader="College"

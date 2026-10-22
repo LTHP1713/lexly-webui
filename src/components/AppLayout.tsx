@@ -77,10 +77,9 @@ export function AppLayout() {
   const context = user?.college?.name ?? '';
 
   function toggleSidebar() {
-    setExpanded((current) => {
-      writeSidebarExpanded(!current);
-      return !current;
-    });
+    const next = !expanded;
+    setExpanded(next);
+    writeSidebarExpanded(next);
   }
 
   return (
@@ -138,7 +137,12 @@ export function AppLayout() {
 
         <div className={styles.panel}>
           <header className={styles.topBar}>
-            <Link to={home} className={styles.phoneBrand} aria-label="Lexly home">
+            {/* Without a sidebar (password must be changed) the top bar carries the brand at every width. */}
+            <Link
+              to={home}
+              className={`${styles.phoneBrand} ${sideItems.length === 0 ? styles.brandAlways : ''}`}
+              aria-label="Lexly home"
+            >
               <LexlyWordmark size="1.6rem" />
             </Link>
             {context && <p className={styles.context}>{context}</p>}

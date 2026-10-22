@@ -55,7 +55,7 @@ describe('SUPERADMIN Overview', () => {
     expect(placard(/Active colleges/)).toHaveTextContent('1');
     expect(placard(/Students · 63 professors/)).toHaveTextContent('1,820');
     expect(placard(/Last index run · 4 min 12 s/)).toHaveTextContent('Succeeded');
-    const table = screen.getByRole('table', { name: 'Colleges, first 5 by name' });
+    const table = screen.getByRole('table', { name: 'Colleges, first 3 by name' });
     expect(within(table).getByRole('link', { name: 'National Law School' })).toHaveAttribute('href', '/admin/colleges/c1');
     expect(within(table).getByText('Inactive')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Re-index' })).toHaveAttribute('href', '/admin/tutor');

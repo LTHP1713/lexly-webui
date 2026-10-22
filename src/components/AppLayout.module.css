@@ -404,6 +404,10 @@
     display: none;
   }
 
+  .phoneBrand.brandAlways {
+    display: inline-flex;
+  }
+
   .profileName {
     display: inline;
   }
