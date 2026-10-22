@@ -70,7 +70,7 @@ test('navigating away while the refresh is in flight does not sign the user out 
 test('logout clears the cookie; the next load is signed out with no "session ended" banner', async ({ page, context }) => {
   await register(page)
   await page.goto('/profile')
-  await page.getByRole('button', { name: 'Log out' }).click()
+  await page.getByRole('main').getByRole('button', { name: 'Log out' }).click()
   await expect(page).toHaveURL(/\/login$/)
   const cookie = (await context.cookies(`${API}/auth/refresh`)).find((c) => c.name === 'lexly_refresh_token')
   expect(cookie?.value ?? '').toBe('')

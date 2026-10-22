@@ -8,6 +8,7 @@ import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { API, apiError, http, json, me, server } from '@/test/server';
+import { mockCollegeOverview, mockStudyHub } from '@/test/homes';
 
 async function renderAt(path: string) {
   vi.resetModules();
@@ -79,16 +80,41 @@ describe('forced password change', () => {
 describe('role areas', () => {
   it('sends a student who opens an admin URL to their own home', async () => {
     signedInAs({ role: 'S_STUDENT', firstName: 'Priya' });
+    mockStudyHub();
     const router = await renderAt('/admin/caselaws');
-    expect(await screen.findByRole('heading', { level: 1, name: /Priya/ })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Study hub' })).toBeInTheDocument();
+    expect(screen.getByText(/, Priya$/)).toBeInTheDocument();
     expect(router.state.location.pathname).toBe('/dashboard');
   });
 
-  it('gives the super admin Colleges, Content, Audit, Tutor and Library', async () => {
+  it('gives the super admin Colleges, Content, Audit, Tutor and Library, plus Overview in the sidebar', async () => {
     signedInAs({ role: 'SUPERADMIN' });
     await renderAt('/');
-    const nav = (await screen.findAllByRole('navigation', { name: 'Primary' }))[0];
-    expect(within(nav).getAllByRole('link').map((l) => l.textContent)).toEqual(['Colleges', 'Content', 'Audit', 'Tutor', 'Library']);
+    const [sidebar, tabs] = await screen.findAllByRole('navigation', { name: 'Primary' });
+    expect(within(tabs).getAllByRole('link').map((l) => l.textContent)).toEqual(['Colleges', 'Content', 'Audit', 'Tutor', 'Library']);
+    expect(within(sidebar).getAllByRole('listitem').map((l) => l.textContent)).toEqual([
+      'Overview',
+      'Colleges',
+      'Content',
+      'Audit',
+      'Tutor',
+      'Library',
+    ]);
+    expect(within(sidebar).getByRole('link', { name: 'Overview' })).toHaveAttribute('aria-current', 'page');
+    expect(within(sidebar).getByRole('button', { name: 'Expand sidebar' })).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('expands and collapses the sidebar, and remembers the choice', async () => {
+    signedInAs({ role: 'SUPERADMIN' });
+    await renderAt('/');
+    const [sidebar] = await screen.findAllByRole('navigation', { name: 'Primary' });
+    const ui = userEvent.setup();
+    await ui.click(within(sidebar).getByRole('button', { name: 'Expand sidebar' }));
+    expect(within(sidebar).getByRole('button', { name: 'Collapse sidebar' })).toHaveAttribute('aria-expanded', 'true');
+    expect(within(sidebar).getByText('Lexly')).toBeInTheDocument();
+    expect(localStorage.getItem('lexly.sidebar')).toBe('expanded');
+    await ui.click(within(sidebar).getByRole('button', { name: 'Collapse sidebar' }));
+    expect(localStorage.getItem('lexly.sidebar')).toBe('collapsed');
   });
 
   it.each([
@@ -103,13 +129,22 @@ describe('role areas', () => {
     await waitFor(() => expect(router.state.location.pathname).toBe(home));
   });
 
-  it('gives the college admin Users, Subjects, Audit, Tutor and Library, and a hub naming the college', async () => {
+  it('gives the college admin Users, Subjects, Audit, Tutor and Library, and an Overview under the college name', async () => {
     signedInAs({ role: 'C_ADMIN', college: { id: 'c', code: 'NLSIU', name: 'National Law School' } });
+    mockCollegeOverview();
     await renderAt('/');
-    expect(await screen.findByRole('heading', { level: 1, name: 'National Law School' })).toBeInTheDocument();
-    expect(screen.getByText('NLSIU')).toBeInTheDocument();
-    const nav = screen.getAllByRole('navigation', { name: 'Primary' })[0];
-    expect(within(nav).getAllByRole('link').map((l) => l.textContent)).toEqual(['Users', 'Subjects', 'Audit', 'Tutor', 'Library']);
+    expect(await screen.findByRole('heading', { level: 1, name: 'Overview' })).toBeInTheDocument();
+    expect(screen.getByText('National Law School')).toBeInTheDocument();
+    const [sidebar, tabs] = screen.getAllByRole('navigation', { name: 'Primary' });
+    expect(within(tabs).getAllByRole('link').map((l) => l.textContent)).toEqual(['Users', 'Subjects', 'Audit', 'Tutor', 'Library']);
+    expect(within(sidebar).getAllByRole('listitem').map((l) => l.textContent)).toEqual([
+      'Overview',
+      'Users',
+      'Subjects',
+      'Audit',
+      'Tutor',
+      'Library',
+    ]);
   });
 
   it('shows the Library sub-nav to college roles only', async () => {

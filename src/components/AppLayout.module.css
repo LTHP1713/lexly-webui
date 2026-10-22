@@ -1,13 +1,29 @@
-/* Mobile-first: the role's nav (src/auth/roles.ts) is a bottom tab bar below 768px and sits in
-   the header from 768px. */
+/*
+ * App shell (UI spec UR.2). Mobile-first: below 768px a top bar and a floating black tab bar
+ * (src/auth/roles.ts navFor); from 768px a pale page with a black frame around the collapsible
+ * sidebar (sidebarFor) and a white panel.
+ */
 
 .shell {
   /* The Lexly palette is light-only (the auth screens opt in the same way in AuthLayout). */
   color-scheme: light;
   min-height: 100vh;
   min-height: 100dvh;
-  background: var(--lx-ivory);
+  background: var(--lx-card);
   color: var(--lx-ink);
+  font-family: var(--lx-sans);
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .skipLink {
@@ -15,300 +31,413 @@
   left: 0.75rem;
   top: -3rem;
   padding: 0.5rem 0.75rem;
-  background: var(--lx-navy);
+  background: var(--lx-sidebar);
   color: #fff;
-  border-radius: 0.4rem;
-  z-index: 50;
+  border-radius: 0.5rem;
+  z-index: 60;
 }
 
 .skipLink:focus {
   top: 0.75rem;
 }
 
-/* ---------- Header ---------- */
-
-.header {
-  position: sticky;
-  top: 0;
-  z-index: 30;
-  padding-top: env(safe-area-inset-top, 0px);
-  background: rgb(248 245 238 / 0.92);
-  backdrop-filter: saturate(1.2) blur(8px);
-  border-bottom: 1px solid var(--lx-border);
+.frame {
+  display: flex;
+  min-height: inherit;
 }
 
-.headerInner {
+/* ---------- Sidebar (from 768px) ---------- */
+
+.sidebar {
+  display: none;
+}
+
+.sidebarTop,
+.sidebarBottom {
   display: flex;
-  align-items: center;
-  gap: 1rem;
-  max-width: 72rem;
-  height: 3.5rem;
-  margin: 0 auto;
-  padding: 0 max(1rem, env(safe-area-inset-right, 0px)) 0 max(1rem, env(safe-area-inset-left, 0px));
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .brand {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 0.55rem;
-  flex-shrink: 0;
-  min-height: 44px;
-  color: var(--lx-navy);
+  gap: 0.75rem;
+  /* The mark (collapsed) and the wordmark (expanded) take the same height, so the nav doesn't jump. */
+  min-height: 3.7rem;
+  margin: 0 0 1.1rem;
+  padding: 0.35rem;
+  border-radius: 1rem;
+  color: #fff;
   text-decoration: none;
-  border-radius: 0.5rem;
 }
 
-.brandName {
-  font-family: var(--lx-serif);
-  font-size: 1.35rem;
+.brand:hover {
+  color: #fff;
+}
+
+.brandText {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+  padding-left: 0.25rem;
+}
+
+.brandSub {
+  overflow: hidden;
+  color: #9ea1ab;
+  font-size: 0.75rem;
   font-weight: 700;
-  letter-spacing: 0.01em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sideList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sideLink,
+.sideButton {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 0.8rem;
+  border: 0;
+  border-radius: 0.9rem;
+  background: none;
+  color: var(--lx-sidebar-text);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.sideLink > svg,
+.sideButton > svg {
+  flex: none;
+}
+
+.sideLink:hover,
+.sideButton:hover {
+  background: rgb(255 255 255 / 0.08);
+  color: #fff;
+}
+
+.sideLink[aria-current='page'] {
+  background: #fff;
+  color: var(--lx-ink);
+}
+
+.sideButton:first-child {
+  border: 1px solid #3a3a3e;
+}
+
+.sideLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar :focus-visible {
+  outline-color: #fff;
+}
+
+/* ---------- Panel and top bar ---------- */
+
+.panel {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--lx-card);
+}
+
+.topBar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: calc(0.75rem + env(safe-area-inset-top, 0px)) 1rem 0.75rem;
+  background: rgb(255 255 255 / 0.94);
+  backdrop-filter: saturate(1.2) blur(8px);
+}
+
+.phoneBrand {
+  display: inline-flex;
+  flex: none;
+  padding: 0.2rem 0.1rem;
+  border-radius: 0.6rem;
+  color: var(--lx-brand-black);
+  text-decoration: none;
+}
+
+.phoneBrand:hover {
+  color: var(--lx-brand-black);
+}
+
+.context {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: var(--lx-muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .actions {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
-  min-width: 0;
+  gap: 0.5rem;
   margin-left: auto;
 }
 
-/* Shrinks before anything else in the header: a long name truncates rather than overflowing. */
-.greeting {
-  display: flex;
-  min-width: 0;
-  margin: 0 0.25rem 0 0;
-  color: var(--lx-navy);
-  font-size: 0.92rem;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.greetingName {
-  min-width: 0;
-  max-width: 9rem;
-  /* Keeps the leading space, which a flex item would otherwise trim. */
-  white-space: pre;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Below the narrowest supported phone (360px) only "Hi!" fits. */
-@media (max-width: 359.98px) {
-  .greetingName {
-    display: none;
-  }
-}
-
-.avatar {
+.roundButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  color: var(--lx-navy);
-  text-decoration: none;
+  background: var(--lx-ivory);
+  color: var(--lx-ink);
 }
 
-.avatar > svg {
-  box-sizing: content-box;
-  padding: 6px;
-  border-radius: 50%;
-  background: var(--lx-gold-soft);
-  border: 1px solid #e6d6b2;
+.roundButton:hover {
+  background: var(--lx-ivory-deep);
 }
 
-.avatar[aria-current='page'] > svg {
-  border-color: var(--lx-gold);
-}
-
-/* Role nav in the header: hidden on phones, where the bottom tab bar carries it. */
-.headerNav {
-  display: none;
-  min-width: 0;
-}
-
-.headerNavList {
-  display: flex;
-  gap: 0.25rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.headerNavLink {
-  position: relative;
+.profile {
   display: inline-flex;
   align-items: center;
+  gap: 0.6rem;
   min-height: 44px;
-  padding: 0 0.7rem;
-  border-radius: 0.5rem;
-  color: var(--lx-muted);
-  font-size: 0.95rem;
-  font-weight: 600;
+  padding: 0.3rem;
+  border-radius: 999px;
+  background: var(--lx-ivory);
+  color: var(--lx-ink);
+  font-size: 0.875rem;
+  font-weight: 700;
   text-decoration: none;
+}
+
+.profile:hover,
+.profile[aria-current='page'] {
+  background: var(--lx-ivory-deep);
+}
+
+.initials {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 50%;
+  background: var(--lx-mint);
+  color: var(--lx-mint-ink);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.profileName {
+  display: none;
+  max-width: 10rem;
+  padding-right: 0.6rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.headerNavLink:hover {
-  color: var(--lx-navy);
-}
-
-.headerNavLink[aria-current='page'] {
-  color: var(--lx-navy);
-}
-
-.headerNavLink[aria-current='page']::after {
-  content: '';
-  position: absolute;
-  left: 0.7rem;
-  right: 0.7rem;
-  bottom: 0.35rem;
-  height: 2px;
-  border-radius: 2px;
-  background: var(--lx-gold);
-}
-
-/* Forced password change: the header's only action. */
 .logout {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
   min-height: 44px;
-  padding: 0 0.9rem;
+  padding: 0 1rem;
   border: 1px solid var(--lx-border);
-  border-radius: 0.5rem;
+  border-radius: var(--lx-radius-sm);
   background: #fff;
-  color: var(--lx-navy);
+  color: var(--lx-ink);
   font: inherit;
-  font-weight: 600;
+  font-size: 0.9rem;
+  font-weight: 700;
   cursor: pointer;
 }
 
 .logout:hover {
-  border-color: var(--lx-navy);
+  border-color: var(--lx-sidebar);
 }
 
 /* ---------- Main ---------- */
 
 .main {
+  width: 100%;
   max-width: 48rem;
   margin: 0 auto;
-  padding: 1.25rem 1rem calc(4.5rem + env(safe-area-inset-bottom, 0px));
+  padding: 0.5rem 1rem calc(6.5rem + env(safe-area-inset-bottom, 0px));
 }
 
 .mainWide {
-  max-width: 72rem;
-  padding-top: 1rem;
+  max-width: 76rem;
 }
 
 .main:focus {
   outline: none;
 }
 
-/* No bottom tab bar to clear. */
 .mainNoTabs {
   padding-bottom: 2rem;
 }
 
-/* ---------- Bottom tab bar (mobile) ---------- */
+/* ---------- Bottom tab bar (below 768px) ---------- */
 
 .bottomNav {
   position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 30;
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-  background: #fff;
-  border-top: 1px solid var(--lx-border);
-  box-shadow: 0 -2px 12px rgb(19 41 75 / 0.06);
+  left: 0.75rem;
+  right: 0.75rem;
+  bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  z-index: 40;
+  padding: 0.45rem;
+  border-radius: 1.5rem;
+  background: var(--lx-sidebar);
+  box-shadow: 0 12px 30px rgb(28 28 30 / 0.25);
 }
 
-/* Column count is set inline from the role's item count. */
 .bottomNavList {
   display: grid;
+  gap: 0.25rem;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
 .bottomNavLink {
-  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 0.15rem;
-  min-height: 3.5rem;
-  color: var(--lx-muted);
-  font-size: 0.72rem;
-  font-weight: 600;
+  min-height: 3.25rem;
+  padding: 0.25rem;
+  border-radius: 1rem;
+  color: var(--lx-sidebar-text);
+  font-size: 0.7rem;
+  font-weight: 700;
   text-decoration: none;
 }
 
+.bottomNavLink > span {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .bottomNavLink[aria-current='page'] {
-  color: var(--lx-navy);
+  background: #fff;
+  color: var(--lx-ink);
 }
 
-.bottomNavLink[aria-current='page'] > svg {
-  color: var(--lx-navy);
-  stroke-width: 2;
+.bottomNav :focus-visible {
+  outline-color: #fff;
 }
 
-.bottomNavLink[aria-current='page']::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 50%;
-  width: 1.75rem;
-  height: 3px;
-  transform: translateX(-50%);
-  border-radius: 0 0 3px 3px;
-  background: var(--lx-gold);
-}
+/* ---------- From 768px: frame, sidebar, panel ---------- */
 
 @media (min-width: 768px) {
-  .headerInner {
-    height: 4rem;
-    gap: 2rem;
-    padding: 0 1.5rem;
+  /* A thin margin round the frame, so it fills the window and a home fits without scrolling. */
+  .shell {
+    padding: 0.5rem;
+    background: var(--lx-page);
   }
 
-  .actions {
-    gap: 0.5rem;
+  .frame {
+    min-height: calc(100dvh - 1rem);
+    padding: 0.5rem;
+    border-radius: 2.1rem;
+    background: var(--lx-sidebar);
+    box-shadow: 0 24px 60px rgb(28 28 30 / 0.16);
   }
 
-  .greeting {
-    margin-right: 0.5rem;
-    font-size: 0.98rem;
+  .sidebar {
+    position: sticky;
+    top: 1rem;
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 1.5rem;
+    width: 4.75rem;
+    max-height: calc(100dvh - 2rem);
+    padding: 0.6rem 0.15rem 0.85rem;
+    overflow-y: auto;
+    transition: width 0.18s ease;
   }
 
-  /* The header nav needs the room until 1024px. */
-  .greetingName {
-    max-width: 8rem;
+  .sidebarExpanded {
+    width: 13.75rem;
   }
 
+  .panel {
+    border-radius: 1.6rem;
+  }
+
+  .topBar {
+    padding: 0.75rem 2rem 0.25rem;
+    border-radius: 1.6rem 1.6rem 0 0;
+  }
+
+  .phoneBrand {
+    display: none;
+  }
+
+  .phoneBrand.brandAlways {
+    display: inline-flex;
+  }
+
+  .profileName {
+    display: inline;
+  }
+
+  /* Fills the panel's height, so a page (the role homes) can spread its rows over the screen. */
   .main {
-    padding: 2rem 1.5rem 3rem;
+    display: flex;
+    flex: 1 0 auto;
+    flex-direction: column;
+    max-width: 52rem;
+    padding: 0.5rem 2rem 1.25rem;
   }
 
   .mainWide {
-    padding-top: 1.5rem;
+    max-width: none;
   }
 
   .bottomNav {
     display: none;
   }
+}
 
-  .headerNav {
-    display: block;
+@media (min-width: 1280px) {
+  .main {
+    padding: 0.5rem 2.25rem 1.25rem;
   }
 }
 
-@media (min-width: 1024px) {
-  .greetingName {
-    max-width: 18rem;
+@media (prefers-reduced-motion: reduce) {
+  .sidebar {
+    transition: none;
   }
 }

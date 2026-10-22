@@ -40,6 +40,7 @@ import {
 import { ORDER_LABELS, answerReviewLink, submissionsLink } from './reviewLinks';
 import localStyles from '@/components/Assessment.module.css';
 import styles from '@/components/ui.module.css';
+import { Maxim } from '@/components/brand/Maxim';
 
 const NEXT_UNGRADED_ID = 'review-next-ungraded';
 const BACK_TO_SUBMISSIONS_ID = 'review-back-to-submissions';
@@ -65,7 +66,7 @@ export function AnswerReviewPage() {
   return (
     <>
       <nav aria-label="Breadcrumb" className={styles.breadcrumb}>
-        <Link to="/professor">Assessments</Link>
+        <Link to="/professor/assessments">Assessments</Link>
         {review && (
           <>
             {' / '}
@@ -372,6 +373,7 @@ function GradePanel({ review, cache }: { review: AnswerReview; cache: ReturnType
 
       {editable ? (
         <>
+          <Maxim latin="Audi alteram partem." meaning="Hear the other side: read the whole answer before you mark." />
           <p className={styles.hint}>Not published. The student can&rsquo;t see your marks or feedback yet.</p>
           <NumberField
             id={FIELD_IDS.finalMarks}

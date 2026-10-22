@@ -58,7 +58,7 @@ export function ProfessorAssessmentDetailPage() {
   return (
     <>
       <nav aria-label="Breadcrumb" className={styles.breadcrumb}>
-        <Link to="/professor">Assessments</Link>
+        <Link to="/professor/assessments">Assessments</Link>
         {assessment && <span aria-current="page"> / {assessment.title || 'Untitled draft'}</span>}
       </nav>
       {query.status === 'loading' && (
@@ -113,7 +113,7 @@ function AssessmentDetailView({ assessment }: { assessment: AssessmentDetail }) 
     }
     refresh(assessment.id);
     flash('Draft deleted.');
-    navigate('/professor');
+    navigate('/professor/assessments');
   }
 
   async function confirmRemove() {

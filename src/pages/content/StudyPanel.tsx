@@ -4,7 +4,6 @@
  * Layout classes live in StudyPanel.module.css; each page supplies its own tone classes. Hooks and
  * text helpers are in studyPanelModel.ts.
  */
-import '@fontsource-variable/source-serif-4/opsz.css';
 import { useEffect, useRef, useState, type MouseEvent, type ReactNode, type RefObject } from 'react';
 import { textLines, type StudyPart } from './studyPanelModel';
 import sp from './StudyPanel.module.css';

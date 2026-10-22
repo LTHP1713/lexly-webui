@@ -161,7 +161,7 @@ describe('ways into the results', () => {
         }),
       ),
     );
-    await renderApp('/student');
+    await renderApp('/student/assessments');
     const link = await screen.findByRole('link', { name: /Moot problem/ });
     expect(link).toHaveAttribute('href', '/student/assessments/a1/results');
     expect(within(link).getByText(/1 result published/)).toBeInTheDocument();

@@ -31,7 +31,7 @@ export function StudentResultsPage() {
   return (
     <>
       <nav aria-label="Breadcrumb" className={styles.breadcrumb}>
-        <Link to="/student">Assessments</Link>
+        <Link to="/student/assessments">Assessments</Link>
         {results && (
           <>
             {' / '}

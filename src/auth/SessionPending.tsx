@@ -1,4 +1,4 @@
-import { LexlyMark } from '@/components/icons/Icons';
+import { LexlyMark } from '@/components/brand/Logo';
 import styles from './SessionPending.module.css';
 
 /**
@@ -10,7 +10,7 @@ export function SessionPending() {
   return (
     <div className={styles.screen} role="status">
       <span className={styles.mark}>
-        <LexlyMark size={40} />
+        <LexlyMark size={48} pulse />
       </span>
       <span className={styles.visuallyHidden}>Loading Lexly…</span>
     </div>

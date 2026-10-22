@@ -229,11 +229,12 @@ Frontend phases mirror the backend phases. **F*n* starts once backend Phase *n*'
 | F3 | Assessments & answering | Phase 3 | L | **Done** 2026-10-16 against backend `main` (`75a7c08`); F3.9 dropped |
 | F4 | Manual grading & student results | Phase 4 | M | Built 2026-10-18 against backend `feature/phase4` (`0e1174e`); Done once Phase 4 is merged |
 | F5 | AI evaluation UI | Phase 5 | S | *On hold* (backend Phase 5 on hold 2026-10-19) |
-| F5a | AI legal tutor | Phase 5a | M | In progress 2026-10-20 against backend `feature/phase5a` (`a4f2bee`) |
+| F5a | AI legal tutor | Phase 5a | M | Merged 2026-10-20 (PR #6); backend Phase 5a merged to `main` (`f62b9f0`). Done once re-indexed and `e2e/f5a-tutor.spec.ts` passes |
 | F6a | Rankings & statistics | Phase 6a | M | — |
 | F6b | AI analysis & admin chatbot | Phase 6b | — | To be planned |
 | F7 | Solo AI practice | Phase 7 | M | — |
 | F8 | Payments & hardening | Phase 8 | M | — |
+| UR | UI refresh (new visual language, sidebar shell, role homes) | none (frontend only; no endpoint changes) | L | Built 2026-10-20 on `feature/ui-refresh`; e2e F0–F4 and axe pass against the live backend |
 
 F6a can run alongside F5a, as on the backend. On 2026-10-19 the user put Phase 5 (AI grading) on hold, so assessments stay manually graded (F4), and Phase 5a (a RAG legal tutor) was built instead. Phase 6 was split into 6a (manual statistics, the old F6) and 6b (AI analysis of those statistics plus a C_ADMIN chatbot, planned later). Don't reopen this.
 
@@ -422,6 +423,23 @@ Backend Phase 5a (TDD §10a, contract §11a): a RAG tutor over the library and a
 | F8.5 | Security | CSP (`default-src 'self'`, `connect-src` the API origin, `frame-src blob:` for `PdfViewer`); dependency audit; confirm no token, blob URL or personal data reaches logs; production CORS origin |
 | F8.6 | Error monitoring | Optional, after approval (D9), with request bodies and id-bearing URLs redacted |
 | F8.7 | E2E matrix | One Playwright journey per role, plus "wrong role opens URL → redirected" per area |
+
+---
+
+### UR — UI refresh
+
+Decided by the user on 2026-10-20 from a reference dashboard and the approved design mock ("Lexly UI refresh" canvas): a pale-blue page, a black collapsible sidebar, a white content panel, pastel placards that open screens, tables, and one dark call-to-action card per role. Frontend only: **every backend endpoint and DTO stays as it is**, and a home tile that would need a new endpoint is dropped rather than added. Manrope (self-hosted, `@fontsource-variable/manrope`, approved) for the interface; the serif stays for legal reading text (statutes, case laws, tutor answers). UI spec section UR has the details.
+
+| # | Task | Details |
+|---|---|---|
+| UR.1 | Foundations | New palette in the `--lx-*` tokens (`src/index.css`), new tokens for the page, sidebar and the four pastel placard pairs, radius and type scale; Manrope; headings move to sans, reading text keeps the serif; shared components restyled (`ui.module.css`, badges, buttons, tables, tabs, forms, dialogs, toasts, query states) |
+| UR.2 | Shell | `AppLayout`: from 768 px a black sidebar (collapsed icon rail by default, expandable to labels; the choice remembered in `localStorage`, a UI preference only), logo tile, role nav, collapse toggle and Log out; a top bar in the panel (context line, Library search, notifications, profile pill). Below 768 px a top bar and a floating black bottom tab bar (≤ 5 items, as today) |
+| UR.3 | Role homes | SUPERADMIN and C_ADMIN **Overview** (`/admin`, `/college`); C_PROFESSOR **Teaching desk** (`/professor`); C_STUDENT **My studies** (`/student`); S_STUDENT **Study hub** (`/dashboard`). The professor and student lists move to `/professor/assessments` and `/student/assessments` (their detail routes already live there). Each home: a hero card, three placards, a table and a dark action card, all from existing endpoints |
+| UR.4 | Screens | Restyle in waves: lists and tables, detail pages, forms and editors, the Library (reader, case law, search), the tutor and tutor admin, sign-in and change password, NotFound |
+| UR.5 | Clean-up | Replace the hard-coded colours outside the tokens (≈ 270, mostly the Library CSS) |
+| UR.6 | Tests | Route and nav tests updated for the new homes and routes; e2e selectors updated; axe, phone and desktop screenshots per wave |
+
+**Done when:** every screen uses the new tokens and shell, the five role homes match the approved mock with real data, all tests and the e2e suites pass, and axe reports no violations.
 
 ---
 

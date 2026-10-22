@@ -4,11 +4,13 @@ import styles from './QueryStates.module.css';
 
 /**
  * "Nothing here yet" (UI spec §0.3): one sentence on what belongs here and, when the user can
- * act, the primary action. Also used for "no matches" with a Clear filters action.
+ * act, the primary action. Also used for "no matches" with a Clear filters action. `title` is an
+ * optional bold first line in Lexly's voice ("Nothing on the docket yet.").
  */
-export function EmptyState({ children, actions }: { children: ReactNode; actions?: ReactNode }) {
+export function EmptyState({ title, children, actions }: { title?: string; children: ReactNode; actions?: ReactNode }) {
   return (
     <div className={styles.empty}>
+      {title && <p className={styles.emptyTitle}>{title}</p>}
       <p className={styles.emptyMessage}>{children}</p>
       {actions && <div className={styles.emptyActions}>{actions}</div>}
     </div>

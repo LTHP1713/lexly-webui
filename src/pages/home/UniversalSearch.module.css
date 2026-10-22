@@ -25,12 +25,12 @@
   border: 1px solid transparent;
   border-radius: 12px;
   background: #fff;
-  box-shadow: 0 6px 20px rgb(6 18 38 / 0.22);
+  box-shadow: none;
 }
 
 .field:focus-within {
   border-color: var(--lx-gold);
-  box-shadow: 0 0 0 3px rgb(184 146 74 / 0.35), 0 6px 20px rgb(6 18 38 / 0.22);
+  box-shadow: 0 0 0 3px rgb(62 127 211 / 0.35), 0 6px 20px rgb(28 28 30 / 0.22);
 }
 
 .fieldIcon {
@@ -57,7 +57,7 @@
 }
 
 .input::placeholder {
-  color: #8a8e98;
+  color: #6b6f7b;
 }
 
 .submit {
@@ -101,7 +101,7 @@
   border-radius: 12px;
   background: #fff;
   color: var(--lx-ink);
-  box-shadow: 0 16px 40px rgb(19 41 75 / 0.2);
+  box-shadow: 0 16px 40px rgb(28 28 30 / 0.2);
 }
 
 .popup[hidden] {
@@ -113,7 +113,7 @@
 }
 
 .group + .group {
-  border-top: 1px solid #efeae0;
+  border-top: 1px solid var(--lx-divider);
 }
 
 .groupHeading {
@@ -201,7 +201,7 @@
 
 .seeAll {
   align-items: center;
-  border-top: 1px solid #efeae0;
+  border-top: 1px solid var(--lx-divider);
   color: var(--lx-navy);
 }
 

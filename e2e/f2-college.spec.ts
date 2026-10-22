@@ -85,13 +85,13 @@ test('college admin: hub and nav, then a professors import', async ({ page }) =>
   await signInWithEmail(page, ADMIN_EMAIL, temporaryPassword)
   await changePassword(page, temporaryPassword, ADMIN_PASSWORD)
   await expect(page).toHaveURL(/\/college$/)
-  await expect(page.getByRole('heading', { level: 1, name: COLLEGE_NAME })).toBeVisible()
-  await expect(page.getByText(COLLEGE_CODE, { exact: true })).toBeVisible()
-  const nav = page.getByRole('navigation', { name: 'Primary' }).first()
-  await expect(nav.getByRole('link')).toHaveText(['Users', 'Subjects', 'Audit', 'Library'])
+  await expect(page.getByRole('heading', { level: 1, name: 'Overview' })).toBeVisible()
+  // The college name is in the top bar, its code in the expanded sidebar.
+  await expect(page.getByText(COLLEGE_NAME, { exact: true })).toBeVisible()
+  await expect(page.locator('nav[aria-label="Primary"]').last().getByRole('link', { includeHidden: true })).toHaveText(['Users', 'Subjects', 'Audit', 'Tutor', 'Library'])
   await expectNoAxeViolations(page)
 
-  await page.getByRole('main').getByRole('link', { name: /^Users/ }).click()
+  await page.getByRole('main').getByRole('link', { name: /Students/ }).click()
   await expect(page).toHaveURL(/\/college\/users$/)
   await expect(page.getByText('No students yet. Add them one at a time, or import a CSV or Excel file.')).toBeVisible()
   await expectNoAxeViolations(page)
@@ -178,7 +178,7 @@ test('college admin manages users: duplicate ID, reset, remove with the typed lo
   await expect(page.getByText('4 students')).toBeVisible()
 
   // Search, then reset and remove from the row menu.
-  await page.getByLabel('Search').fill('vikram')
+  await page.getByLabel('Search', { exact: true }).fill('vikram')
   await expect(page).toHaveURL(/q=vikram/)
   await expect(page.getByRole('row')).toHaveCount(2)
   await page.getByRole('button', { name: 'Actions for Vikram Singh' }).click()
@@ -273,7 +273,9 @@ test('an imported student signs in with college code + roll no and sees the subj
   await collegeSignIn(page, 'R001', 'R001')
   await changePassword(page, 'R001', NEW_PASSWORD)
   await expect(page).toHaveURL(/\/student$/)
-  // Since F3 the subject shows in the assessment list's Subject filter.
+  await expect(page.getByRole('heading', { level: 1, name: 'My studies' })).toBeVisible()
+  // Since F3 the subject shows in the assessment list's Subject filter (the list moved in UR.3).
+  await page.goto('/student/assessments')
   await expect(page.getByLabel('Subject').getByRole('option', { name: /CON-101 · Constitutional Law I/ })).toBeAttached()
   await expectNoAxeViolations(page)
   await logOut(page)
@@ -287,6 +289,8 @@ test('a professor sees their subject in the assessment filter', async ({ page })
   await collegeSignIn(page, 'EMP1', 'EMP1')
   await changePassword(page, 'EMP1', NEW_PASSWORD)
   await expect(page).toHaveURL(/\/professor$/)
+  await expect(page.getByRole('heading', { level: 1, name: 'Teaching desk' })).toBeVisible()
+  await page.goto('/professor/assessments')
   await expect(page.getByRole('heading', { level: 1, name: 'Assessments' })).toBeVisible()
   await expect(page.getByLabel('Subject').getByRole('option', { name: /CON-101 · Constitutional Law I/ })).toBeAttached()
   await expectNoAxeViolations(page)

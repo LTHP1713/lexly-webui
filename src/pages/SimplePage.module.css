@@ -2,7 +2,7 @@
 
 .title {
   margin: 0 0 1rem;
-  font-family: var(--lx-serif);
+  font-family: var(--lx-sans);
   font-size: 1.75rem;
   line-height: 1.25;
   color: var(--lx-navy);
@@ -33,7 +33,7 @@
 
 .panelTitle {
   margin: 0;
-  font-family: var(--lx-serif);
+  font-family: var(--lx-sans);
   font-size: 1.3rem;
   color: var(--lx-navy);
 }

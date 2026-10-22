@@ -34,12 +34,12 @@ let actId = ''
 
 test('super admin: forced change, then the hub and role nav', async ({ page }) => {
   await superadminSignIn(page)
-  await expect(page.getByRole('heading', { level: 1, name: 'Administration' })).toBeVisible()
-  const nav = page.getByRole('navigation', { name: 'Primary' }).first()
-  await expect(nav.getByRole('link')).toHaveText(['Colleges', 'Content', 'Audit', 'Library'])
-  for (const card of ['Colleges', 'Content', 'Audit log']) {
-    await expect(page.getByRole('main').getByRole('link', { name: new RegExp(`^${card}`) })).toBeVisible()
-  }
+  await expect(page.getByRole('heading', { level: 1, name: 'Overview' })).toBeVisible()
+  await expect(page.locator('nav[aria-label="Primary"]').last().getByRole('link', { includeHidden: true })).toHaveText(['Colleges', 'Content', 'Audit', 'Tutor', 'Library'])
+  const main = page.getByRole('main')
+  await expect(main.getByRole('link', { name: /Active colleges/ })).toHaveAttribute('href', '/admin/colleges')
+  await expect(main.getByRole('link', { name: /Open spend/ })).toHaveAttribute('href', '/admin/tutor?tab=spend')
+  await expect(main.getByRole('link', { name: 'Re-index' })).toHaveAttribute('href', '/admin/tutor')
   await expectNoAxeViolations(page)
 })
 
@@ -72,7 +72,7 @@ test('super admin adds a college and its admin; the password is shown once', asy
   await expect(again.getByText('Another college already uses this code.')).toBeVisible()
   await again.getByRole('button', { name: 'Cancel' }).click()
 
-  await page.getByLabel('Search').fill(COLLEGE_CODE)
+  await page.getByLabel('Search', { exact: true }).fill(COLLEGE_CODE)
   await expect(page).toHaveURL(new RegExp(`q=${COLLEGE_CODE}`))
   await expect(page.getByRole('row')).toHaveCount(2)
   await expect(page.getByRole('cell', { name: 'None' })).toBeVisible()
@@ -102,15 +102,15 @@ test('the college admin is forced to change the password, then lands on /college
   await expect(page).toHaveURL(/\/change-password$/)
   await changePassword(page, temporaryPassword, ADMIN_NEW_PASSWORD)
   await expect(page).toHaveURL(/\/college$/)
-  await expect(page.getByRole('heading', { level: 1, name: `E2E College ${STAMP}` })).toBeVisible()
-  const nav = page.getByRole('navigation', { name: 'Primary' }).first()
-  await expect(nav.getByRole('link')).toHaveText(['Users', 'Subjects', 'Audit', 'Library'])
+  await expect(page.getByRole('heading', { level: 1, name: 'Overview' })).toBeVisible()
+  await expect(page.getByText(`E2E College ${STAMP}`, { exact: true })).toBeVisible()
+  await expect(page.locator('nav[aria-label="Primary"]').last().getByRole('link', { includeHidden: true })).toHaveText(['Users', 'Subjects', 'Audit', 'Tutor', 'Library'])
   await expectNoAxeViolations(page)
 
   // Own college only; no college filter.
   await page.goto('/college/audit')
   await expect(page.getByRole('heading', { level: 1, name: 'Audit log' })).toBeVisible()
-  await expect(page.getByLabel('College')).toHaveCount(0)
+  await expect(page.getByLabel('College', { exact: true })).toHaveCount(0)
   await expect(page.getByRole('cell', { name: 'Password changed' }).first()).toBeVisible()
   await expectNoAxeViolations(page)
 
@@ -283,7 +283,7 @@ test('audit log shows the run; deactivating the college blocks its admin', async
   await expectNoAxeViolations(page)
 
   await page.goto('/admin/colleges')
-  await page.getByLabel('Search').fill(COLLEGE_CODE)
+  await page.getByLabel('Search', { exact: true }).fill(COLLEGE_CODE)
   await page.getByRole('link', { name: `E2E College ${STAMP}` }).click()
   await page.getByRole('button', { name: 'Deactivate' }).click()
   const confirm = page.getByRole('dialog', { name: `Deactivate E2E College ${STAMP}?` })

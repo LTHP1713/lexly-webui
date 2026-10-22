@@ -6,7 +6,7 @@
 
 /* Paired with the "Due soon" text, never colour alone. */
 .deadlineSoon {
-  color: #8a4b0b;
+  color: var(--lx-cream-ink);
 }
 
 .deadlineSoon strong {
@@ -32,11 +32,11 @@
 }
 
 .cell_SUBMITTED {
-  color: #1f5136;
+  color: var(--lx-mint-ink);
 }
 
 .cell_UPLOADED {
-  color: #6b4b0f;
+  color: var(--lx-cream-ink);
 }
 
 .cell_NOT_UPLOADED {
@@ -45,7 +45,7 @@
 }
 
 .cell_NOT_ATTEMPTED {
-  color: #7d2c18;
+  color: var(--lx-danger-ink);
 }
 
 /* Submissions grid: sticky header and first column inside its own scroll area */
@@ -176,7 +176,7 @@
 .answerCardTitle {
   margin: 0;
   color: var(--lx-navy);
-  font-family: var(--lx-serif);
+  font-family: var(--lx-sans);
   font-size: 1.1rem;
 }
 
@@ -225,7 +225,7 @@
 .groupHeading {
   margin: 1.5rem 0 0.6rem;
   color: var(--lx-navy);
-  font-family: var(--lx-serif);
+  font-family: var(--lx-sans);
   font-size: 1.15rem;
 }
 
@@ -276,7 +276,7 @@
 .cardTitle {
   margin: 0;
   color: var(--lx-navy);
-  font-family: var(--lx-serif);
+  font-family: var(--lx-sans);
   font-size: 1.1rem;
 }
 
@@ -314,7 +314,7 @@
 .checklistTitle {
   margin: 0 0 0.6rem;
   color: var(--lx-navy);
-  font-family: var(--lx-serif);
+  font-family: var(--lx-sans);
   font-size: 1.05rem;
 }
 
@@ -334,11 +334,11 @@
 }
 
 .checkOk {
-  color: #1f5136;
+  color: var(--lx-mint-ink);
 }
 
 .checkFail {
-  color: #7d2c18;
+  color: var(--lx-danger-ink);
 }
 
 .checkFail a {
@@ -376,7 +376,7 @@
   margin: 0;
   overflow: hidden;
   color: var(--lx-navy);
-  font-family: var(--lx-serif);
+  font-family: var(--lx-sans);
   font-size: 1.1rem;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -405,11 +405,11 @@
 .grade_AI_EVALUATING,
 .grade_AI_EVALUATED,
 .grade_AI_FAILED {
-  color: #6b4b0f;
+  color: var(--lx-cream-ink);
 }
 
 .grade_PUBLISHED {
-  color: #1f5136;
+  color: var(--lx-mint-ink);
 }
 
 .cellLink {
@@ -502,14 +502,14 @@
 .panelTitle {
   margin: 0;
   color: var(--lx-navy);
-  font-family: var(--lx-serif);
+  font-family: var(--lx-sans);
   font-size: 1.1rem;
 }
 
 .bigMarks {
   margin: 0;
   color: var(--lx-navy);
-  font-family: var(--lx-serif);
+  font-family: var(--lx-sans);
   font-size: 1.6rem;
   font-weight: 700;
 }

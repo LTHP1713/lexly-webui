@@ -38,7 +38,7 @@ function notAttemptedText(a: AssessmentSummary): string {
 }
 
 /**
- * `/professor` (UI spec F3.1): the professor's own assessments in every status, filtered by
+ * `/professor/assessments` (UI spec F3.1; moved from `/professor` by UR.3): the professor's own assessments in every status, filtered by
  * subject and status in the URL, newest due date first (drafts without one at the top).
  */
 export function ProfessorAssessmentsPage() {
@@ -167,6 +167,7 @@ export function ProfessorAssessmentsPage() {
               </EmptyState>
             ) : (
               <EmptyState
+                title="Nothing on the docket yet."
                 actions={
                   <Link to="/professor/assessments/new" className={styles.primaryButton}>
                     New assessment

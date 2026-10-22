@@ -92,7 +92,7 @@ describe('student list (F3.5)', () => {
         ),
       ),
     );
-    await renderApp('/student');
+    await renderApp('/student/assessments');
     expect(await screen.findByText('National Law School')).toBeInTheDocument();
     const todo = (await screen.findByRole('heading', { level: 2, name: 'To do' })).closest('section') as HTMLElement;
     expect(within(todo).getAllByRole('link').map((link) => link.getAttribute('href'))).toEqual([
@@ -108,7 +108,7 @@ describe('student list (F3.5)', () => {
   });
 
   it('shows the empty state', async () => {
-    await renderApp('/student');
+    await renderApp('/student/assessments');
     expect(await screen.findByText('No assessments yet. When your professors publish one, it appears here.')).toBeInTheDocument();
   });
 });

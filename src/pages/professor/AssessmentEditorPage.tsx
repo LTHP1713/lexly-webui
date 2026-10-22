@@ -81,7 +81,7 @@ export function AssessmentEditorPage() {
   return (
     <>
       <nav aria-label="Breadcrumb" className={styles.breadcrumb}>
-        <Link to="/professor">Assessments</Link>
+        <Link to="/professor/assessments">Assessments</Link>
       </nav>
       <h1 className={styles.title}>{failed ? 'Assessment unavailable' : 'Loading assessment…'}</h1>
       {failed ? (
@@ -273,7 +273,7 @@ function AssessmentEditor({
     }
     refresh(assessment.id);
     flash('Draft deleted.');
-    navigate('/professor');
+    navigate('/professor/assessments');
   }
 
   const errorEntries = Object.entries(errors);
@@ -284,7 +284,7 @@ function AssessmentEditor({
   return (
     <>
       <nav aria-label="Breadcrumb" className={styles.breadcrumb}>
-        <Link to="/professor">Assessments</Link>
+        <Link to="/professor/assessments">Assessments</Link>
         <span aria-current="page"> / {assessment ? assessment.title || 'Untitled draft' : 'New assessment'}</span>
       </nav>
       <div className={styles.titleRow}>

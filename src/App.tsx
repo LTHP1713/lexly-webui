@@ -53,6 +53,8 @@ const SubjectsPage = lazy(() => import('@/pages/college/subjects/SubjectsPage').
 const SubjectDetailPage = lazy(() =>
   import('@/pages/college/subjects/SubjectDetailPage').then((m) => ({ default: m.SubjectDetailPage })),
 );
+const TeachingDeskPage = lazy(() => import('@/pages/professor/TeachingDeskPage').then((m) => ({ default: m.TeachingDeskPage })));
+const MyStudiesPage = lazy(() => import('@/pages/student/MyStudiesPage').then((m) => ({ default: m.MyStudiesPage })));
 const ProfessorAssessmentsPage = lazy(() =>
   import('@/pages/professor/ProfessorAssessmentsPage').then((m) => ({ default: m.ProfessorAssessmentsPage })),
 );
@@ -185,7 +187,8 @@ function App() {
                 </RequireRole>
               }
             >
-              <Route path="/professor" element={<ProfessorAssessmentsPage />} />
+              <Route path="/professor" element={<TeachingDeskPage />} />
+              <Route path="/professor/assessments" element={<ProfessorAssessmentsPage />} />
               <Route path="/professor/assessments/new" element={<AssessmentEditorPage />} />
               <Route path="/professor/assessments/:assessmentId" element={<ProfessorAssessmentDetailPage />} />
               <Route path="/professor/assessments/:assessmentId/edit" element={<AssessmentEditorPage />} />
@@ -200,7 +203,8 @@ function App() {
                 </RequireRole>
               }
             >
-              <Route path="/student" element={<StudentAssessmentsPage />} />
+              <Route path="/student" element={<MyStudiesPage />} />
+              <Route path="/student/assessments" element={<StudentAssessmentsPage />} />
               <Route path="/student/assessments/:assessmentId" element={<StudentAssessmentPage />} />
               <Route path="/student/assessments/:assessmentId/results" element={<StudentResultsPage />} />
             </Route>

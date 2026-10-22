@@ -1,0 +1,45 @@
+/* The wordmark: Manrope at its heaviest with tight tracking, close to the logo's grotesk. */
+
+.wordmark {
+  display: inline-flex;
+  align-items: flex-start;
+  font-family: var(--lx-sans);
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* Centred on the x-height line, just past the "y", as in the logo. */
+.spark {
+  flex: none;
+  margin: 0.13em 0 0 0.03em;
+}
+
+/* The AI is working: the spark breathes and turns a quarter (it is symmetric, so the loop is seamless). */
+.pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: sparkPulse 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse {
+    animation: none;
+  }
+}
+
+@keyframes sparkPulse {
+  0% {
+    opacity: 0.55;
+    transform: scale(0.72) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1) rotate(45deg);
+  }
+  100% {
+    opacity: 0.55;
+    transform: scale(0.72) rotate(90deg);
+  }
+}

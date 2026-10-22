@@ -92,6 +92,7 @@ test('setup: college, admin, a professor, two students and a subject (API)', asy
 test('professor writes a 10-question draft, sees the checklist, and publishes it', async ({ page }) => {
   await collegeSignIn(page, 'EMP1')
   await expect(page).toHaveURL(/\/professor$/)
+  await page.goto('/professor/assessments')
   await expect(page.getByRole('heading', { level: 1, name: 'Assessments' })).toBeVisible()
   await expect(page.getByText(/No assessments yet\. Create one for a subject you teach/)).toBeVisible()
   await expectNoAxeViolations(page)
@@ -146,6 +147,7 @@ test('student uploads, replaces and submits 7 answers, and leaves one unsubmitte
   test.setTimeout(6 * 60_000)
   await collegeSignIn(page, 'R001')
   await expect(page).toHaveURL(/\/student$/)
+  await page.goto('/student/assessments')
   const todo = page.locator('section').filter({ has: page.getByRole('heading', { level: 2, name: 'To do' }) })
   await expect(todo.getByRole('link', { name: new RegExp(TITLE) })).toBeVisible()
   await expect(todo.getByText(/Due soon/)).toBeVisible()
@@ -200,6 +202,7 @@ test("after the close job, the professor's grid matches", async ({ page }) => {
   test.setTimeout(4 * 60_000)
   await collegeSignIn(page, 'EMP1')
   await expect(page).toHaveURL(/\/professor$/)
+  await page.goto('/professor/assessments')
   await page.getByRole('link', { name: TITLE }).click()
   // The close job runs every minute.
   await expect(async () => {
@@ -219,13 +222,13 @@ test("after the close job, the professor's grid matches", async ({ page }) => {
   // Filter by status: Not attempted is offered now that it is closed.
   await page.getByLabel('Status').selectOption('NOT_ATTEMPTED')
   await expect(page).toHaveURL(/status=NOT_ATTEMPTED/)
-  await page.getByLabel('Search').fill('R001')
+  await page.getByLabel('Search', { exact: true }).fill('R001')
   await expect(page.getByText('1 student')).toBeVisible()
   await expect(page).not.toHaveURL(/R001/)
   await expectNoAxeViolations(page)
 
   // The list agrees.
-  await page.goto('/professor')
+  await page.goto('/professor/assessments')
   const row = page.getByRole('row').filter({ has: page.getByRole('link', { name: TITLE }) })
   await expect(row.getByRole('cell', { name: '7 of 20' })).toBeVisible()
   await expect(row.getByRole('cell', { name: '13' })).toBeVisible()
@@ -236,6 +239,7 @@ test('the student screens work on a phone', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await collegeSignIn(page, 'R001')
   await expect(page).toHaveURL(/\/student$/)
+  await page.goto('/student/assessments')
   const closed = page.locator('section').filter({ has: page.getByRole('heading', { level: 2, name: 'Closed' }) })
   await expect(closed.getByRole('link', { name: new RegExp(TITLE) })).toBeVisible()
   await expectNoHorizontalScroll(page)

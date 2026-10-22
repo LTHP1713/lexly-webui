@@ -111,6 +111,7 @@ test('setup: college, users, a published 2-question assessment and submitted ans
 test('professor grades question 1 from the grid', async ({ page }) => {
   await collegeSignIn(page, 'EMP1')
   await expect(page).toHaveURL(/\/professor$/)
+  await page.goto('/professor/assessments')
   const row = page.getByRole('row').filter({ has: page.getByRole('link', { name: TITLE }) })
   await expect(row.getByRole('cell', { name: '3 of 4' })).toBeVisible()
   // Submitted · To grade · Published
@@ -160,6 +161,7 @@ test('professor grades question 1 from the grid', async ({ page }) => {
 test('the student sees question 1 at once, and question 2 awaiting', async ({ page }) => {
   await collegeSignIn(page, 'R001')
   await expect(page).toHaveURL(/\/student$/)
+  await page.goto('/student/assessments')
   const link = page.getByRole('link', { name: new RegExp(TITLE) })
   await expect(link.getByText(/1 result published/)).toBeVisible()
   await link.click()
@@ -174,6 +176,8 @@ test('the student sees question 1 at once, and question 2 awaiting', async ({ pa
 
 test('professor continues with next ungraded, and the counts follow', async ({ page }) => {
   await collegeSignIn(page, 'EMP1')
+  await page.waitForURL((url) => !url.pathname.startsWith('/login'))
+  await page.goto('/professor/assessments')
   await page.getByRole('link', { name: TITLE }).click()
   await page.getByRole('table', { name: 'Submissions' }).getByRole('link', { name: 'Question 1, Asha Rao: Published, 8 of 10' }).click()
   await page.getByRole('link', { name: 'Next ungraded →' }).click()
@@ -208,6 +212,8 @@ test('the results work on a phone', async ({ page }) => {
 test('the answer review works on a phone', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await collegeSignIn(page, 'EMP1')
+  await page.waitForURL((url) => !url.pathname.startsWith('/login'))
+  await page.goto('/professor/assessments')
   await page.getByRole('link', { name: TITLE }).click()
   await page.getByRole('link', { name: 'Question 1, Vikram Singh: To grade' }).click()
   await expect(page.getByRole('heading', { level: 1, name: 'Vikram Singh' })).toBeVisible()

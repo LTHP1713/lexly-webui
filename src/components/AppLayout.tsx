@@ -1,8 +1,9 @@
-import { Suspense } from 'react';
+import { Suspense, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/auth/AuthContext';
-import { CHANGE_PASSWORD_PATH, homeFor, isNavItemActive, navFor } from '@/auth/roles';
-import { LexlyMark, LogOutIcon, UserIcon } from '@/components/icons/Icons';
+import { LexlyMark, LexlyWordmark } from '@/components/brand/Logo';
+import { CHANGE_PASSWORD_PATH, homeFor, isNavItemActive, navFor, sidebarFor, type NavItem } from '@/auth/roles';
+import { ChevronLeftIcon, ChevronRightIcon, LogOutIcon, SearchIcon } from '@/components/icons/Icons';
 import { useFlash } from '@/components/flash';
 import { NotificationsButton } from '@/components/NotificationsButton';
 import { LoadingState } from '@/components/QueryStates';
@@ -23,103 +24,176 @@ function isWidePath(pathname: string): boolean {
     pathname.startsWith('/admin/') ||
     pathname === '/professor' ||
     pathname.startsWith('/professor/') ||
+    pathname === '/student' ||
     pathname === '/tutor' ||
     pathname.startsWith('/tutor/')
   );
 }
 
+/** The sidebar's collapsed / expanded choice: a per-browser UI preference, never session data. */
+const SIDEBAR_KEY = 'lexly.sidebar';
+
+function readSidebarExpanded(): boolean {
+  try {
+    return localStorage.getItem(SIDEBAR_KEY) === 'expanded';
+  } catch {
+    return false;
+  }
+}
+
+function writeSidebarExpanded(expanded: boolean) {
+  try {
+    localStorage.setItem(SIDEBAR_KEY, expanded ? 'expanded' : 'collapsed');
+  } catch {
+    // Storage unavailable: the choice lasts until reload.
+  }
+}
+
+/** "Asha Rao" → "AR"; one letter for a single name. */
+function initials(name: string | null | undefined): string {
+  const parts = (name ?? '').trim().split(/\s+/).filter(Boolean);
+  return parts.length === 0 ? '' : (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase();
+}
+
 /**
- * Shell for every authenticated screen: skip link, header (brand → role home, role nav from
- * 768px, greeting, notifications, profile), the `<main>` landmark, and the same nav as a fixed
- * bottom tab bar below 768px. While the password must be changed, the nav, greeting and profile
- * are hidden and the header offers only Log out (UI spec F1.2).
+ * Shell for every authenticated screen (UI spec UR.2). From 768 px: a pale page with a black frame
+ * holding the collapsible sidebar (the role's home and nav, the collapse toggle and Log out) and a
+ * white panel with a top bar (context, Library search, notifications, profile) above the page.
+ * Below 768 px: a top bar and a floating bottom tab bar with at most 5 items. While the password
+ * must be changed there is no nav, and the top bar offers only Log out (UI spec F1.2).
  */
 export function AppLayout() {
   const { pathname } = useLocation();
   const { user, logout } = useAuth();
   const toast = useToast();
   useFlash(toast.show);
+  const [expanded, setExpanded] = useState(readSidebarExpanded);
   const forced = user?.mustChangePassword === true;
   const role = user?.role ?? null;
-  const navItems = forced ? [] : navFor(role);
+  const sideItems = forced ? [] : sidebarFor(role);
+  const tabItems = forced ? [] : navFor(role);
+  const home = forced ? CHANGE_PASSWORD_PATH : homeFor(role);
+  // College roles see their college; SUPERADMIN pages already say "Super admin" above the H1.
+  const context = user?.college?.name ?? '';
+
+  function toggleSidebar() {
+    const next = !expanded;
+    setExpanded(next);
+    writeSidebarExpanded(next);
+  }
 
   return (
     <div className={styles.shell}>
       <a href="#main-content" className={styles.skipLink}>
         Skip to content
       </a>
-      <header className={styles.header}>
-        <div className={styles.headerInner}>
-          <Link to={forced ? CHANGE_PASSWORD_PATH : homeFor(role)} className={styles.brand} aria-label="Lexly home">
-            <LexlyMark />
-            <span className={styles.brandName}>Lexly</span>
-          </Link>
-
-          {navItems.length > 0 && (
-            <nav aria-label="Primary" className={styles.headerNav}>
-              <ul className={styles.headerNavList}>
-                {navItems.map((item) => (
+      <div className={styles.frame}>
+        {sideItems.length > 0 && (
+          <nav aria-label="Primary" className={`${styles.sidebar} ${expanded ? styles.sidebarExpanded : ''}`}>
+            <div className={styles.sidebarTop}>
+              <Link to={home} className={styles.brand} aria-label="Lexly home">
+                {expanded ? (
+                  <span className={styles.brandText}>
+                    <LexlyWordmark size="1.85rem" />
+                    {user?.college?.code && <span className={styles.brandSub}>{user.college.code}</span>}
+                  </span>
+                ) : (
+                  <LexlyMark size="3rem" />
+                )}
+              </Link>
+              <ul className={styles.sideList}>
+                {sideItems.map((item) => (
                   <li key={item.to}>
-                    <Link
-                      to={item.to}
-                      className={styles.headerNavLink}
-                      aria-current={isNavItemActive(item, pathname) ? 'page' : undefined}
-                    >
-                      {item.label}
-                    </Link>
+                    <SideLink item={item} expanded={expanded} active={isNavItemActive(item, pathname)} />
                   </li>
                 ))}
               </ul>
-            </nav>
-          )}
-
-          <div className={styles.actions}>
-            {forced ? (
-              <button type="button" className={styles.logout} onClick={() => void logout()}>
-                <LogOutIcon size={18} />
-                Log out
+            </div>
+            <div className={styles.sidebarBottom}>
+              <button
+                type="button"
+                className={styles.sideButton}
+                onClick={toggleSidebar}
+                aria-expanded={expanded}
+                title={expanded ? undefined : 'Expand sidebar'}
+              >
+                {expanded ? <ChevronLeftIcon size={22} /> : <ChevronRightIcon size={22} />}
+                <span className={expanded ? styles.sideLabel : styles.visuallyHidden}>
+                  {expanded ? 'Collapse sidebar' : 'Expand sidebar'}
+                </span>
               </button>
-            ) : (
-              <>
-                <p className={styles.greeting}>
-                  Hi
-                  {/* The leading space lives in the span so it hides with the name on very narrow screens. */}
-                  {user?.fullName && (
-                    <span className={styles.greetingName} title={user.fullName}>
-                      {` ${user.fullName}`}
+              <button
+                type="button"
+                className={styles.sideButton}
+                onClick={() => void logout()}
+                title={expanded ? undefined : 'Log out'}
+              >
+                <LogOutIcon size={22} />
+                <span className={expanded ? styles.sideLabel : styles.visuallyHidden}>Log out</span>
+              </button>
+            </div>
+          </nav>
+        )}
+
+        <div className={styles.panel}>
+          <header className={styles.topBar}>
+            {/* Without a sidebar (password must be changed) the top bar carries the brand at every width. */}
+            <Link
+              to={home}
+              className={`${styles.phoneBrand} ${sideItems.length === 0 ? styles.brandAlways : ''}`}
+              aria-label="Lexly home"
+            >
+              <LexlyWordmark size="1.6rem" />
+            </Link>
+            {context && <p className={styles.context}>{context}</p>}
+            <div className={styles.actions}>
+              {forced ? (
+                <button type="button" className={styles.logout} onClick={() => void logout()}>
+                  <LogOutIcon size={18} />
+                  Log out
+                </button>
+              ) : (
+                <>
+                  <Link to="/search" className={styles.roundButton} aria-label="Search the library">
+                    <SearchIcon size={20} />
+                  </Link>
+                  <NotificationsButton />
+                  <Link
+                    to="/profile"
+                    className={styles.profile}
+                    aria-label={user?.fullName ? `Profile: ${user.fullName}` : 'Profile'}
+                    aria-current={pathname === '/profile' ? 'page' : undefined}
+                  >
+                    <span className={styles.initials} aria-hidden="true">
+                      {initials(user?.fullName) || '·'}
                     </span>
-                  )}
-                  !
-                </p>
-                <NotificationsButton />
-                <Link
-                  to="/profile"
-                  className={styles.avatar}
-                  aria-label="Profile"
-                  aria-current={pathname === '/profile' ? 'page' : undefined}
-                >
-                  <UserIcon size={20} />
-                </Link>
-              </>
-            )}
-          </div>
+                    {user?.fullName && (
+                      <span className={styles.profileName} title={user.fullName}>
+                        {user.fullName}
+                      </span>
+                    )}
+                  </Link>
+                </>
+              )}
+            </div>
+          </header>
+
+          <main
+            id="main-content"
+            className={`${styles.main} ${isWidePath(pathname) ? styles.mainWide : ''} ${tabItems.length === 0 ? styles.mainNoTabs : ''}`}
+            tabIndex={-1}
+          >
+            <Suspense fallback={<LoadingState label="Loading page" />}>
+              <Outlet />
+            </Suspense>
+          </main>
         </div>
-      </header>
+      </div>
 
-      <main
-        id="main-content"
-        className={`${styles.main} ${isWidePath(pathname) ? styles.mainWide : ''} ${navItems.length === 0 ? styles.mainNoTabs : ''}`}
-        tabIndex={-1}
-      >
-        <Suspense fallback={<LoadingState label="Loading page" />}>
-          <Outlet />
-        </Suspense>
-      </main>
-
-      {navItems.length > 0 && (
+      {tabItems.length > 0 && (
         <nav aria-label="Primary" className={styles.bottomNav}>
-          <ul className={styles.bottomNavList} style={{ gridTemplateColumns: `repeat(${navItems.length}, 1fr)` }}>
-            {navItems.map((item) => {
+          <ul className={styles.bottomNavList} style={{ gridTemplateColumns: `repeat(${tabItems.length}, 1fr)` }}>
+            {tabItems.map((item) => {
               const ItemIcon = item.icon;
               return (
                 <li key={item.to}>
@@ -139,5 +213,21 @@ export function AppLayout() {
       )}
       {toast.element}
     </div>
+  );
+}
+
+/** A sidebar item: icon only when collapsed (the label stays its accessible name), icon + label when expanded. */
+function SideLink({ item, expanded, active }: { item: NavItem; expanded: boolean; active: boolean }) {
+  const ItemIcon = item.icon;
+  return (
+    <Link
+      to={item.to}
+      className={styles.sideLink}
+      aria-current={active ? 'page' : undefined}
+      title={expanded ? undefined : item.label}
+    >
+      <ItemIcon size={22} />
+      <span className={expanded ? styles.sideLabel : styles.visuallyHidden}>{item.label}</span>
+    </Link>
   );
 }

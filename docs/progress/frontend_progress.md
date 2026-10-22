@@ -886,6 +886,172 @@ while anonymous redirects back to `/login`. No console errors in any of it.
 
 ## In Progress
 
+### 2026-10-22 — UR: code review fixes before merging to `master`
+
+**Status:** Done (`96e2f5e`). `tsc -b`, the build, lint (one pre-existing warning) and 262 unit
+tests pass. Not re-checked in the browser against the live backend.
+
+What changed (from a review of `master...feature/ui-refresh`):
+- A `Placard` whose query failed is no longer a link, so its Try again button doesn't sit inside
+  an `<a>` and doesn't navigate away when clicked.
+- While the password must be changed (so there is no sidebar), the top-bar brand also shows from 768 px.
+- My studies: an open assessment with no due date shows "No due date" in the Due next hero instead of "Due —".
+- SUPERADMIN Overview: the colleges table caption says "first 3", which matches the rows it shows.
+- The sidebar toggle writes `localStorage` outside the state updater. `cardState`'s JSDoc now
+  describes its real behaviour. The unused `ChatIcon` is removed.
+
+Left as is: after a sign-out, `signedOut` also drops the return path for later deep links in the
+same anonymous session (a deliberate trade-off of `5c5de4d`). The Study hub's Bare acts table
+isn't `HomeTable` yet. The Overview makes two colleges requests.
+
+### 2026-10-21 — UR brand: Lexly logo and the "Knowledge is power" motto
+
+**Status:** Committed on `feature/ui-refresh` (`1864c62`) and merged to `master` on 2026-10-22. `tsc -b`, the build, lint (one
+pre-existing warning) and 262 unit tests pass. Checked in the browser against the live local
+backend: sign-in (1440 / 390 px), register (800 px), and the Study hub of a fresh S_STUDENT with
+the sidebar collapsed, expanded and on a phone.
+
+What changed:
+- **Logo:** the master file is `docs/brand/lexly-logo.png`. `components/brand/Logo.tsx` draws it
+  in code: `LexlyWordmark` (Manrope 800, tight tracking, the spark top right of the "y"),
+  `LexlySpark` and `LexlyMark` (a white "L" and the spark on a black tile). New tokens
+  `--lx-brand-black` (#0b0b0d) and `--lx-spark` (#9d8cff, decorative only). `LexlyMark` moved out
+  of `Icons.tsx`.
+- **Everywhere the "§" tile was:** sidebar (the mark when collapsed, the wordmark and college code
+  when expanded), the phone top bar (the wordmark), the auth frame, the session splash. The
+  favicon (it was still Vite's) is now the mark; `theme-color` is #0b0b0d, and there is a meta
+  description.
+- **Sign-in / register / change password (`AuthLayout`):** the hero is now the motto "Knowledge
+  is *power.*", with the spark on the pill, shown at every width (on phones under the logo,
+  without the tagline). The auth frame uses the brand black.
+- **Brand pass 2 (same day):**
+  - **The spark means AI.** Outside the logo it marks only the tutor: `SparkIcon` (an outline
+    spark in the line-icon set) replaces `ChatIcon` in the nav, the tutor placards and the auth
+    feature card. The tutor page eyebrow, the new-chat intro and a visible "Lexly tutor" label on
+    every answer carry the spark (the label replaces the hidden "Tutor:" prefix). The tutor action
+    cards on the Study hub, My studies and the SUPERADMIN Overview pass `ai` to `ActionCard`, which
+    puts the spark on the pill's corner and in the button. The first pass's spark on the home
+    greeting and the hero-card watermark were removed, because they weren't AI.
+  - **The pulsing spark is the AI's working state.** It replaces the spinner on the tutor's
+    "Answering…" line, and `LexlyMark pulse` animates the spark on the session splash. It is
+    still under `prefers-reduced-motion`. The in-button spinners stay (they aren't AI).
+  - **Legal maxims** (`components/brand/Maxim`, Latin marked `lang="la"`, in the serif): the 404
+    has "Ignorantia juris non excusat", and the professor's grade form has "Audi alteram partem".
+    `EmptyState` takes an optional `title`; the four truly empty assessment lists (the professor's
+    Teaching desk and list, the student's My studies and list) open with "Nothing on the docket
+    yet."
+  - **Sidebar in the logo black:** `--lx-sidebar` is now #0b0b0d (the frame and the dark action
+    cards follow).
+  - Checked in the browser against the live backend: the Study hub, the tutor and the 404 for a
+    fresh S_STUDENT. The "Answering…" state was not seen live (it would spend AI quota); a unit
+    test covers its text.
+- **Homes fit one screen (same day):** the home tables show 3 rows instead of 5 (SUPERADMIN
+  colleges, C_ADMIN recent activity — now fetched with `size: 3` — the professor's and student's
+  assessments, the Study hub's bare acts); "see all" links stay. The dark `ActionCard` (the tutor
+  card, and the import / new-assessment cards that share it) is compact: no 15rem min-height,
+  smaller padding and title, it no longer stretches to the table's height, max width 22rem.
+  The black frame now fills the window: the shell margin round it is 0.5rem (was 1rem, 1.75rem
+  from 1280 px), the frame padding 0.5rem, and the top bar and main padding are tighter. Home
+  tables use `compactTable` (0.5rem row padding), the home's section gap is 1.1rem and the H1 is
+  1.9rem from 768 px. The build, lint and 262 unit tests pass. Measured with a throwaway
+  Playwright script against the live backend: none of the five homes (SUPERADMIN, C_ADMIN,
+  professor, college student, S_STUDENT) scrolls at 1280×720, 1366×768, 1440×900 or 1920×1080.
+  The professor and student homes had no assessments, so their tables were the empty state.
+  From 768 px `.main` is a flex column that fills the panel, the home's `.page` grows into it, and
+  the second row (`.row + .row`) has `margin-top: auto`, so the table and action card sit at the
+  bottom of the screen. Checked in the browser: the homes still don't scroll, and
+  `/admin/colleges` and `/tutor` look as before.
+
+### 2026-10-20 — UR UI refresh: role homes, auth, screens, clean-up (UR.3–UR.6)
+
+**Status:** Built on `feature/ui-refresh`, not committed yet. Lint (one pre-existing warning),
+`tsc -b`, the build and 261 unit tests pass. **Verified against the live backend** (backend
+`feature/phase5a`): e2e F0, F1, F2, F3 and F4 pass on desktop and phone (42 passed; the skips are
+the suites' own desktop-only / phone-only splits). F5a not run (it would re-index and spend AI
+quota). Axe finds no violations on ~40 screens across all five roles (sign-in, register, each home,
+every list, detail, form, the grading review, results, the Library, tutor, tutor admin, profile,
+change password, NotFound; phone and desktop).
+
+What changed:
+- **Role homes (UR.3):** shared `components/dashboard/` (`HeroCard`, `PlacardGroup` / `Placard`,
+  `ActionCard`, `SegmentBar`, `Legend`, `Sparkline`, `HomeTable` (table from 768 px, cards
+  below), `cardState`). SUPERADMIN **Overview** (`/admin`: AI spend + sparkline, active colleges,
+  people across colleges, last index run, colleges table, Re-index card); C_ADMIN **Overview**
+  (`/college`: people split, students / professors / subjects, last 7 days of audit, Import
+  card); C_PROFESSOR **Teaching desk** (`/professor`: grading progress bars, answers to grade →
+  first assessment with work, open assessments, next due, newest assessments, New assessment
+  card); C_STUDENT **My studies** (`/student`: due next with answer progress, open assessments,
+  results, tutor questions left, assessments, tutor card); S_STUDENT **Study hub** (`/dashboard`:
+  universal search + act shortcuts, acts, case-law count, tutor questions left, acts table, tutor
+  card; the flagged progress cards stay below). Each card loads and fails on its own. Only
+  existing endpoints; `queryKeys.library.*` added.
+- **Routes:** the lists moved to `/professor/assessments` and `/student/assessments` (breadcrumbs,
+  redirects and nav follow); the professor and student tab bars gain their home ("Desk",
+  "Studies").
+- **Auth (UR.4):** `AuthLayout` rebuilt: black frame with the logo tile, the hero line with
+  "Master it." in a pill and three pastel feature cards beside a white form panel; a black brand
+  band on phones. Form fields, tabs (black pill) and buttons restyled; `AuthIllustration` removed.
+- **Screens and clean-up (UR.4, UR.5):** the Library's per-content tones mapped to the pastels by
+  family; titles and labels in sans, statute / case-law / rich text in the serif; ~250 hard-coded
+  colours replaced with tokens (new `--lx-danger-*`, `--lx-sky-text`, `--lx-divider`); text that
+  used the accent now uses `--lx-gold-ink` (axe caught 4.0:1 on the pager); links default to ink;
+  tutor list on a grey panel and sources as pastel cards per type; `QuickActions` removed.
+- **Tests (UR.6):** `pages/home/homes.test.tsx` (each home's numbers and links, one failing card
+  doesn't blank the page), `test/homes.ts` (mocks for what each home loads), App / tutor tests
+  for the new homes, list tests on the new routes. e2e: `logOut` clicks the profile page's own
+  button (the sidebar has one too), tab-bar checks query the hidden bar from 768 px, lists
+  opened explicitly after sign-in, exact `Search` / `College` labels (the top bar's search button
+  and the profile pill now contain those words).
+
+Notes:
+- **Fixed 2026-10-20:** signing out on `/profile` used to leave `from: /profile` behind, so the next
+  user on the tab landed on that page. A deliberate logout now sets `signedOut` in the session store
+  (`sessionStore.signOut()`), and `RequireAuth` then sends the visitor to `/login` with no "return
+  to" state; an expired session still returns the user to where they were. Test in
+  `LoginPage.test.tsx` ("signing out").
+- **Backend Phase 5a merged** to `lexly-backend` `main` on 2026-10-20 (PR #6, `f62b9f0`) after
+  `./mvnw test` passed locally (263 tests, 0 failures; the backend repo has no CI). The frontend
+  `master` no longer depends on unmerged backend code. Still owed for F5a: one Re-index and
+  `e2e/f5a-tutor.spec.ts`.
+
+### 2026-10-20 — UR UI refresh: foundations and shell (UR.1, UR.2)
+
+**Status:** Built on `feature/ui-refresh` (cut from `master` after PR #6); superseded by the entry
+above, which completes UR. Lint (one pre-existing
+warning), `tsc -b`, the build and 255 unit tests pass. Checked in headless Chromium against the
+live backend as SUPERADMIN (desktop collapsed and expanded, phone): axe finds no violations on
+`/admin/colleges`, `/acts` and `/admin/tutor?tab=spend` (phone).
+
+Decided by the user: the reference dashboard and the "Lexly UI refresh" design mock (approved);
+Manrope for the interface with the serif kept for legal reading text (new dependency
+`@fontsource-variable/manrope`, approved); bottom tabs on phones; **Overview** for SUPERADMIN and
+C_ADMIN, with Teaching desk / My studies / Study hub proposed for the others; mock first. No
+endpoint changes.
+
+What changed:
+- **Docs:** plan row and section UR; UI spec section UR (tokens, type, components, shell, the
+  five role homes with their endpoints, restyle rules).
+- **Tokens (`index.css`):** new palette on the existing names (navy → black, ivory → grey
+  surface, gold → blue accent) plus page, sidebar, sky, lavender, mint, cream, CTA, divider,
+  `--lx-sans`, `--lx-radius-sm`; `--lx-serif` is now Source Serif 4. Both fonts load from
+  `main.tsx`.
+- **Shared styles:** headings and numbers in Manrope 800; buttons, inputs, badges (pastel +
+  ink), tables (no frame, light dividers), stat tiles, tabs (black indicator), dialogs, toasts,
+  menus, link cards restyled; the Library and Home heroes turned light blue (the dark hero made
+  the Library sub-nav unreadable once "navy" became black).
+- **Shell (`AppLayout`):** from 768 px a black frame with a collapsible sidebar (`sidebarFor`:
+  the role home first, then the nav; collapsed rail by default, the choice kept in
+  `localStorage` `lexly.sidebar`) and a white panel with a top bar (college name, Library
+  search, notifications, profile pill "Profile: {name}"); below 768 px a top bar and a floating
+  black tab bar. `NavItem.exact` keeps a home item from lighting up on its sub-pages.
+- **Tests:** sidebar and tab bar per role, toggle + persistence, `sidebarFor` and exact matching.
+
+Notes:
+- The Library reading pages (section, case law, study panel) still carry their own hard-coded
+  colours and serif headings; they sit fine in the new shell and are restyled in UR.4 / UR.5.
+- The e2e specs haven't been re-run against the new shell yet; their nav selectors use link
+  names, which the sidebar keeps (labels are visually hidden, not removed).
+
 ### 2026-10-20 — F5a AI legal tutor (F5a.1–F5a.6)
 
 **Status:** Built on `feature/f5a-tutor` (cut from `master` after F4) and merged to `master` on

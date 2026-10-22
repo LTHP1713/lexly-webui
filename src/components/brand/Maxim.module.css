@@ -1,0 +1,21 @@
+/* A maxim is legal text, so the Latin is set in the reading serif, its meaning below it. */
+
+.maxim {
+  margin: 0;
+  color: var(--lx-muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.latin {
+  display: block;
+  color: var(--lx-ink);
+  font-family: var(--lx-serif);
+  font-size: 1.1rem;
+  font-style: italic;
+  font-weight: 600;
+}
+
+.meaning {
+  display: block;
+}

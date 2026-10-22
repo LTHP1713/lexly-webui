@@ -37,6 +37,7 @@ No Figma file or reference designs exist yet. When they do, link them here and f
 - [F3 — Assessments & answering](#f3--assessments--answering)
 - [F4 — Manual grading & student results](#f4--manual-grading--student-results)
 - [F5a — AI legal tutor](#f5a--ai-legal-tutor)
+- [UR — UI refresh](#ur--ui-refresh)
 - [F5–F8 (not yet written)](#f5f8-not-yet-written)
 - [Open questions](#open-questions)
 - [Changelog](#changelog)
@@ -175,6 +176,7 @@ These are the only roles. Backend P1 remapped the old `ADMIN` to `SUPERADMIN` an
 | F6a | Rankings & statistics | Not yet | — |
 | F7 | Solo AI practice | Not yet | — |
 | F8 | Payments & hardening | Not yet | — |
+| UR | UI refresh | **Written** | Visual language (UR.1), Shell (UR.2), Role homes (UR.3), Screens (UR.4) |
 
 F0.2, F0.4–F0.7, F1.3, F1.11, F2.1, F2.9, F3.10 and F4.7 have no screens of their own.
 
@@ -1199,6 +1201,77 @@ None. Tutor questions and answers are never audited (contract §11a). Index runs
 
 ---
 
+## UR — UI refresh
+
+Plan section UR. Approved design: the "Lexly UI refresh" canvas (2026-10-20). Frontend only; no endpoint changes. Where this section and an earlier screen section disagree on **look or shell**, this section wins; behaviour, data and copy stay as specified per screen.
+
+### UR.1 Visual language
+
+**Tokens** (`src/index.css`; existing names keep working, with new values):
+
+| Token | Value | Use |
+|---|---|---|
+| `--lx-page` (new) | `#E6EFFB` | Page background around the frame |
+| `--lx-sidebar` (new) / `--lx-navy` | `#1C1C1E` | Sidebar, frame, primary buttons, icon chips, headings' ink accents |
+| `--lx-sidebar-text` (new) | `#C9CBD3` | Inactive sidebar items |
+| `--lx-card` | `#FFFFFF` | Content panel, cards |
+| `--lx-ivory` | `#F2F4F8` | Subtle surfaces (hovers, inputs, round icon buttons) |
+| `--lx-ivory-deep` / `--lx-border` | `#E3E6EC` | Borders, dividers |
+| `--lx-ink` / `--lx-muted` | `#141416` / `#5F6370` | Text / secondary text (≥ 5.5:1 on white and `--lx-ivory`) |
+| `--lx-sky` + `--lx-sky-ink` (new) | `#DCE9FB` + `#1F4E8C` | Hero cards, info badges |
+| `--lx-lavender` + `--lx-lavender-ink` (new) | `#E6E0F5` + `#45366F` | Placard 1 |
+| `--lx-mint` + `--lx-mint-ink` (new) | `#DDF0E1` + `#23683A` | Placard 2, success badges |
+| `--lx-cream` + `--lx-cream-ink` (new) | `#F7EFD3` + `#7A560A` | Placard 3, warning badges |
+| `--lx-cta` (new) | `#BFD8F7` | Button on the dark action card |
+| `--lx-gold` / `--lx-gold-soft` / `--lx-gold-ink` | `#3E7FD3` / `#DCE9FB` / `#1F4E8C` | Former gold accent, now blue: chart lines, highlights, small accent text |
+| `--lx-wrong` | `#B42318` | Errors, destructive actions |
+| `--lx-radius` / `--lx-radius-sm` (new) | `20px` / `12px` | Cards and placards / inputs, buttons, chips |
+
+Pastels mark **categories** (which placard, which source). Statuses always keep their text label; colour never carries meaning alone. Every pastel pairs only with its own `-ink` colour or `--lx-ink` for text.
+
+**Type.** `--lx-sans`: Manrope (self-hosted variable font) for all interface text, headings included: H1 34 px / 800 / −0.02em (28 px on phones), section headings 20 px / 800, card labels 13–15 px / 600–700, numbers tabular. `--lx-serif`: Source Serif 4 for legal reading text only: section and case-law bodies, illustrations, "in simple words", tutor answers and cited passages.
+
+**Components.**
+- Buttons: primary black with white text, 12 px radius; secondary white with a `--lx-border` border; the dark card's button `--lx-cta` with ink text. 44 px minimum height.
+- Placard (`LinkTile`): a pastel card (radius 20, min-height 150 px) that is one link: the number (24 px / 800), the label in its `-ink`, a black 40 px icon chip and "{action} →". It opens a screen.
+- Hero card: `--lx-sky`, radius 20, a heading line, a big number and a small chart or progress bars.
+- Action card: `--lx-sidebar` background, white heading with one word in an outlined pill, short muted text, a `--lx-cta` button.
+- Tables: no outer border; header 12 px `--lx-muted`; rows separated by 1 px `#F0F1F4`; first column can lead with a black 36 px chip (initials or code).
+- Filter pills: rounded 999 px selects/buttons with a border.
+- Badges: pill, 12 px / 700, pastel background with its `-ink` text.
+
+### UR.2 Shell
+
+**From 768 px.** The page is `--lx-page` with a 16 px gutter (28 px from 1280 px). Inside it, a black frame (radius 34 px) holds:
+- **Sidebar** (`<nav aria-label="Primary">`, sticky, full frame height): the logo tile (cream `§` → role home), the role's items, then at the bottom the collapse toggle and Log out. **Collapsed** (default) is a 76 px icon rail: each item's label is visually hidden (still its accessible name) and shown as a `title` tooltip. **Expanded** is 220 px with icon + label, and the logo shows "Lexly" (plus the college code for college roles). The toggle is a button "Collapse sidebar" / "Expand sidebar" with `aria-expanded`; the choice is kept in `localStorage` (`lexly.sidebar`), a UI preference only. The current item is a white pill with ink text (`aria-current="page"`); others are `--lx-sidebar-text`.
+- **Panel**: white, radius 26 px, padding 30/36 px. Its **top bar** holds the context line on the left (college name for college roles, "Super admin", or nothing) and on the right: a round Library search button (→ `/search`), notifications, and the profile pill (initials + name → `/profile`). The page's own H1 follows.
+
+Sidebar items: the role's home item first, then the role's nav (F0.3 list, plus the Tutor), so the sidebar may hold more than 5. Home items: SUPERADMIN "Overview" (`/admin`), C_ADMIN "Overview" (`/college`), C_PROFESSOR "Teaching desk" (`/professor`), C_STUDENT "My studies" (`/student`), S_STUDENT "Study hub" (`/dashboard`).
+
+**Below 768 px.** White page, no frame. A top bar (logo chip, notifications, profile) and a **floating black bottom tab bar** (12 px from the edges, radius 24 px): at most 5 items, the current one a white pill. The H1 is 28 px. Content keeps the 16 px gutter and clears the tab bar.
+
+While the password must be changed, the sidebar and tab bar show only Log out (F1.2 unchanged).
+
+### UR.3 Role homes
+
+Each home: top row of a hero card (≈ 40 %) and a "placards" group of three tiles; below, a table (≈ 60 %) and the dark action card. Loading: skeletons per card; one failing card shows its own error and never blanks the page (§0.3). Numbers come only from the listed endpoints.
+
+| Role · route · H1 | Hero | Placards (number · label → target) | Table | Action card |
+|---|---|---|---|---|
+| SUPERADMIN · `/admin` · **Overview** | AI spend, last 30 days: total cost, questions, index runs, daily cost line (`GET /superadmin/ai-usage/daily`) → "Open spend" (`/admin/tutor?tab=spend`) | Active colleges (`/superadmin/colleges?active=true` total) → Colleges · Students and professors across colleges (sum of the colleges list `counts`) · Last index run status and duration (`/superadmin/tutor/index-runs`) → `/admin/tutor` | Colleges (name + code chip, students, professors, admins, status), up to 5 by name, → "All colleges" | "Keep the **tutor** up to date" → Re-index (`/admin/tutor`) |
+| C_ADMIN · `/college` · **Overview** (context line: college name) | People at your college: students + professors, with a split bar of the two (`/college/users?role=` totals; the C_ADMIN endpoints give no admin count, so admins aren't shown) → All users | Students → `/college/users` · Professors → `/college/users?role=professors` · Subjects (`/college/subjects` length) → `/college/subjects` | Recent activity (`GET /audit`, last 7 days, 5 rows: action, by, details summary, when) → Audit log | "Add a whole **batch** at once" → Import users |
+| C_PROFESSOR · `/professor` · **Teaching desk** | Grading progress: published of submitted, a bar per open/closed assessment (published vs to grade) from `/professor/assessments` `counts` | Answers to grade (sum of `pendingEvaluation`) → the first assessment with answers to grade · Open assessments (`PUBLISHED`) → `/professor/assessments?status=PUBLISHED` · Next due (soonest future `dueAt`) → that assessment | Your assessments (code chip, title + subject, due, submitted, to grade, status), 5 newest → `/professor/assessments` | "Set the next **problem**" → New assessment |
+| C_STUDENT · `/student` · **My studies** | Due next: the soonest open assessment, subject and professor, "Due in …", answer progress bar → Continue answering | Open assessments (`OPEN` + `PARTIALLY_SUBMITTED`) → `/student/assessments` · Results published (assessments with `resultsPublished` > 0) → the list filtered · Tutor questions left today (`/tutor/quota`) → `/tutor` | Assessments (code chip, title + subject, due, answers submitted of questions, state badge), 5 by due date → `/student/assessments` | "Stuck on a **section**? Ask the tutor" → `/tutor` |
+| S_STUDENT · `/dashboard` · **Study hub** | "Find any section or case law": the universal search and 3 act shortcuts | Bare acts (`/acts` length) → `/acts` · Case laws (`/caselaws` total) → `/caselaws` · Tutor questions left today → `/tutor` | Bare acts (code chip, name, year), 5 → `/acts` | "Learn with the **tutor**" → `/tutor` (mentions solo practice is coming soon) |
+
+Empty states: no colleges / users / assessments → the table shows the existing empty copy with its primary action; a placard with 0 still shows 0.
+
+### UR.4 Screens
+
+Every other screen keeps its layout, data and copy, restyled with UR.1 inside the panel: title rows use the new H1; filter bars use filter pills; lists use the new tables (cards on phones as today); stat tiles become white cards with a border; tabs keep their markup with a black underline; dialogs get radius 20 and the new buttons. Library reading pages: the H1 and chrome in sans, the statute and case-law text in the serif, the study panel keeps one colour per kind of content, mapped to the new pastels by family (amber → cream, purple → lavender, blue → sky, green → mint; each dark tone keeps ≥ 4.5:1 for white text). The tutor's sources become pastel cards per source type (section lavender, case law mint, file cream).
+
+---
+
 ## F5–F8 (not yet written)
 
 Each stub lists what the section must cover. Task IDs are the plan's.
@@ -1235,3 +1308,4 @@ Each stub lists what the section must cover. Task IDs are the plan's.
 | 2026-10-15 | F3 written against backend Phase 3 (contract §9 LIVE): professor list, draft editor with the publish checklist, delete/remove, assessment detail and submissions grid, student list and the answer cards with upload, submit and `PdfViewer`; F3 error copy in §0.6; F2.8 cards replaced by subject filters. F3.9 and the college Assessments tab dropped (A9 changed) |
 | 2026-10-18 | F4 written against backend Phase 4 (contract §10 LIVE): grading counts and grade cells in the list, detail and grid (with the grade-status filter and grading order), answer review with the inline PDF, grade panel (draft, approve & publish, read-only once published), previous / next / next ungraded, grade history, student results per `outcome` and its entry points; `INVALID_MARKS` and `GRADE_PUBLISHED` copy in §0.6; F4 audit summaries |
 | 2026-10-20 | F5a written against backend Phase 5a (contract §11a): tutor nav item for every role and the `/admin` Tutor card; the tutor screen (chat list with expiry and delete, thread with pending / failed messages, `[n]` source markers, library and `FILE` sources, not-found answers, composer, quota line and banner, disclaimer, expired conversations); tutor admin Index (re-index, latest run, polling, previous runs) and Spend (URL filters, stat tiles, SVG daily cost chart with a table) tabs; `QUOTA_EXCEEDED` (tutor), `AI_UNAVAILABLE` and `INDEX_RUN_IN_PROGRESS` copy in §0.6. F5 marked on hold |
+| 2026-10-20 | UR (UI refresh) written from the approved design mock: new tokens and type (Manrope for the interface, the serif for legal text), the sidebar shell with a collapsed rail and a floating phone tab bar, the five role homes from existing endpoints (Overview, Overview, Teaching desk, My studies, Study hub), restyle rules for the other screens. Tutor failure copy split (AI_UNAVAILABLE vs maybe answered); spend tab server validation shown as bad filters |
