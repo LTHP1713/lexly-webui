@@ -886,9 +886,27 @@ while anonymous redirects back to `/login`. No console errors in any of it.
 
 ## In Progress
 
+### 2026-10-22 — UR: code review fixes before merging to `master`
+
+**Status:** Done (`96e2f5e`). `tsc -b`, the build, lint (one pre-existing warning) and 262 unit
+tests pass. Not re-checked in the browser against the live backend.
+
+What changed (from a review of `master...feature/ui-refresh`):
+- A `Placard` whose query failed is no longer a link, so its Try again button doesn't sit inside
+  an `<a>` and doesn't navigate away when clicked.
+- While the password must be changed (so there is no sidebar), the top-bar brand also shows from 768 px.
+- My studies: an open assessment with no due date shows "No due date" in the Due next hero instead of "Due —".
+- SUPERADMIN Overview: the colleges table caption says "first 3", which matches the rows it shows.
+- The sidebar toggle writes `localStorage` outside the state updater. `cardState`'s JSDoc now
+  describes its real behaviour. The unused `ChatIcon` is removed.
+
+Left as is: after a sign-out, `signedOut` also drops the return path for later deep links in the
+same anonymous session (a deliberate trade-off of `5c5de4d`). The Study hub's Bare acts table
+isn't `HomeTable` yet. The Overview makes two colleges requests.
+
 ### 2026-10-21 — UR brand: Lexly logo and the "Knowledge is power" motto
 
-**Status:** Built on `feature/ui-refresh`, not committed yet. `tsc -b`, the build, lint (one
+**Status:** Committed on `feature/ui-refresh` (`1864c62`) and merged to `master` on 2026-10-22. `tsc -b`, the build, lint (one
 pre-existing warning) and 262 unit tests pass. Checked in the browser against the live local
 backend: sign-in (1440 / 390 px), register (800 px), and the Study hub of a fresh S_STUDENT with
 the sidebar collapsed, expanded and on a phone.
