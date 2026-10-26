@@ -11,7 +11,7 @@ import { LexlySpark } from '@/components/brand/Logo';
 import { SparkIcon } from '@/components/icons/Icons';
 import styles from './Dashboard.module.css';
 
-export type PlacardTone = 'lavender' | 'mint' | 'cream';
+export type PlacardTone = 'lavender' | 'mint' | 'cream' | 'sky';
 
 function CardProblem({ state, label }: { state: CardState; label: string }) {
   if (state.status === 'loading') {

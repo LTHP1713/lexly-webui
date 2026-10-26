@@ -89,7 +89,7 @@ const LIBRARY: NavItem = {
   to: LIBRARY_HOME,
   label: 'Library',
   icon: BookIcon,
-  matches: ['/acts', '/sections', '/search', '/caselaws'],
+  matches: ['/acts', '/sections', '/search', '/caselaws', '/vocab', '/maxims'],
 };
 
 /** A nav item is only listed once its screens exist (UI spec F0.3). At most 5 per role. */
@@ -166,7 +166,7 @@ export function sidebarFor(role: Role | null): NavItem[] {
   return [home, ...navFor(role).filter((item) => item.to !== home.to)];
 }
 
-/** Roles that see the Library sub-nav (Bare Acts · Case Laws · Search); S_STUDENT has its own tabs. */
+/** Roles that see the Library sub-nav (Bare Acts · Case Laws · Search · Vocab · Maxims); S_STUDENT has its own tabs. */
 export function hasLibrarySubNav(role: Role | null): boolean {
   return role !== 'S_STUDENT';
 }

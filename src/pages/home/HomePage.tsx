@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { listCaseLaws } from '@/api/caselaws';
 import { listActs } from '@/api/content';
 import { getTutorQuota } from '@/api/tutor';
+import { listVocab } from '@/api/vocab';
 import { useAppLayout } from '@/components/appLayoutContext';
 import { EmptyState, ErrorState, LoadingState } from '@/components/QueryStates';
 import {
@@ -14,7 +15,7 @@ import {
   RowChip,
 } from '@/components/dashboard/Dashboard';
 import { cardState } from '@/components/dashboard/cardState';
-import { BookIcon, ScalesIcon, SparkIcon } from '@/components/icons/Icons';
+import { BookIcon, LayersIcon, ScalesIcon, SparkIcon } from '@/components/icons/Icons';
 import { backendFeatures, homeMockMode } from '@/config/features';
 import { useCachedQuery } from '@/hooks/useCachedQuery';
 import { formatCount } from '@/lib/format';
@@ -29,15 +30,16 @@ import styles from '@/components/ui.module.css';
 
 /**
  * `/dashboard`: the solo student's **Study hub** (UI spec UR.3). Library search with act
- * shortcuts, placards for bare acts, case laws and tutor questions left today, the bare acts and
- * a tutor card. The two progress cards depend on endpoints TDD v2 dropped, so they render only
- * while their flag is on (decision D3).
+ * shortcuts, placards for bare acts, case laws, tutor questions left today and legal terms (F5b),
+ * the bare acts and a tutor card. The two progress cards depend on endpoints TDD v2 dropped, so
+ * they render only while their flag is on (decision D3).
  */
 export function HomePage() {
   const { firstName } = useAppLayout();
   const acts = useCachedQuery(queryKeys.library.acts, () => listActs());
   const caseLaws = useCachedQuery(queryKeys.library.caseLawCount, () => listCaseLaws({ page: 0, size: 1 }));
   const quota = useCachedQuery(queryKeys.tutor.quota, (signal) => getTutorQuota(signal));
+  const vocab = useCachedQuery(queryKeys.library.vocabCount, (signal) => listVocab({ page: 0, size: 1 }, { signal }));
   const actList = acts.status === 'success' ? acts.data : [];
 
   return (
@@ -90,6 +92,15 @@ export function HomePage() {
             action="Tutor"
             icon={SparkIcon}
             state={cardState(quota)}
+          />
+          <Placard
+            to="/vocab"
+            tone="sky"
+            value={vocab.status === 'success' ? formatCount(vocab.data.totalElements) : ''}
+            label="Legal terms"
+            action="Glossary"
+            icon={LayersIcon}
+            state={cardState(vocab)}
           />
         </PlacardGroup>
       </DashboardRow>

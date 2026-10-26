@@ -252,7 +252,7 @@ Frontend phases mirror the backend phases. **F*n* starts once backend Phase *n*'
 | F5 | AI evaluation UI | Phase 5 | S | *On hold* with backend Phase 5 (2026-10-19) |
 | F5a | AI legal tutor | Phase 5a (merged) | M | Merged (PR #6); Done after a re-index and `e2e/f5a-tutor.spec.ts` pass |
 | UR | UI refresh | none | L | **Merged** (PR #7, 2026-10-22) |
-| F5b | Vocab & Maxims | Phase 5b (merged) | S | **Next.** Contract §11b LIVE |
+| F5b | Vocab & Maxims | Phase 5b (merged) | S | **Done** 2026-10-26 (e2e against backend `main`) |
 | F5c | Subject notes | Phase 5c (merged) | M | Contract §11c LIVE; build against backend `main` |
 | F8a | Trial, plans & billing (no gateway) | Phase 8a | M | Contract §14 PROPOSED; build against MSW |
 | F6a | C_ADMIN analytics (Sync) | Phase 6a | M | Contract §12a PROPOSED; build against MSW |

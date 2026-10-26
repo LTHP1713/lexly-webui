@@ -1290,7 +1290,7 @@ Contract: §11b (LIVE, P5b; TDD §7.11). Two read-only glossaries for **every ro
 | Routes | `/vocab` and `/maxims` for every role (shared like the Library, not in `AREAS`), wide, one lazy chunk |
 | Library sub-nav | Bare Acts · Case Laws · **Vocab** · **Maxims** · Search, for every role that has it (all but S_STUDENT, F0.3) |
 | S_STUDENT | No sub-nav and the tab bar is unchanged. The Study hub's "Your library" group gets a fourth placard (below), and both pages show a **Vocab ⇄ Maxims** switch under the H1, a two-link `nav` (`aria-label` "Glossary") with `aria-current="page"` on the open one. No tab is active on these pages |
-| Study hub (UR.3) | Fourth placard, tone sky: value = `totalElements` of `GET /vocab?size=1` ("1,240"), label "Legal terms and maxims", action "Glossary" → `/vocab`. With four placards the group is 2 × 2. On an error (including a `402` from P8a) the placard shows no number and still links to `/vocab` |
+| Study hub (UR.3) | Fourth placard, tone sky: value = `totalElements` of `GET /vocab?page=0&size=1` ("1,240"), label "Legal terms", action "Glossary" → `/vocab` (Maxims is one switch away). With four placards the group is 2 × 2. Loading and errors as every placard (UR.3); a `402` from P8a is handled in F8a |
 | URL | `q`, `letter` and `page` (1-based). An invalid `letter` (not one letter A–Z or `#`) is dropped with a replace. `#` is written `%23` |
 
 ### F5b.3 Vocab — `/vocab` · Maxims — `/maxims`
