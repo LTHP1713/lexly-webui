@@ -1,0 +1,86 @@
+/* Vocab and Maxims (UI spec F5b.3): Library chrome from Browse.module.css, entries as cards. */
+
+.filters {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.entries {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 768px) {
+  .entries {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.entry {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+  padding: 1rem 1rem 0.9rem;
+  border: 1px solid var(--lx-border);
+  border-radius: var(--lx-radius);
+  background: var(--lx-card);
+  box-shadow: var(--lx-shadow);
+}
+
+.term {
+  margin: 0;
+  color: var(--lx-navy);
+  font-family: var(--lx-sans);
+  font-size: 1.05rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.meaning {
+  flex: 1;
+  margin: 0;
+  color: var(--lx-ink);
+  font-family: var(--lx-serif);
+  font-size: 1rem;
+  line-height: 1.55;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.source {
+  margin: 0;
+}
+
+.sourceLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.75rem;
+  color: var(--lx-muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.sourceLink:hover {
+  color: var(--lx-navy);
+}
+
+.sourceLink:focus-visible {
+  outline: 3px solid var(--lx-gold);
+  outline-offset: 2px;
+}
+
+.skeleton {
+  height: 8rem;
+}
+
+.emptyActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+}

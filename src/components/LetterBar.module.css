@@ -1,0 +1,58 @@
+/* A–Z filter (UI spec F5b.3): wraps from 768 px, one sideways-scrolling row below. */
+
+.bar {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.3rem;
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 0.2rem 0.1rem 0.4rem;
+  scrollbar-width: thin;
+}
+
+.letter {
+  flex: none;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0 0.5rem;
+  border: 1px solid var(--lx-border);
+  border-radius: 999px;
+  background: var(--lx-card);
+  color: var(--lx-navy);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.all {
+  padding: 0 0.9rem;
+}
+
+.letter:hover {
+  border-color: var(--lx-gold);
+}
+
+.letter[aria-pressed='true'] {
+  border-color: var(--lx-navy);
+  background: var(--lx-navy);
+  color: #fff;
+}
+
+.letter:focus-visible {
+  outline: 3px solid var(--lx-gold);
+  outline-offset: 2px;
+}
+
+@media (min-width: 768px) {
+  .bar {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+
+  .letter {
+    min-width: 2.25rem;
+    min-height: 2.25rem;
+  }
+}
