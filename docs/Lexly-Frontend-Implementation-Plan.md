@@ -1,36 +1,38 @@
 # Lexly — Frontend Implementation Plan (lexly-webui)
 
-**Status:** Draft for review, revised 2026-10-16 (synced with backend Phases 0–3)
-**Frontend repo:** https://github.com/LTHP1713/lexly-webui (reviewed at commit `fab9df4` "bare act & case laws")
-**Backend state (2026-10-15):** Phases 0–3 are merged to `lexly-backend` `main` (Phase 3: `75a7c08`, PR #4). The contract copy in this repo matches it. Frontend F0–F3 are Done (F3 verified against backend `main` on 2026-10-16).
-**Based on:** `Lexly-TDD.md` v2 (frozen 2026-10-12) and `Lexly-Implementation-Plan.md`. Request/response shapes: `Lexly-API-Contract.md`. Section references like §7.3 point to the TDD; "Phase 3" points to the backend plan.
-**Companion docs:** `Lexly-UI-Spec.md` (layout, states and copy per screen, written per phase) and `Lexly-Frontend-Status-Report.md` (what is built).
+**Status:** Draft for review, revised 2026-10-26 (synced with backend Phases 0–5c and the 2026-10-25 roadmap; F5b–F6a detailed against the backend code at `fbe14dd`)
+**Frontend repo:** https://github.com/LTHP1713/lexly-webui (last reviewed at `d5d52aa`, PR #7 UI refresh merged)
+**Backend state (2026-10-26):** Phases 0–4, 5a, 5b (PR #7, `ce0b250`) and 5c (PR #8, `fbe14dd`) are merged to `lexly-backend` `main`. Phase 5 (AI grading) is on hold. Next on the backend: 8a (trial & billing core), then 6a (C_ADMIN analytics).
+**Frontend state:** F0–F3 Done. F4, F5a and UR are merged to `master`; F4 and F5a become Done once their e2e suites are re-run against backend `main`. F5b, F5c, F8a and F6a are new in this revision (§4).
+**Based on:** `Lexly-TDD.md` v2 (frozen 2026-10-12, with addenda up to 2026-10-25) and `Lexly-Implementation-Plan.md`. Request/response shapes: `Lexly-API-Contract.md`. Section references like §7.3 point to the TDD; "Phase 3" points to the backend plan.
+**Contract copy:** this repo's `Lexly-API-Contract.md` was refreshed from the backend's `docs/Lexly-API-Contract_backend.md` on 2026-10-26 (at `fbe14dd`). The new sections are §11b Vocab & Maxims (LIVE), §11c Subject notes (LIVE), §12a C_ADMIN analytics (PROPOSED) and §14 Trial & billing (PROPOSED). §12 rankings moved to P6a-2, and §13 solo plans are superseded by §14.
+**Companion docs:** `Lexly-UI-Spec.md` (layout, states and copy per screen, written per phase; sections for F5b, F5c, F8a and F6a still need writing) and `Lexly-Frontend-Status-Report.md` (what is built).
 **Supersedes:** `Lexly-Frontend-Development-Master-Doc.md` §3. Its prompts target the old subscription / MCQ-practice design. Its §4 (security) and §5 (progress SOP) still apply and are summarised in §9 and §10 below.
 
-**Rule for every frontend phase:** a phase isn't done until `npm run build` (type-check + build), `npm run lint` and `npm test` pass, and its golden path has been exercised against a running `lexly-backend` with the matching backend phase applied. A frontend phase never ships before its backend phase; until then it can be built against MSW mocks of the TDD contract.
+**Rule for every frontend phase:** a phase isn't done until `npm run build` (type-check + build), `npm run lint` and `npm test` pass, and its golden path has been exercised against a running `lexly-backend` with the matching backend phase applied. A frontend phase never ships before its backend phase; until then it can be built against MSW mocks of the contract.
 
 ---
 
 ## 1. Where the frontend is today
 
-`lexly-webui` is a Vite + React 19 + TypeScript SPA. It uses React Router 7 (`createBrowserRouter` with a splat route around `App`, so `useBlocker` works), CSS Modules and no UI kit. Its only runtime dependencies are React, the router and the self-hosted Source Serif 4 font.
+`lexly-webui` is a Vite + React 19 + TypeScript SPA. It uses React Router 7 (`createBrowserRouter` with a splat route around `App`, so `useBlocker` works), TanStack Query (D1), CSS Modules and no UI kit. Fonts are self-hosted: Manrope for the interface, Source Serif 4 for legal reading text.
 
 ### 1.1 Built and working
 
-| Area | Where | Notes |
+`Lexly-Frontend-Status-Report.md` has the detail. In short:
+
+| Area | Phase | Notes |
 |---|---|---|
-| **Cookie session** | `src/api/client.ts`, `src/api/auth.ts`, `src/auth/session-store.ts` | The refresh token lives only in the `HttpOnly` `lexly_refresh_token` cookie. `credentials: 'include'` is sent on auth calls only. On load, a bootstrap calls `/auth/refresh` and then `GET /users/me`, showing `SessionPending` meanwhile. Refreshes are serialised across tabs with a Web Lock (`lexly-auth-refresh`) and share one in-flight promise within a tab. Logout calls `POST /auth/logout` |
-| **HTTP cache handling** | `client.ts` | In dev every GET uses `cache: 'no-cache'`. After a logout, GETs use `cache: 'reload'` for 5 minutes in every tab, so the next user never sees cached data |
-| **Guards** | `RequireAuth`, `RedirectIfAuthenticated`, `RequireAdmin` | Signed-in users who open `/login` or `/register` go to `/dashboard` |
-| **Auth screens** | `src/pages/auth/` | Redesigned: `AuthLayout` with an SVG illustration, `AuthField`/`PasswordField`, and `authForm.ts` mapping errors to friendly text |
-| **Bare Acts reader** | `ActsPage`, `SectionsPage`, `SectionDetailPage`, `StudyPanel*`, `SectionDetail.module.css` | Study-panel layout. Left rail: reading progress, "On this page" with scroll-spy, "In this Act". Centre: a serif document with clause gutter, In simple words, Clause by clause, illustrations tagged Hypothetical or From the Act, exceptions with nested illustrations, and key legal terms. In Study mode, terms show definitions in popovers. Right rail: stats and insight cards. Breadcrumb and Previous/Next come from `actId`, `actTitle`, `prev` and `next`. Sections are sorted naturally on the client |
-| **Case-law reader** | `CaseLawsPage`, `CaseLawDetailPage`, `caseLawLabels.ts` | Uses the same study panel. Shows the full structured content: issues (collapsible from 3 on), arguments as party cards, final holding with an outcome badge, ratio ("Binding"), obiter ("Not binding"), provisions, principles and related sections |
-| **Case-law admin** | `src/pages/admin/`, `src/api/adminCaseLaws.ts` | List, create/edit metadata and delete. A structured content editor (`PUT /admin/caselaws/{id}/content`) with `RepeatableList` (add, move up/down, remove, live-region announcements). Server `VALIDATION_ERROR` paths map to inline row errors and an error summary. Unsaved-changes guard via `useBlocker` + `beforeunload`. Client limits mirror the server's `@Size` limits |
-| **Reusable admin parts** | `ConfirmDialog` (native `<dialog>`), `Toast`, `Field`, `RepeatableList`, `useUnsavedChangesGuard`, `contentForm.ts` | Good candidates for `src/components/` (see F0.4) |
-| **Free/Pro removed** | — | No `isFree`, `ProBadge`, locked teasers or free-flag calls remain (2026-10-11) |
-| **Home** | `src/pages/home/` | Greeting from `/users/me` (`VITE_API_USERS_ME=true`), universal search (fan-out over `/sections/search`, `/caselaws?q=` and the cached `/acts`), quick actions, and Practice Progress, Bare-Act Progress and Continue Learning cards behind flags that are off |
-| **Shell** | `AppLayout` | Header with "Hi {name}!", bell and avatar. Bottom tab bar below 768 px (Home / Bare Acts / Practice / Profile). A wide 72 rem layout for `/sections/*`, `/caselaws/*` and `/admin/*` |
-| **Data hooks** | `useApiQuery`, `useDebouncedValue`, `useHomeData` | Keyed fetch with stale data, retry and superseded-response dropping |
+| **Cookie session & roles** | F0, F1 | Refresh token only in the `HttpOnly` cookie; Web Lock–serialised refresh; role, college and `mustChangePassword` from `/users/me`; `RequireRole`, role homes, forced password change, two login modes |
+| **Library** | pre-F0, UR | Bare-act study panel, case-law reader, search. Every role can read it |
+| **SUPERADMIN** | F1, F5a | Colleges and their C_ADMINs, acts / sections / case-law admin, bulk JSON import with per-row results, audit log, tutor re-index and AI spend |
+| **C_ADMIN** | F2 | Users (create, edit, reset, remove), CSV/XLSX import, subjects and the professor mapping, audit log |
+| **C_PROFESSOR** | F3, F4 | Assessment drafts, publish checklist, remove, submissions grid, answer review with the PDF, draft/approve grades, grade history |
+| **C_STUDENT** | F3, F4 | Assessment list and detail, per-question upload/replace/submit, results |
+| **AI tutor** | F5a | `/tutor` for every role: conversations, cited answers, quota, unavailable and expired states |
+| **Shell & homes** | UR | Black collapsible sidebar from 768 px, floating bottom tab bar below it, pastel placards; homes Overview / Overview / Teaching desk / My studies / Study hub |
+| **Shared parts** | F0–F4 | `ConfirmDialog`, `Toast`, `Field`, `RepeatableList`, `useUnsavedChangesGuard`, `DataTable`, `Pagination`, `ImportResultTable`, `FileDropzone`, `StatusBadge`, `DateTimeField`, `Deadline`, `NumberField`, `PdfViewer`, `errors.ts` catalogue; `apiClient.upload` (XHR with progress) and `download` (blob + filename) |
+| **Tests** | F0.6 | Vitest + Testing Library + MSW; Playwright e2e per phase with axe; CI on every PR |
 
 ### 1.2 Conventions to keep following
 
@@ -38,30 +40,25 @@
 - Filters, query and page live in the URL (page is 1-based in the URL, 0-based on the wire). Router state is only an optional "back to results" hint.
 - One `<h1>` per screen, landmarks, `aria-live` for async results, `aria-busy` while refetching, keyboard-operable everything, and colour never the only signal.
 - Loading, empty and error states exist for every card and list. One failing card never blanks a page.
-- Backend `message`s are mapped to friendly text (`authForm.ts`, `contentForm.ts`); raw bodies and stacks are never shown.
+- Backend `message`s are mapped to friendly text; raw bodies and stacks are never shown.
 - Every task gets an entry in `docs/progress/frontend_progress.md`: date, status, what changed, how it was verified against the live backend, and notes.
 
 ---
 
-## 2. Gap analysis: what's left against TDD v2
+## 2. Gap analysis
 
-Most of the drift from the old design was fixed in `fab9df4`. What remains:
+G1–G10 and G13 were closed by F0–F3 (see the progress file). Still open, and new:
 
 | # | Gap | Action |
 |---|---|---|
-| G1 | Roles: the UI knows `STUDENT` / `LAWYER` / `ADMIN`. The role comes from decoding the JWT at login (`roleFromAccessToken`) and from `/users/me` on reload. `RequireAdmin` checks `role === 'ADMIN'`. **Since backend P1 those role names no longer exist** (V16 remaps them), so an `ADMIN` check fails for every user | Five roles, role-scoped areas and `RequireRole`. Take the role, `college` and `mustChangePassword` from `/users/me` after **every** login, not from the JWT (F0.2, F1) |
-| G2 | The admin area is reached only through a link on Profile; there is no admin nav | Per-role navigation (F0.3) |
-| G3 | MCQ practice is still referenced: the Home `PracticeProgress` card, the `practiceStats` flag and DTOs, the `/practice` placeholder, and the "Build the Practice flow…" item in Next Up | Remove it. `/practice` becomes Solo practice in F7 (F0.1) |
-| G4 | The progress file's Next Up still listed "Upgrade to Pro" and the MCQ practice flow. `HOME_DASHBOARD_API_CONTRACT.md` described MCQ endpoints | Done 2026-10-13: Next Up rewritten from this plan; `HOME_DASHBOARD_API_CONTRACT.md` deleted (superseded by `Lexly-API-Contract.md`) |
-| G5 | `apiClient` sets `Content-Type: application/json` whenever there is a body. There is no multipart upload, upload progress or binary download, and no `PATCH` | Needed for answer PDFs, solo attempts and CSV/XLSX imports (F0.5) |
-| G6 | `ApiError` no longer keeps the error body (removed with the teasers) | Fine for now. Re-add only if a new endpoint returns extra fields on errors |
-| G7 | Content admin covers case laws only. Acts, sections, illustrations, exceptions, case-law ↔ section linking and bulk JSON import have no UI | F1 |
-| G8 | No automated tests; verification is ad-hoc Playwright runs | Vitest + Testing Library + MSW + a committed Playwright suite (F0.6) |
-| G9 | Email-only login; no forced password change. Since backend P1, a seeded or reset account gets `403 PASSWORD_CHANGE_REQUIRED` on every call except `/users/me`, so it can't use the app at all | Two login modes and `/change-password` (F1) |
-| G13 | Bulk import code expects the old all-or-nothing response (`201 { counts, created }` / `422 BULK_IMPORT_REJECTED`). Since backend P0 it is always `200 BulkImportResult` | F1.9 builds against the per-row shape; nothing in the UI calls the bulk endpoints today |
-| G10 | Known edge case: navigating away while `/auth/refresh` is in flight can sign the user out (the server rotated the token, but the aborted response never delivered the new cookie) | Don't attach the bootstrap refresh to an abortable navigation. If it still happens, retry the refresh once after a 401 caused by a just-rotated token (F0.7) |
-| G11 | Bare-Act Progress, Continue Learning, learning-activity tracking and unified `/search` aren't in TDD v2 | Keep the flags off and hide the cards (D3) |
-| G12 | Dark mode: the palette is light-only | Decide in F8 (D4) |
+| G11 | Bare-Act Progress, Continue Learning, learning-activity tracking and unified `/search` aren't in TDD v2 | Keep the flags off and the cards hidden (D3) |
+| G12 | Dark mode: the palette is light-only | Decide in F8b (D4) |
+| G14 | The contract copy in this repo predated the 2026-10-25 roadmap (no §11b, §11c, §12a, §14) | **Closed 2026-10-26:** refreshed at `fbe14dd` |
+| G15 | `FileDropzone` and the client checks accept only PDF (and CSV/XLSX for imports). Downloads are PDFs shown inline in `PdfViewer` | F5c: accept DOCX/PPTX as well, and save `attachment` downloads (DOCX, PPTX, CSV) as files instead of viewing them |
+| G16 | The `SUBJECT_IN_USE` copy says only "has assessments". From P5c a subject with notes can't be deleted either | Update the copy in F5c (§3.6) |
+| G17 | S_STUDENTs are never gated today. From P8a the tutor, Vocab and Maxims answer `402 PLAN_REQUIRED` once the trial has ended | `PlanGate` + access banner in F8a. F5b ships first and must already handle 402 (it falls through to a generic error until F8a) |
+| G18 | `navFor` feeds both the sidebar and the tab bar, capped at 5. SUPERADMIN and C_ADMIN already have 5 items, and this revision adds Billing (SUPERADMIN) and Notes + Analytics (C_ADMIN) | Split the two lists before F5c (D11, §3.2) |
+| G19 | S_STUDENT has no Library sub-nav (`hasLibrarySubNav`) and a full tab bar (Home · Bare Acts · Practice · Tutor · Profile), so the sub-nav change alone gives it no way into Vocab and Maxims | F5b.2: Study hub entry points + a Vocab ⇄ Maxims switch on both pages |
 
 ---
 
@@ -69,7 +66,7 @@ Most of the drift from the old design was fixed in `fab9df4`. What remains:
 
 ### 3.1 One SPA, role-scoped areas
 
-Keep one app and one repo. Keep the existing `src/pages/` convention and add one folder per role area. Each area is a lazily loaded route chunk, so a student never downloads grading code.
+Keep one app and one repo. Each role area is a lazily loaded route chunk, so a student never downloads grading code.
 
 ```
 src/
@@ -77,86 +74,106 @@ src/
 │   ├── client.ts            JSON, multipart upload, blob download, refresh, cache modes
 │   ├── errors.ts            error-code catalogue (§3.6)
 │   ├── auth.ts users.ts content.ts caselaws.ts search.ts
-│   ├── adminContent.ts adminCaseLaws.ts adminBulk.ts
-│   ├── colleges.ts collegeUsers.ts subjects.ts
-│   ├── professor.ts student.ts analytics.ts audit.ts solo.ts
+│   ├── adminContent.ts adminCaseLaws.ts bulkImport.ts
+│   ├── colleges.ts collegeUsers.ts subjects.ts audit.ts
+│   ├── assessments.ts professor.ts student.ts grading.ts tutor.ts
+│   ├── vocab.ts notes.ts billing.ts analytics.ts          new: F5b, F5c, F8a, F6a
+│   └── solo.ts                                             F7
 ├── auth/                    session store, AuthContext, guards, roles.ts
-├── components/              shell + shared UI (moved here from pages/admin in F0.4):
-│                            ConfirmDialog Toast Field RepeatableList useUnsavedChangesGuard
-│                            DataTable Pagination StatusBadge FileDropzone PdfViewer
-│                            ImportResultTable MarksInput DateTimeField EmptyState
+├── components/              shell + shared UI
 ├── pages/
-│   ├── auth/  content/  home/            existing
-│   ├── admin/                            SUPERADMIN: content, bulk, colleges, solo, audit
-│   ├── college/                          C_ADMIN: users, imports, subjects, statistics
+│   ├── auth/  content/  home/  tutor/    existing
+│   ├── glossary/                         new (F5b): Vocab, Maxims — every role
+│   ├── notes/                            new (F5c): note list, card, upload form — shared by 3 roles
+│   ├── billing/                          new (F8a): S_STUDENT plans and billing
+│   ├── admin/                            SUPERADMIN: content, bulk, colleges, audit, tutor, billing
+│   ├── college/                          C_ADMIN: users, imports, subjects, audit, analytics
 │   ├── professor/                        assessments, submissions grid, answer review
 │   ├── student/                          assessments, answering, results
-│   ├── analytics/                        ranking table (shared by 3 roles)
-│   └── solo/                             S_STUDENT practice
+│   └── solo/                             S_STUDENT practice (F7)
 ├── hooks/  lib/  config/  dev/  test/
 ```
 
 ### 3.2 Roles, routing and home screens
 
-`src/auth/roles.ts` holds the role union, each role's home path and its nav items. `AppLayout` renders the nav from that config. `RequireRole roles={[…]}` replaces `RequireAdmin`. A user who opens another role's URL goes to their own home. This is only a convenience; the server is the gate.
+`src/auth/roles.ts` holds the role union, each role's home and its nav items; the sidebar and tab bar render from it. `RequireRole` guards each area. A user who opens another role's URL goes to their own home. This is only a convenience; the server is the gate.
 
-| Role | Home | Nav (header on desktop, bottom tabs on mobile) |
+New nav items in this revision (the existing items stay as UR left them):
+
+| Role | Adds |
+|---|---|
+| `SUPERADMIN` | **Billing** (F8a) |
+| `C_ADMIN` | **Notes** (F5c), **Analytics** (F6a) |
+| `C_PROFESSOR` | **Notes** (F5c) |
+| `C_STUDENT` | **Notes** (F5c) |
+| `S_STUDENT` | **Plan & billing** reached from Profile and the access banner (F8a); the tab bar stays at ≤ 5 items |
+
+The Library sub-nav becomes **Bare Acts · Case Laws · Vocab · Maxims · Search** (F5b).
+
+**Sidebar vs. tab bar (D11, G18).** Today `navFor(role)` is both the sidebar's list and the phone tab bar, so it can't grow past 5. Before F5c adds the first sixth item, split it in `roles.ts`: `sidebarFor(role)` lists every item (it has room), and a new `tabsFor(role)` picks at most 5. The rest are reached from the role's home placards and from related screens. Recommended tab bars:
+
+| Role | Tab bar (≤ 5) | Sidebar only, reached from |
 |---|---|---|
-| `SUPERADMIN` | `/admin` | Colleges · Content · Solo · Audit · Library |
-| `C_ADMIN` | `/college` | Users · Subjects · Statistics · Audit · Library |
-| `C_PROFESSOR` | `/professor` | Assessments · Rankings · Library |
-| `C_STUDENT` | `/student` | Assessments · Library |
-| `S_STUDENT` | `/dashboard` | Home · Bare Acts · Practice · Profile (as today) |
+| `SUPERADMIN` | Colleges · Content · Billing · Tutor · Library | Audit: the Overview placard |
+| `C_ADMIN` | Users · Subjects · Analytics · Tutor · Library | Notes: the Overview and the subject screens (F5c.7). Audit: the Overview |
+| `C_PROFESSOR` | Desk · Assessments · Notes · Tutor · Library | — |
+| `C_STUDENT` | Studies · Assessments · Notes · Tutor · Library | — |
+| `S_STUDENT` | unchanged | Vocab, Maxims, Case Laws: the Study hub (F5b.2). Plans: Profile and the banner (F8a) |
 
-"Library" is the shared read-only content: `/acts`, `/sections/:id`, `/search`, `/caselaws`, `/caselaws/:id`. Every role can read it (§2.1). `/profile` (name, email, college, change password, log out) exists for every role. `RedirectIfAuthenticated` sends users to their role's home instead of always `/dashboard`.
+`isNavItemActive` keeps working for both lists. The nav tests assert both lists per role, and that no tab bar has more than 5 items.
 
 Route map (✅ = exists today):
 
 ```
 Public        /login ✅  /register ✅
-Gated         /change-password                 (the only route reachable while mustChangePassword)
+Gated         /change-password ✅                 (the only route reachable while mustChangePassword)
 All roles     /acts ✅  /acts/:actId ✅  /sections/:sectionId ✅  /search ✅
-              /caselaws ✅  /caselaws/:id ✅  /profile ✅
-SUPERADMIN    /admin
-              /admin/caselaws ✅  /admin/caselaws/new ✅  /admin/caselaws/:id ✅  /admin/caselaws/:id/content ✅
-              /admin/acts  /admin/acts/:actId  /admin/sections/:sectionId   (content admin)
-              /admin/import                                                (bulk JSON)
-              /admin/colleges  /admin/colleges/:id                         (admins, AI usage tabs)
-              /admin/solo/subjects  /admin/solo/plans
-              /admin/analytics?collegeId=  /admin/audit
-C_ADMIN       /college  /college/users  /college/users/import  /college/users/:id
-              /college/subjects  /college/subjects/:id
-              /college/rankings/:subjectId  /college/students/:id  /college/audit
-C_PROFESSOR   /professor  /professor/assessments/new  /professor/assessments/:id/edit
-              /professor/assessments/:id  /professor/answers/:answerId  /professor/rankings/:subjectId
-C_STUDENT     /student  /student/assessments/:id  /student/assessments/:id/results
-S_STUDENT     /dashboard ✅  /practice ✅(placeholder)  /practice/new  /practice/questions/:id  /practice/answers
+              /caselaws ✅  /caselaws/:id ✅  /profile ✅  /tutor ✅  /tutor/:conversationId ✅
+              /vocab  /maxims                                               (F5b)
+SUPERADMIN    /admin ✅  /admin/colleges ✅  /admin/colleges/:id ✅  /admin/audit ✅  /admin/tutor ✅
+              /admin/acts ✅ …  /admin/caselaws ✅ …  /admin/import ✅
+              /admin/billing?tab=plans|subscriptions                        (F8a)
+              /admin/solo/subjects                                          (F7)
+C_ADMIN       /college ✅  /college/users ✅ …  /college/subjects ✅ …  /college/audit ✅
+              /college/notes                                                (F5c)
+              /college/analytics  /college/analytics/assessments/:id        (F6a)
+              /college/rankings/:subjectId  /college/students/:id           (F6a-2)
+C_PROFESSOR   /professor ✅  /professor/assessments ✅ …  /professor/answers/:answerId ✅
+              /professor/notes                                              (F5c)
+              /professor/rankings/:subjectId                                (F6a-2)
+C_STUDENT     /student ✅  /student/assessments ✅ …  /student/assessments/:id/results ✅
+              /student/notes                                                (F5c)
+S_STUDENT     /dashboard ✅  /practice ✅(placeholder)
+              /plans  /billing                                              (F8a)
+              /practice/new  /practice/questions/:id  /practice/answers     (F7)
 ```
+
+`/admin/solo/plans` is dropped: billing grants (F8a) replace solo plans.
 
 ### 3.3 Data fetching
 
-- Read-only screens keep `useApiQuery`.
-- From F2 the app has many mutations that must refresh other views (import → user list, approve → grid and ranking), plus polling for AI jobs. **Recommendation:** add `@tanstack/react-query` in F2 rather than growing `useApiQuery` into a cache (D1). It has no transitive runtime dependencies. Query keys mirror API paths (`['professor','assessments',id,'answers',filters]`), mutations invalidate by prefix, and existing pages migrate only when next touched. The client's cache-mode logic (`no-cache` in dev, `reload` after logout) stays in `client.ts` and works underneath it unchanged.
-- Polling is only for in-flight AI work (`AI_EVALUATING`, solo `EVALUATING`): every 3 s, backing off to 10 s, stopping on a terminal status or a hidden tab.
+- TanStack Query for everything new. Query keys mirror API paths (`['college','analytics','overview',filters]`), mutations invalidate by prefix. The client's cache-mode logic (`no-cache` in dev, `reload` after logout) stays in `client.ts` underneath it.
+- Polling only for in-flight work: tutor re-index (F5a), and later AI evaluation and solo `EVALUATING`. Every 3 s, backing off to 10 s, stopping on a terminal status or a hidden tab. The analytics Sync (F6a) is polled the same way while `RUNNING`.
 
 ### 3.4 Forms
 
-Build on what the case-law admin already has: `Field`, `contentForm.ts` (client limits mirroring `@Size`, mapping server `VALIDATION_ERROR` paths to fields and rows, error summary with links), `RepeatableList` and `useUnsavedChangesGuard`. Generalise `contentForm.ts` into `src/lib/forms.ts` when the second form type (sections) needs it. No form library.
+Build on `Field`, the form helpers (client limits mirroring `@Size`, server `VALIDATION_ERROR` paths mapped to fields, error summary with links), `RepeatableList` and `useUnsavedChangesGuard`. No form library.
 
-New domain inputs:
-- **`MarksInput`:** `step="0.5"`, `min=0`, `max=maxMarks`. Rejects non-multiples of 0.5 before submit (mirrors `INVALID_MARKS`).
-- **`DateTimeField`:** wraps `<input type="datetime-local">`, shows the user's timezone, sends ISO-8601 UTC, and enforces "in the future" for `due_at`.
-- **`FileDropzone`:** accepts PDFs (or CSV/XLSX for imports). Checks size and the `%PDF-` magic bytes on the client before uploading (the server re-checks). Shows upload progress and is keyboard operable.
+Domain inputs: `NumberField` (marks, `step="0.5"`), `DateTimeField` (ISO-8601 UTC), `FileDropzone` (client checks before upload; the server re-checks). New in this revision:
+- **Note files (F5c):** PDF, DOCX or PPTX, at most 20 MB. Magic bytes are `%PDF-` for PDF and `PK\x03\x04` for DOCX/PPTX.
+- **Money (F8a):** prices are integer paise; show them as `₹499` with `Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' })`; the SUPERADMIN price field takes rupees and sends paise.
+- **IST dates (F6a):** analytics filters are `yyyy-MM-dd` India dates (`<input type="date">`), never converted to UTC. `asOf`, `startedAt` and `nextSyncAt` are ISO-8601 UTC instants, shown as IST date and time.
 
 ### 3.5 Files
 
-- **Upload:** a new `apiClient.upload(path, formData, { method, onProgress, signal })` built on `XMLHttpRequest`, because `fetch` has no upload progress. It sends no manual `Content-Type` and follows the same 401 → refresh → retry-once rule. `request()` must also skip the JSON `Content-Type` when the body is `FormData`.
-- **Download/view:** files come only from access-checked endpoints that need the bearer header, so a plain `<a href>` won't work. `apiClient.download(path) → { blob, filename }` reads the filename from `Content-Disposition`. `PdfViewer` shows the blob in an `<iframe>` on an object URL using the browser's own PDF viewer (no pdf.js), and revokes the URL on unmount. Downloads always use `cache: 'no-store'`.
-- **Professor side effect:** the first `GET /professor/answers/{id}/file` sets `professor_downloaded_at`, which enables AI Evaluate. Invalidate the answer query after the download resolves.
+- **Upload:** `apiClient.upload(path, formData, { method, onProgress, signal })` (XHR, no manual `Content-Type`, same 401 → refresh → retry-once rule).
+- **Declared type matters (F5c):** the backend checks the part's declared content type against the file's bytes (contract §11c). Some systems give `.docx`/`.pptx` an empty `File.type`. Before appending, re-wrap such a file as `new File([file], file.name, { type })` with the type inferred from the extension. Never guess a type for any other extension.
+- **View vs. save:** files come only from access-checked endpoints, so `apiClient.download(path) → { blob, filename }`. PDFs (`Content-Disposition: inline`) open in `PdfViewer`. `attachment` files (DOCX, PPTX, the analytics CSV) are saved. `download()` returns only the file name, so the caller decides from what it already knows (a note's `file.contentType`; the CSV is always saved). Saving goes through an object URL and a temporary `<a download>`, and the URL is revoked straight after. Downloads always use `cache: 'no-store'`.
+- **Professor side effect:** the first `GET /professor/answers/{id}/file` sets `professor_downloaded_at`. Invalidate the answer query after the download resolves.
 
 ### 3.6 Error-code catalogue
 
-`src/api/errors.ts` maps each `error` code to UI behaviour. Screens switch on codes, not on HTTP status.
+`src/api/errors.ts` maps each `error` code to UI behaviour. Screens switch on codes, not on HTTP status. New or changed rows in this revision are marked ●.
 
 | Code | UI behaviour |
 |---|---|
@@ -164,53 +181,57 @@ New domain inputs:
 | `PASSWORD_CHANGE_REQUIRED` | Global: go to `/change-password` |
 | `COLLEGE_INACTIVE` | Login banner: "Your college's account is inactive. Contact your administrator." |
 | `FORBIDDEN` | "You don't have access to this page" + link to the role's home |
-| `NOT_FOUND` | Not-found state. This is also the answer for out-of-scope ids (§2.2), so never hint that the id exists |
-| `VALIDATION_ERROR` | Map `path: reason` onto fields (existing `contentForm.ts` parser); otherwise a form banner |
+| `NOT_FOUND` | Not-found state. This is also the answer for out-of-scope ids, so never hint that the id exists |
+| `VALIDATION_ERROR` | Map `path: reason` onto fields; otherwise a form banner |
 | `EMAIL_ALREADY_EXISTS`, `SHORT_CODE_ALREADY_EXISTS`, `SECTION_NUMBER_ALREADY_EXISTS`, `COLLEGE_CODE_ALREADY_EXISTS`, `LOGIN_ID_ALREADY_EXISTS`, `SUBJECT_CODE_ALREADY_EXISTS` | Inline on the field |
-| `SUBJECT_IN_USE` | Delete dialog explains the subject has assessments; offers rename |
+| ● `SUBJECT_IN_USE` | Delete dialog explains the subject still has assessments or notes; offers rename |
 | `ASSESSMENT_NOT_EDITABLE` | Refetch; editor becomes read-only |
 | `ASSESSMENT_CLOSED` | Refetch; the question card shows "Closed — not attempted" |
 | `ANSWER_LOCKED` | Refetch; show as submitted |
-| `INVALID_FILE` | Inline on the dropzone (the `message` says type, size or pages) |
+| ● `INVALID_FILE` | Inline on the dropzone. The `message` names the problem: type, size, pages, unreadable, password-protected, or (notes) "must not contain macros" |
 | `GRADE_PUBLISHED` | Refetch; the grade form becomes read-only |
-| `AI_EVALUATION_NOT_ALLOWED` | Inline: "Open the answer PDF first" or "Already published" |
-| `INVALID_MARKS` | Inline on `MarksInput` |
-| `PLAN_REQUIRED` (402) | Solo plan-gate screen |
-| `QUOTA_EXCEEDED` (429) | Tutor (F5a): disable the composer, keep the typed question, refetch `/tutor/quota` and show the banner with the local time of `resetsAt`. Solo (F7): usage banner with the reset date; disable generate buttons |
-| `AI_UNAVAILABLE` (503) | Tutor (F5a): the pending message turns failed with **Try again**, keeping the question; nothing was stored or counted. The rest of the app is unaffected |
-| `INDEX_RUN_IN_PROGRESS` (409) | Tutor admin (F5a): refetch the index runs and show the running one; not an error toast |
-| `ATTEMPT_LIMIT_REACHED` | Hide upload; "3 of 3 attempts used" |
+| `AI_EVALUATION_NOT_ALLOWED` | Inline: "Open the answer PDF first" or "Already published" (F5, on hold) |
+| `INVALID_MARKS` | Inline on the marks field |
+| ● `PLAN_REQUIRED` (402) | S_STUDENT only, from P8a: the gated screen (tutor, Vocab, Maxims, later solo) is replaced by `PlanGate` ("Your trial has ended…", plans link, "Check again" = `/auth/refresh` then refetch). Never a toast |
+| ● `PAYMENTS_UNAVAILABLE` (503) | Plans page (F8a): "Online payment isn't available yet. Contact us to activate a plan." The Buy buttons stay, so this shows on click |
+| ● `PLAN_NOT_AVAILABLE` (409) | Plans page: refetch the plans; "This plan is no longer available" |
+| ● `SYNC_IN_PROGRESS` (409) | Analytics Sync (F6a): "A sync is already running"; start polling; not an error toast |
+| ● `SYNC_COOLDOWN` (429) | Analytics Sync (F6a): refetch the sync state; "You can sync again at {nextSyncAt}"; not an error toast |
+| `QUOTA_EXCEEDED` (429) | Tutor: disable the composer, keep the typed question, refetch `/tutor/quota`, show the banner with the local time of `resetsAt`. Solo (F7): usage banner with the reset date |
+| `AI_UNAVAILABLE` (503) | Tutor: the pending message turns failed with **Try again**, keeping the question; nothing was stored or counted |
+| `INDEX_RUN_IN_PROGRESS` (409) | Tutor admin: refetch the index runs and show the running one |
+| `ATTEMPT_LIMIT_REACHED` | Hide upload; "3 of 3 attempts used" (F7) |
 | `IMPORT_FILE_INVALID` | Whole-file error on the import screen |
-| `RATE_LIMITED` (429) | Toast "Too many requests, try again shortly" (the form banner on sign-in and change password); no automatic retry. The backend raises it only from P8 (contract §0.8), but handle it from F1 |
+| `RATE_LIMITED` (429) | Toast "Too many requests, try again shortly" (form banner on sign-in and change password); no automatic retry. Raised from P8 |
 | `NETWORK_ERROR` | Retryable error state |
 
-The exact copy for each code is in `Lexly-UI-Spec.md` §0.6. Confirm each new code's HTTP status against the live backend once per phase (as was done for `EMAIL_ALREADY_EXISTS`) and record it in the progress file.
+The exact copy for each code is in `Lexly-UI-Spec.md` §0.6. Confirm each new code's HTTP status against the live backend once per phase and record it in the progress file.
 
 ### 3.7 Styling and UX baseline
 
-- Keep CSS Modules and the `--lx-*` tokens. Add status tokens (draft, published, closed, removed, pending, AI, failed), always paired with a text label.
-- The study panel stays the reading layout for the Library. New work areas (admin, college, professor) use the wide layout with a shared `DataTable`: sortable headers with `aria-sort`, a sticky header, server pagination over `PagedResponse`, and filters held in the URL.
-- Professor and admin grids are desktop-first but scroll horizontally on tablets without breaking the page. Student screens are mobile-first (students will upload from phones).
+- The UR tokens (`--lx-*`), the sidebar shell and pastel placards apply to every new screen. Status colours are always paired with a text label.
+- The study panel stays the reading layout for the Library. Vocab and Maxims use the Library chrome but a list layout (F5b).
+- Work areas use the shared `DataTable` (sortable headers with `aria-sort`, sticky header, server pagination, filters in the URL). Student screens are mobile-first, including Notes.
+- Charts are hand-drawn SVG with a data-table alternative, as in the F5a spend graph. No chart library.
 
 ### 3.8 Configuration
 
 ```
 VITE_API_BASE_URL=http://localhost:8080/api/v1
-VITE_API_USERS_ME=true            # remove the flag in F0: /users/me is required from now on
 VITE_API_UNIFIED_SEARCH=false     # not in TDD v2 (D3)
 VITE_API_LEARNING_PROGRESS=false  # not in TDD v2 (D3)
-VITE_HOME_MOCKS=                  # dev only, unchanged
+VITE_HOME_MOCKS=                  # dev only
 ```
 
-Remove `VITE_API_PRACTICE_STATS`. There are no upload-limit variables: the student assessment detail returns `uploadLimits` (contract §9.3, B4).
+No upload-limit variables: answer limits come from `uploadLimits` (contract §9.3). The 20 MB note limit and the note file types are constants in `src/api/notes.ts` citing contract §11c, because the API doesn't return them.
 
 ### 3.9 Testing
 
 | Layer | Tool | Scope |
 |---|---|---|
-| Unit | Vitest | Mappers (`toSectionDetail`, `toCaseLawDetail`), `compareSectionNumbers`, `contentForm` error parsing, `MarksInput` rules, error catalogue |
-| Component | Vitest + Testing Library + user-event | Forms, `RepeatableList`, the answer card and grade panel state machines, a11y roles |
-| Mocks | MSW, with handlers typed from `src/api` DTOs | Loading / empty / error / success for every screen. Also replaces ad-hoc Playwright route interception |
+| Unit | Vitest | Mappers, error catalogue, form rules, the paise formatter, the IST date-range check, file-type inference |
+| Component | Vitest + Testing Library + user-event | Forms, state machines, `PlanGate`, note-card permissions, a11y roles |
+| Mocks | MSW, with handlers typed from `src/api` DTOs | Loading / empty / error / success for every screen; the only way to build F8a and F6a before their backend phases merge |
 | E2E | Playwright, committed under `e2e/` | One golden path per role per phase against a live backend, at 390×844 and 1280×800, with an axe-core scan per screen |
 
 CI: `lint → tsc -b → vitest run → vite build`.
@@ -219,227 +240,172 @@ CI: `lint → tsc -b → vitest run → vite build`.
 
 ## 4. Phase plan
 
-Frontend phases mirror the backend phases. **F*n* starts once backend Phase *n*'s API contract is agreed and ships after Phase *n* is merged.** F0 needs only what the backend already has.
+Frontend phases mirror the backend phases. **F*n* starts once backend Phase *n*'s contract is agreed and ships after Phase *n* is merged.** The 2026-10-25 build order is the backend's: **5b → 5c → 8a → 6a**.
 
 | Phase | Name | Backend dep | Size | State |
 |---|---|---|---|---|
-| F0 | Clean-up & foundations | current backend + Phase 0 | S | most groundwork done in `fab9df4`; backend P0 merged |
-| F1 | Identity, roles, SUPERADMIN & content admin | Phase 1 | L | case-law admin done; backend P1 committed (`feature/phase1`), contract §1, §2, §5–§7 LIVE |
+| F0 | Clean-up & foundations | Phase 0 | S | **Done** 2026-10-14 |
+| F1 | Identity, roles, SUPERADMIN & content admin | Phase 1 | L | **Done** 2026-10-14 |
 | F2 | College administration | Phase 2 | M | **Done** 2026-10-14 |
-| F3 | Assessments & answering | Phase 3 | L | **Done** 2026-10-16 against backend `main` (`75a7c08`); F3.9 dropped |
-| F4 | Manual grading & student results | Phase 4 | M | Built 2026-10-18 against backend `feature/phase4` (`0e1174e`); Done once Phase 4 is merged |
-| F5 | AI evaluation UI | Phase 5 | S | *On hold* (backend Phase 5 on hold 2026-10-19) |
-| F5a | AI legal tutor | Phase 5a | M | Merged 2026-10-20 (PR #6); backend Phase 5a merged to `main` (`f62b9f0`). Done once re-indexed and `e2e/f5a-tutor.spec.ts` passes |
-| F6a | Rankings & statistics | Phase 6a | M | — |
+| F3 | Assessments & answering | Phase 3 | L | **Done** 2026-10-16; F3.9 dropped |
+| F4 | Manual grading & student results | Phase 4 (merged) | M | Merged; Done after the e2e re-run against backend `main` |
+| F5 | AI evaluation UI | Phase 5 | S | *On hold* with backend Phase 5 (2026-10-19) |
+| F5a | AI legal tutor | Phase 5a (merged) | M | Merged (PR #6); Done after a re-index and `e2e/f5a-tutor.spec.ts` pass |
+| UR | UI refresh | none | L | **Merged** (PR #7, 2026-10-22) |
+| F5b | Vocab & Maxims | Phase 5b (merged) | S | **Next.** Contract §11b LIVE |
+| F5c | Subject notes | Phase 5c (merged) | M | Contract §11c LIVE; build against backend `main` |
+| F8a | Trial, plans & billing (no gateway) | Phase 8a | M | Contract §14 PROPOSED; build against MSW |
+| F6a | C_ADMIN analytics (Sync) | Phase 6a | M | Contract §12a PROPOSED; build against MSW |
+| F6a-2 | Rankings & statistics | Phase 6a-2 | M | Later (contract §12) |
 | F6b | AI analysis & admin chatbot | Phase 6b | — | To be planned |
-| F7 | Solo AI practice | Phase 7 | M | — |
-| F8 | Payments & hardening | Phase 8 | M | — |
-| UR | UI refresh (new visual language, sidebar shell, role homes) | none (frontend only; no endpoint changes) | L | Built 2026-10-20 on `feature/ui-refresh`; e2e F0–F4 and axe pass against the live backend |
+| F5d | Other laws | Phase 5d | ? | Waiting for the data model |
+| F7 | Solo AI practice | Phase 7 | M | After F8a; uses billing entitlement |
+| F8b | Gateway checkout & hardening | Phase 8b | M | Waiting for the gateway decision (D8) |
 
-F6a can run alongside F5a, as on the backend. On 2026-10-19 the user put Phase 5 (AI grading) on hold, so assessments stay manually graded (F4), and Phase 5a (a RAG legal tutor) was built instead. Phase 6 was split into 6a (manual statistics, the old F6) and 6b (AI analysis of those statistics plus a C_ADMIN chatbot, planned later). Don't reopen this.
-
----
-
-### F0 — Clean-up & foundations
-
-**Goal:** remove what v2 dropped, and add the plumbing every later phase needs.
-
-| # | Task | Details |
-|---|---|---|
-| F0.1 | Remove MCQ practice | Delete `PracticeProgress`, the `practiceStats` flag, its DTOs/mappers in `users.ts` and its mocks in `homeMocks.ts`. `/practice` becomes "Solo practice — coming soon". Hide the Bare-Act Progress and Continue Learning cards while their flags are off (D3). Already done 2026-10-13: Next Up rewritten from this plan, and the code comments and `.env.example` that cited the deleted `HOME_DASHBOARD_API_CONTRACT.md` now point at `Lexly-API-Contract.md` §15 |
-| F0.2 | Role from `/users/me` | After login/register, call `GET /users/me` (as the bootstrap already does) and drop `roleFromAccessToken`. One source of truth, carrying `role`, `mustChangePassword`, `loginId` and `college: { id, code, name } \| null` (contract §2.1, LIVE). Type `role` as the union of the five roles (contract §0.7). The login/register response now also carries `role` and `mustChangePassword`; use them only to decide whether to go to `/change-password` before `/users/me` returns, never as the stored role |
-| F0.3 | Role skeleton | `roles.ts`, `RequireRole` (replaces `RequireAdmin`), role-driven nav in `AppLayout`, role-aware `RedirectIfAuthenticated`, `React.lazy` per area, a real `NotFound` page (today `*` redirects to `/login`). The Library item goes to `/acts`, and the Library list pages get a Bare Acts · Case Laws · Search sub-nav for roles that have a single Library item; the SUPERADMIN Content item goes to `/admin/acts` with an Acts · Case laws · Import sub-nav. `/admin` redirects to `/admin/acts` until F1.4. **No legacy role mapping:** backend P1 already remapped `ADMIN` → `SUPERADMIN` and `STUDENT`/`LAWYER` → `S_STUDENT` (V16), so the UI only knows the five roles. An unrecognised role is treated as signed-in with Library access only |
-| F0.4 | Shared components | Move `ConfirmDialog`, `Toast`, `Field`, `RepeatableList` and `useUnsavedChangesGuard` from `pages/admin/` to `src/components/`. Split the shared parts of `Admin.module.css` out with them. No behaviour change |
-| F0.5 | Client extensions | Skip the JSON `Content-Type` for `FormData`; add `patch`, `upload` (XHR with progress) and `download` (blob + filename), and pass `AbortSignal` through. Add the `errors.ts` catalogue |
-| F0.6 | Tests & CI | Vitest, Testing Library, MSW, Playwright, axe. Seed the suite with the mappers, `compareSectionNumbers`, `contentForm` parsing and the cookie-session flows from the 2026-10-09 entry. Add a GitHub Actions workflow |
-| F0.7 | Session edge cases | Re-run the 2026-10-09 cookie checks against the **live** backend (still listed in Next Up). Fix G10 |
-
-**Done when:** no MCQ code remains; a `SUPERADMIN` sees an admin nav without going through Profile; `npm test` runs in CI; the cookie-session checks pass against the live backend.
+Don't reopen the roadmap: Phase 5 is on hold, the tutor came first, Phase 6 is split, and billing was brought forward as 8a.
 
 ---
 
-### F1 — Identity, roles, SUPERADMIN & content admin
+### F0–F4, F5, F5a, UR
 
-**Goal:** all five roles log in and land in their own area. SUPERADMIN manages colleges, C_ADMINs, all legal content and the audit log.
+Done or merged. The task tables are kept in the progress file and in git history (this plan up to the 2026-10-16 revision); they aren't repeated here. Two follow-ups stay open:
+- **F4:** re-run `e2e/f4-grading.spec.ts` against backend `main` and mark it Done.
+- **F5a:** re-index on the live backend, run `e2e/f5a-tutor.spec.ts`, and mark it Done.
 
-| # | Task | Details |
-|---|---|---|
-| F1.1 | Two-mode login | `/login` gets two tabs on the existing `AuthLayout`: **Email** (SUPERADMIN, C_ADMIN, S_STUDENT) and **College** (college code, upper-cased as typed, + roll no / employee ID + password). Send exactly one shape (`{ email, password }` or `{ collegeCode, loginId, password }`); both or neither is a `400`. One generic error on `401` (§4.1); `403 COLLEGE_INACTIVE` gets its own banner. Remember the last-used tab name in `localStorage`, never credentials |
-| F1.2 | Forced password change | `/change-password` (current, new, confirm; ≥ 8 chars, ≠ current, ≠ `loginId`, matching the backend's three `VALIDATION_ERROR` messages). The same route serves a voluntary change from Profile, with Cancel. While `mustChangePassword` is set, every route redirects here and the nav shows only Log out. A `403 PASSWORD_CHANGE_REQUIRED` from any call also redirects here. On success, **replace the in-memory access token with the one returned** (the gate is read from the token, so the old token stays gated), refetch `/users/me`, and go to the role's home |
-| F1.3 | Registration | Unchanged; the result is always `S_STUDENT` (§4.3). The response now carries `role` and `mustChangePassword` |
-| F1.4 | Role areas live | Role homes for all five roles. `/admin` becomes a hub (Colleges, Content, Audit). Placeholder homes for areas whose features come later |
-| F1.5 | Profile | Name, email, role, college name/code, change password, log out. The "Admin: manage case laws" link is removed, since the admin area now has its own nav |
-| F1.6 | Colleges | `/admin/colleges`: list (search, active filter), create/edit (code, name), and deactivate/reactivate with a `ConfirmDialog` saying every user in the college loses access. College detail **Admins** tab: create C_ADMIN, list, reset password, remove |
-| F1.7 | Acts & sections admin | `/admin/acts`: list/create/edit/delete (`SHORT_CODE_ALREADY_EXISTS` inline). `/admin/acts/:actId`: ordered section list, create/delete (`SECTION_NUMBER_ALREADY_EXISTS` inline). `/admin/sections/:id`: an editor for every reader field (body text, in simple words, provision meaning, illustrations with the `hypothetical` flag, exceptions with nested illustrations, key legal terms) built with `RepeatableList` and saved with one full-replace `PUT /admin/sections/{id}`. The per-item illustration/exception endpoints and `…/reorder` are not used, because that `PUT` replaces the nested lists anyway. The editor loads `GET /admin/sections/{id}` and Edit act loads `GET /admin/acts/{id}` (both ADDED, LIVE since P1). A "View as reader" link. Same cache-bypass-after-save pattern as the case-law admin |
-| F1.8 | Case-law ↔ section linking | Open item from the case-law admin entry. In the case-law form, a section picker (act → section list or search) calls `POST/DELETE /admin/caselaws/{id}/sections/{sectionId}`, replacing today's read-only list |
-| F1.9 | Bulk JSON import | `/admin/import`: choose acts / sections / case laws, upload or paste JSON, parse on the client, submit. The response is always `200 BulkImportResult` (contract §5.5, LIVE since P0); `400` only for an invalid envelope. Then show the §7.1 result: summary counts and an `ImportResultTable` (index, key, status, errors), filterable by status, with "download rejected rows" (a JSON file in the same envelope holding only the rejected and failed rows, ready to fix and re-import). `ImportResultTable` is reused in F2 |
-| F1.10 | Audit log | `/admin/audit` (college filter) and `/college/audit` (C_ADMIN; `GET /audit` is already open to them): filters for action, date range and college. Columns: time, actor + role, action, entity, and details (JSON rendered as text in an expandable row). A note that entries are kept for 30 days. Only send `action` / `entityType` values from the contract's lists (an unknown one is a `400`). P1 records only `LOGIN_FAILED`, `PASSWORD_CHANGED`, `PASSWORD_RESET`, `COLLEGE_CREATED`, `COLLEGE_UPDATED`, `USER_CREATED`, `USER_REMOVED` and `CONTENT_IMPORT`; the action filter lists all actions anyway |
-| F1.11 | Tests | Both login modes; the forced-change redirect can't be bypassed by typing URLs; role guards; inactive-college message; import results with mixed outcomes; section editor round-trip (load → save unchanged → identical body, as done for case laws) |
-
-**Backend asks:** B1, B2 (§6), both delivered in P1.
-
-**Dev seed:** the V16 migration seeds the SUPERADMIN from `LEXLY_SUPERADMIN_EMAIL` / `LEXLY_SUPERADMIN_PASSWORD_HASH`. The backend's `.env.example` uses `superadmin@lexly.local` with password `lexly-superadmin-dev` (dev only), and the account starts with `mustChangePassword = true`.
-
-**Done when:** SUPERADMIN logs in with the seeded credentials, is forced to change the password, creates a college and a C_ADMIN, and the C_ADMIN logs in and is forced to change theirs. SUPERADMIN edits a section and imports a sections batch with 3 bad rows, and the reader shows the changes.
+F5 (AI evaluation UI) keeps its tasks F5.1–F5.6 for when backend Phase 5 resumes: AI Evaluate button, polling, AI suggestion block with flag chips, failure + retry, grid statuses, tests.
 
 ---
 
-### F2 — College administration
+### F5b — Vocab & Maxims
 
-**Goal:** C_ADMIN manages users and subjects in the browser.
+Backend Phase 5b (TDD §7.11, contract §11b, LIVE). Read-only glossaries for **every role**, derived from section key terms and case-law principles. No writes.
 
 | # | Task | Details |
 |---|---|---|
-| F2.1 | React Query | Add `@tanstack/react-query` (D1) and migrate the F1 admin lists |
-| F2.2 | User list | `/college/users`: Students / Professors tabs, search (name, email, login ID), server pagination; row actions edit, reset password, remove |
-| F2.3 | Create/edit user | Name, email, roll no / employee ID; duplicate errors inline |
-| F2.4 | Reset password | Confirm: "The password becomes their roll no / employee ID, and they must change it at next login" |
-| F2.5 | Remove user | `ConfirmDialog` with typed confirmation (enter the login ID), since removal is a hard delete. The text explains the consequences per role (§4.7): a student's answers, grades and ranking entries are deleted; a professor's assessments stay as "Former professor" and their ungraded answers can no longer be graded |
-| F2.6 | Bulk import | `/college/users/import` with Students / Professors tabs: template download (D7), `FileDropzone` (`.csv`, `.xlsx`), upload with progress, then `ImportResultTable` with `CREATED / CONVERTED / REJECTED / FAILED`. `CONVERTED` rows explain that the solo account was converted and its solo data deleted. `IMPORT_FILE_INVALID` is a whole-file error |
-| F2.7 | Subjects | List/create/edit (code, name, description); delete with the `SUBJECT_IN_USE` explanation. Subject detail: a searchable professor multi-select saved through `PUT /college/subjects/{id}/professors` |
-| F2.8 | Read-only subjects | Professors: "My subjects". Students: college subjects (used as filters in F3) |
-| F2.9 | Tests | All 4 import outcomes; the remove dialog needs the exact login ID; another college's user id shows Not Found |
+| F5b.1 | API module | `src/api/vocab.ts`: `VocabSummary { term, definition, source: { sectionId, sectionNumber, actId, actShortCode } }` and `MaximSummary { title, explanation, source: { caseLawId, caseTitle } }` (the backend's DTO names since `783ef11`), as `Page<T>` from `api/content`; `getVocab({ q, letter, page })` / `getMaxims(…)`. Send `letter` only when set, URL-encoded (`#` → `%23`, or the server reads an empty letter, i.e. all). Keep the server's A–Z order. The entries have **no id**: the React key is the term/title lower-cased, which is unique because the server de-duplicates on it. `queryKeys.vocab.list(params)`, `queryKeys.maxims.list(params)` with `useCachedQuery`, keeping the previous page on screen while the next one loads |
+| F5b.2 | Routes and nav | `/vocab` and `/maxims`, shared routes like the Library (every role, not in `AREAS`), lazily loaded as one chunk, wide (`isWidePath`). Library sub-nav: Bare Acts · Case Laws · **Vocab** · **Maxims** · Search. **S_STUDENT (G19):** no sub-nav and a full tab bar, so the Study hub gets a Glossary placard (Vocab and Maxims links), and both pages show a small Vocab ⇄ Maxims switch (S_STUDENT only; the other roles have the sub-nav; UI spec F5b). The S_STUDENT **Bare Acts** tab stays active on these pages only if the UI spec says so (default: no tab active) |
+| F5b.3 | Screen | `pages/glossary/GlossaryPage`, one component with two configs (labels, fetcher, source link). An A–Z letter bar plus `#` (anything not starting A–Z, accented letters included), with `aria-pressed` on the active letter and **All** to clear; on phones it scrolls horizontally inside its own row (no page scroll). Search box (debounced 300 ms, `maxLength` 100, matches the term/title or the meaning). `q`, `letter` and `page` (1-based) in the URL; changing `q` or `letter` resets the page. Entries as a `<dl>`: term/title, definition/explanation as plain text (no `RichText`), and a source link (`ICA · s. 2(d)` → `/sections/:sectionId`; case title → `/caselaws/:caseLawId`). Result count in an `aria-live` region; `aria-busy` while refetching. Empty states: per letter ("No terms under K") and per search ("No terms match '…'", with Clear) |
+| F5b.4 | Entitlement | Prepare for P8a: a `402 PLAN_REQUIRED` from these endpoints renders `PlanGate` once F8a lands. Until then it falls through to the generic error state. Add `PLAN_REQUIRED` to `errors.ts` now so F5b and F8a share the code |
+| F5b.5 | Tests | Mappers; `letter=#` sent as `%23`; letter bar keyboard use; URL round-trip; `#` bucket; search + letter combined; page reset on filter change; source links; `400 VALIDATION_ERROR` on an over-long `q` shows the form message; S_STUDENT reaches both pages from the Study hub; MSW fixtures in `src/test/glossary.ts`. E2E `e2e/f5b-glossary.spec.ts`: a term used in two sections appears once and opens the first section (by act title → section order); a maxim opens its case law |
 
-**Done when:** C_ADMIN imports a students file with a duplicate, a bad email and a conversion, reads the per-row results, creates subjects and maps professors, and an imported student logs in with college code + roll no.
+**Done when:** every role opens Vocab and Maxims from the Library, filters by letter and searches, and each entry opens its section or case law.
 
 ---
 
-### F3 — Assessments & answering
+### F5c — Subject notes
 
-**Goal:** professors author and publish assessments. Students upload and submit answers per question.
+Backend Phase 5c (TDD §7.12, contract §11c). Professors share study notes (PDF, DOCX or PPTX, ≤ 20 MB) per subject. Every C_STUDENT of the college reads them, and the C_ADMIN lists and deletes them. S_STUDENTs and SUPERADMIN never see notes.
 
 | # | Task | Details |
 |---|---|---|
-| F3.1 | Professor list | `/professor`, with filters for subject and status (`DRAFT / PUBLISHED / CLOSED / REMOVED`). Columns: title, subject, due date, status, and the §7.5 counts. F3 shows submitted and not attempted; the grading counts are 0 until backend P4, so F4/F5 add pending evaluation, AI evaluated and published |
-| F3.2 | Draft editor | Subject (mapped only), title, instructions, due date (`DateTimeField`), and 1–50 questions in a `RepeatableList`, each with text, max marks (`MarksInput` > 0) and word limit (> 0). Running total of marks; unsaved-changes guard; explicit save |
-| F3.3 | Publish | A pre-flight checklist mirroring §6.1, each failure linked to its field. Confirm: "Once published, nothing can be edited and the due date can't be extended" |
-| F3.4 | Delete / remove | Drafts: delete. Published or closed: Remove, with a confirm explaining it disappears from students and rankings |
-| F3.5 | Student list | `/student`: cards grouped by state (`OPEN`, `PARTIALLY_SUBMITTED`, `SUBMITTED`, `CLOSED`, `RESULTS_AVAILABLE`), a subject filter, and a relative due countdown (warning colour under 24 h) |
-| F3.6 | Student assessment | Instructions and due date, then one card per question showing text, max marks, word limit and the §6.2 state machine: **Not uploaded** → **Uploaded** (filename, size, time, View, Replace, **Submit**) → **Submitted** (locked, View). Submit confirm: "You can't change this answer after submitting." After the due date the cards are read-only, and an unsubmitted upload is explained as "Not attempted". The countdown uses `serverTime` from the detail response to correct the device clock |
-| F3.7 | Upload | `PUT /student/questions/{qid}/answer` via `apiClient.upload` with progress; client checks first, using `uploadLimits` from the assessment detail; `INVALID_FILE` inline; `ASSESSMENT_CLOSED` triggers a refetch. View your own file in `PdfViewer` |
-| F3.8 | Submissions grid | `/professor/assessments/:id`: questions plus a students × questions grid. Each cell is an icon + text status; filters for question and status; paged by student; sticky first column and header. A cell opens the answer review (F4) |
-| F3.9 | ~~SUPERADMIN read-only~~ | Dropped 2026-10-15: SUPERADMIN has no access to college assessments or answers (A9 changed, TDD §15; contract §9.6) |
-| F3.10 | Tests | Each answer-card transition and each 409; the publish checklist; countdown boundaries; another professor's assessment shows Not Found |
+| F5c.0 | Nav split | D11 / G18 first: `tabsFor(role)` next to `sidebarFor(role)` in `roles.ts`, then add the Notes items. Nav tests per role |
+| F5c.1 | API module | `src/api/notes.ts`: `SubjectNote { id, subject { id, code, name }, title, description \| null, file { originalFilename, contentType, sizeBytes }, uploadedBy { id, fullName } \| null, createdAt, updatedAt }` via `toSubjectNote()` (blank description → `null`). Calls: professor `listProfessorNotes({ subjectId, page })`, `uploadNote(form, { onProgress, signal })` (multipart parts `file`, `subjectId`, `title`, `description`, through `apiClient.upload`), `updateNote(id, { title, description })` (JSON `PUT`), `replaceNoteFile(id, file, …)` (multipart `PUT …/file`), `deleteNote(id)`, `downloadProfessorNote(id)`; student `listStudentNotes({ subjectId, q, page })`, `downloadStudentNote(id)`; C_ADMIN `listCollegeNotes({ subjectId, professorId, page })`, `deleteCollegeNote(id)`. The type and size constants (§3.8) and the extension → content-type inference (§3.5). `queryKeys.notes.{professor,student,college}(params)`; every write invalidates `['notes']` |
+| F5c.2 | Shared note list | `pages/notes/`: a `NoteCard` (`FileTypeIcon` + "PDF / Word / PowerPoint" label, title, description as plain text, subject code · name, `formatBytes` size, uploader or "Former professor", updated date) and a paged list, newest first, as returned. One component for all three roles, with the actions passed in. Mobile-first (cards, not a table, under 768 px) |
+| F5c.3 | Professor | `/professor/notes` (nav **Notes**): subject filter from `listSubjects()` (`GET /college/subjects` already returns only the caller's mapped subjects). A `subjectId` in the URL that's no longer mapped answers `404`: show the filter's Not Found state with **Show all subjects**. **Upload note** opens a dialog (`DialogForm`): subject (required; pre-filled from the filter), title (1–200, trimmed), description (≤ 2,000, optional), file, with upload progress and **Cancel** aborting the XHR. Edit (title + description) and Replace file appear only where `uploadedBy?.id === user.id`; colleagues' notes are read-only (the server answers `404` anyway). Delete confirm: "Students lose access to this file. This can't be undone." A `404` on a write (subject unmapped or deleted meanwhile) shows "This note or its subject is no longer available" and refetches. The unsaved-changes guard covers an open dialog with edits |
+| F5c.4 | Student | `/student/notes` (nav **Notes**): subject filter (all the college's subjects from `listSubjects()`) and search (`q` on title and description, debounced, ≤ 100 chars), both in the URL with the page. View/download as in F5c.6. No edit actions. Optionally a "Latest notes" row on the My studies home (`size=3`) if the UI spec wants it |
+| F5c.5 | C_ADMIN | `/college/notes` (sidebar **Notes**, D11): subject filter (`listSubjects()`) and professor filter (`GET /college/users?role=C_PROFESSOR&size=100&sort=fullName,asc`, a searchable select if a college has more), metadata only (**no** view or download, since the API has none), Delete with a confirm naming the note and its uploader |
+| F5c.6 | Files & errors | `FileDropzone` with `accept=".pdf,.docx,.pptx"` and a `checkNoteFile()` helper: extension in the set, size ≤ 20 MB (`file: must be at most 20 MB` wording), first bytes `%PDF-` or `PK\x03\x04` matching the extension, empty `File.type` re-wrapped (§3.5). Only the zip header is checked on the client; the server checks the package (Strict Open XML is accepted since `526fd13`) and rejects macros. `INVALID_FILE` inline with the server message; the 21 MB multipart `VALIDATION_ERROR` (`file: is larger than the upload limit`) maps to the same inline error. **View vs. save:** decide from `note.file.contentType`, since `download()` returns only `{ blob, filename }`: `application/pdf` opens in `PdfViewer`, anything else goes through a new `saveDownload(download)` helper (object URL + `<a download>`, revoked at once). `SUBJECT_IN_USE` copy updated (G16) |
+| F5c.7 | Subject screens | C_ADMIN subject delete dialog: on `409 SUBJECT_IN_USE`, explain that assessments or notes block deletion (the `Subject` DTO has `assessmentCount` but no note count, so this can't be predicted), and link to `/college/notes?subjectId=`. The subject detail gets a **Notes** link to the same filter |
+| F5c.8 | Audit | `NOTE_UPLOADED`, `NOTE_REPLACED`, `NOTE_DELETED` (entity `SUBJECT_NOTE`) summaries in the audit screens: "Note {fileName}" from the details (`subjectId`, `fileName`; there is no subject name to show). Metadata edits aren't audited |
+| F5c.9 | Tests | Each file type accepted; wrong type, > 20 MB and a renamed `.txt` → `.docx` rejected on the client; empty-`File.type` DOCX gets its type; owner-only actions; "Former professor"; upload progress and cancel; C_ADMIN has no download; PDF opens inline and DOCX is saved; another college's note id shows Not Found; nav tests for the split. MSW fixtures in `src/test/notes.ts`. E2E `e2e/f5c-notes.spec.ts`: a professor uploads a PDF and a DOCX, a student of the college views one and downloads the other, a student of another college gets Not Found, the C_ADMIN deletes one |
 
-**Backend asks:** B3, B4, B5, B6 (all met by backend P3).
-
-**Done when:** the backend Phase 3 scenario works in the browser. A 10-question assessment is published; a student uploads, replaces and submits 7 answers; after the due date the student sees 3 "Not attempted", and the professor's grid matches.
+**Done when:** a professor uploads a PDF and a DOCX, replaces one and edits the other; a student of the college views the PDF and downloads the DOCX; the C_ADMIN filters by professor and deletes one; another college's student can't open either.
 
 ---
 
-### F4 — Manual grading & student results
+### F8a — Trial, plans & billing (no gateway yet)
 
-**Goal:** the full college flow without AI.
+Backend Phase 8a (TDD §7.13–7.14, contract §14, PROPOSED). Each new S_STUDENT gets a 3-day trial. After it ends, the tutor, Vocab and Maxims (later solo and other laws) need a plan; bare acts, sections and case laws stay free. College roles are never gated. **The gateway is undecided**, so checkout always returns `503 PAYMENTS_UNAVAILABLE` and SUPERADMIN grants access by hand.
 
 | # | Task | Details |
 |---|---|---|
-| F4.1 | Answer review | `/professor/answers/:answerId`, a split layout (stacked on narrow screens). Left: question, max marks, word limit, student name/roll no, and the PDF (loaded from `GET /professor/answers/{id}/file`, which records the download). Right: the grade panel |
-| F4.2 | Grade panel | Final marks (`MarksInput`, 0..max) and final feedback (with a character count). **Save draft** (`PUT …/grade`, not visible to the student) and **Approve & publish** (`POST …/approve`), whose confirm says the student sees it immediately and it can't be changed. After publishing, the panel is read-only with a Published badge and time |
-| F4.3 | Grading flow | "Next ungraded" / "Previous" in the order chosen in the grid (by student or by question). The unsaved-changes guard applies |
-| F4.4 | Grade history | A collapsible timeline from `AnswerReview.history` (contract §10.1; always returned) |
-| F4.5 | Counts refresh | The assessment list and detail counts update after each approve |
-| F4.6 | Student results | `/student/assessments/:id/results`: for each **published** question, marks / max and the professor's feedback. Unpublished questions show "Awaiting evaluation"; not attempted shows 0. The total is labelled "of published questions". The student DTO types contain no AI fields (§7.8) |
-| F4.7 | Tests | Approve blocked without feedback or with invalid marks; published is read-only; results with a mix of published and unpublished questions |
+| F8a.1 | API module | `src/api/billing.ts`: `access { status: TRIAL \| PAID \| EXPIRED \| NONE, trialEndsAt, paidUntil, accessUntil }` (also on `/users/me`), `BillingPlan`, `Subscription { kind: PASS \| AUTO_RENEW, source: PAYMENT \| MANUAL, status, startsAt, endsAt, cancelAtPeriodEnd, plan \| null }`, `Payment`; paise kept as integers. S_STUDENT: `getPlans`, `getBillingMe`, `getPayments(page)`, `checkout({ planCode, autoRenew })`, `cancelSubscription(id)`. SUPERADMIN: `getAdminPlans`, `updatePlan(code, …)`, `listSubscriptions({ q, status, page })`, `grantAccess(userId, endsAt)`, `revokeSubscription(id)`. All `no-store` |
+| F8a.2 | Access in the session | Read `access` from `/users/me` into the session user. The mapper turns a missing `access` (any backend before P8a) into `NONE`, so the gate and banner stay off and F8a can ship before 8a without breaking. After any billing change, call `/auth/refresh` and refetch `/users/me` (the token carries `accessUntil`); the existing refresh lock (`lexly-auth-refresh`) covers this call too. Revokes reach a signed-in student within the 15-minute token TTL, at the next refresh |
+| F8a.3 | Access banner | S_STUDENT only, on the Study hub and gated screens: "Trial ends in 2 days" (`TRIAL`), nothing for `PAID` (except within 3 days of `paidUntil` with no auto-renew), "Your trial has ended" (`EXPIRED`) with a link to plans. Dismissible per day (a `localStorage` UI preference) |
+| F8a.4 | `PlanGate` | Shown in place of a gated screen on `402 PLAN_REQUIRED`, or straight away when `access.status === 'EXPIRED'`: what the plan unlocks, a link to `/plans`, and **Check again** (refresh + refetch) for a user who was just granted access. Wired into `/tutor` (both the quota and the ask: `/tutor/**` is gated, so a 402 can arrive mid-chat and the typed question is kept), `/vocab`, `/maxims`. Routes `/plans` and `/billing` join the S_STUDENT area in `AREAS` |
+| F8a.5 | Plans | `/plans`: active plans (`GET /billing/plans`) as cards with period and price, pass vs. auto-renew where `autoRenewAvailable`. **Buy** calls `POST /billing/checkout`, which in P8a is always `503`, so it shows the "contact us" message (§3.6). Copy: no refunds, access ends exactly at the period end |
+| F8a.6 | Billing | `/billing`: current access and its end, the subscription (kind, source, `cancelAtPeriodEnd`), **Cancel auto-renew** with a confirm ("access continues until {endsAt}"), and payment history (paged). A `MANUAL` grant shows "Granted by Lexly" with no plan |
+| F8a.7 | SUPERADMIN billing | `/admin/billing` (nav **Billing**). **Plans** tab: edit name, price (₹ → paise), active and auto-renew available; activation needs a price. **Subscriptions** tab: search and status filter; **Grant access** (end date in the future, picked as an India date and sent as that day's 23:59:59 IST in UTC, e.g. `2027-01-31T18:29:59Z`) and **Revoke** with confirms; revoke text notes it takes effect within 15 minutes. Grant is offered only on rows of the subscriptions list (a support tool, not a launch path: B9 deferred) |
+| F8a.8 | Tests | Each access status and banner; `PlanGate` on a 402 and "Check again" flow; `503` on Buy; cancel auto-renew; paise formatting; grant date validation; college roles never see banner or gate; e2e against the 8a backend: expire a trial (backend test clock or a seeded user), see the gate, SUPERADMIN grants, "Check again" unlocks the tutor |
 
-**Done when:** a professor approves question by question, and the student sees each mark as soon as it's approved.
+**Go-live (decided 2026-10-26):** Lexly goes live only once online payment (F8b) is built, so students buy their own plans and manual grants aren't a launch path. Grants stay a SUPERADMIN support tool. B9 is deferred (§6).
+
+**Done when:** an S_STUDENT on a trial sees the countdown; after it ends the tutor, Vocab and Maxims show the plan gate while bare acts and case laws still work; Buy explains that payments aren't available yet; a grant (made through the API in the e2e setup, `e2e/api.ts`) lets the student in after "Check again".
 
 ---
 
-### F5 — AI evaluation UI (on hold)
+### F6a — C_ADMIN analytics (Sync)
 
-On hold with backend Phase 5 since 2026-10-19. The tasks below are kept for when it resumes.
+Backend Phase 6a (TDD §7.15, contract §12a, PROPOSED; changed 2026-10-26). **C_ADMIN only**; SUPERADMIN and C_PROFESSOR have no analytics screens or actions. Every number comes from the college's current snapshot, which the C_ADMIN refreshes with **Sync** (at most once per 15 minutes; a failed sync doesn't count). There is no nightly run and no SUPERADMIN trigger.
 
 | # | Task | Details |
 |---|---|---|
-| F5.1 | AI Evaluate button | In the grade panel. Disabled, with the reason shown, until the PDF has been opened, and after publishing. Clicking it queues a job → `AI_EVALUATING` |
-| F5.2 | Polling | Poll `GET /professor/answers/{id}` (§3.3) until `AI_EVALUATED` / `AI_FAILED`. Show status text, not a fake percentage. Grid cells update through invalidation |
-| F5.3 | AI suggestion | A read-only "AI suggestion (provisional)" block: marks, feedback, estimated words vs. the word limit, and flags as labelled chips with plain-language help (`WORD_LIMIT_EXCEEDED`, `ILLEGIBLE`, `OFF_TOPIC`, `BLANK`, `LOW_CONFIDENCE`). **Use AI marks & feedback** copies them into the editable fields; approval is still manual |
-| F5.4 | Failure | `AI_FAILED`: error summary, Retry, and a reminder that manual grading is always available |
-| F5.5 | Grid & usage | New statuses in the grid legend and filters. SUPERADMIN college detail: an **AI usage** tab with token/cost totals (Phase 5.8) |
-| F5.6 | Tests | Button enablement; polling starts and stops; "Use AI marks" doesn't approve |
+| F6a.1 | API module | `src/api/analytics.ts`: `getOverview(filters)`, `listAssessmentStats(filters, page)`, `listNonSubmitters(id, include, page)`, `downloadNonSubmittersCsv(id, include)`, `getSync()` and `startSync()` (§12a.5–12a.6); filters `subjectId`, `professorId`, `from`, `to` (IST `yyyy-MM-dd`, sent as typed). Percentages kept as numbers and shown with one decimal; `null` stays `null`. Filter pickers reuse `listSubjects()` and `GET /college/users?role=C_PROFESSOR`; a filter id that's no longer valid answers `404`, shown as "This subject/professor no longer exists" with **Clear filter** |
+| F6a.2 | Overview | `/college/analytics` (nav **Analytics**; the Overview home can link to it). An "Updated {asOf}" line (IST date and time); when `asOf` is `null`, an empty state: "No figures yet. Press Sync to load them." Filters in the URL with `to ≥ from` checked on the client. Stat tiles from `totals` (assessments, questions, attempted questions, students, grades published, average score %). By-subject table with average % (and an optional SVG bar chart with a data-table alternative). By-professor table, where a `null` professor is "Former professor". Submission split (all / some / none) as a labelled stacked bar plus numbers. `null` averages show "—", never 0 |
+| F6a.3 | Assessments | A paged table under the overview, newest published first: title, subject, professor, status, published/due dates, questions, students, submitted all / partial / none, attempted, published grades, average %. A row opens F6a.4 |
+| F6a.4 | Non-submitters | `/college/analytics/assessments/:id`: tabs **All · None · Partial** (`include`), paged by name: student name, roll no, email, submitted / total. **Export CSV** downloads the CSV for the current tab through `saveDownload()` (§3.5; the file name comes from `Content-Disposition`, falling back to `non-submitters.csv`). Names, roll nos and emails stay out of the URL (§9.3); the URL holds only the assessment id, `include` and page. Another college's id → Not Found |
+| F6a.5 | Sync button | On `/college/analytics`, next to the "Updated" line, from `GET /college/analytics/sync`. **Sync** (no confirm) → `POST`; while `RUNNING` the button shows a spinner and "Syncing…" and the state is polled (§3.3). `SUCCEEDED` invalidates `['college','analytics']`. `FAILED` shows "Sync failed. Showing figures from {asOf}." While `nextSyncAt` is in the future the button is disabled with "Next sync at {time}". `409`/`429` per §3.6 |
+| F6a.6 | Tests | Empty (`asOf` null) state; Sync running / succeeded / failed / cooldown and the `409`/`429` handling; filter URL round-trip and the range check; Former professor row; null average; CSV download name; Not Found; non-C_ADMIN roles have no route; e2e against the 6a backend's hand-computed fixture |
 
-**Done when:** a professor opens a PDF, clicks AI Evaluate, sees provisional marks appear without reloading, edits them and approves.
+**Backend asks:** none (B10 resolved 2026-10-26 by contract §12a.5).
+
+**Done when:** a C_ADMIN presses Sync, sees the figures update with the snapshot's time, filters by subject, professor and dates, opens an assessment's non-submitters and exports them, and the numbers match the backend fixture.
 
 ---
 
-### F5a — AI legal tutor
+### F6a-2 — Rankings & statistics (later)
 
-Backend Phase 5a (TDD §10a, contract §11a): a RAG tutor over the library and an owner-managed PDF folder, open to **every role**. The browser only talks to `lexly-backend`, which calls `lexly-ai-service` with an API key. Chat is multi-turn and each answer arrives whole (no streaming, up to ~60 s). Each user gets 10 questions a day, reset at midnight India time; a "not found" answer counts and a failed call is refunded. Conversations are private to their owner and deleted 24 h after the last message. SUPERADMIN gets Re-index and a daily AI spend graph.
+The old F6 tasks, kept for backend Phase 6a-2 (contract §12):
 
 | # | Task | Details |
 |---|---|---|
-| F5a.1 | API module | `src/api/tutor.ts`: types and `to<Model>()` mappers for `TutorConversation`, `TutorMessage`, `TutorCitation`, `TutorQuota`, `TutorIndexRun` and the daily usage; the backend's order kept (conversations newest first, messages oldest first). `queryKeys.tutor.*`. No client-side timeout under ~70 s on the ask call |
-| F5a.2 | Route and nav | `/tutor` and `/tutor/:conversationId`, open to every role (a shared route like the Library, not in `AREAS`), wide, lazily loaded. A **Tutor** nav item (chat-bubble icon) for every role; SUPERADMIN's also matches `/admin/tutor`. The URL holds only the conversation id, never question text |
-| F5a.3 | Tutor screen | Two panes from 1024 px (conversations · thread); below that, the list or the thread with a back button. Quota line updated from each `POST` response. A pending message with an `aria-live` "Answering…" status; one question in flight. Answers as plain text, with `[n]` markers as buttons to their sources; library sources link to `/sections/:id` or `/caselaws/:id`, `FILE` sources show name · location with no link. Not-found answers, delete with a confirm, expired conversations, the disclaimer |
-| F5a.4 | SUPERADMIN tutor admin | `/admin/tutor?tab=index\|spend`, linked from the `/admin` hub and the `/tutor` header. Index: Re-index with a confirm, the latest run card, 5 s polling only while the first run is `RUNNING`, a table of previous runs. Spend: from / to / college / role filters in the URL (`to ≥ from`, ≤ 366 days), stat tiles from `totals`, a hand-drawn SVG daily cost bar chart with tooltips and a data table, rate and exclusion footnotes |
-| F5a.5 | Errors and copy | `QUOTA_EXCEEDED`, `AI_UNAVAILABLE`, `INDEX_RUN_IN_PROGRESS` in `errors.ts` (§3.6); statuses confirmed against the live backend |
-| F5a.6 | Tests | Mappers; the `[n]` parser; quota and expiry formatting; ask happy path, quota, unavailable + retry, expired conversation, not-found answer, citation links, delete; re-index `409` and polling; spend filters and range checks; a non-SUPERADMIN can't see the admin link or route. E2E `e2e/f5a-tutor.spec.ts` (needs the AI service; skips with a message otherwise) |
+| F6.1 | Ranking table | `GET /analytics/subjects/{id}/ranking`: rank, name, roll no, obtained / max, score %. Ties share a rank (1, 1, 3), sorted by name within a rank. Every student appears, including 0%. Client-side name search. No export |
+| F6.2 | Subject picker | C_ADMIN: all subjects. C_PROFESSOR: mapped subjects only. SUPERADMIN: college, then subject |
+| F6.3 | Per student | `/college/students/:id`: per subject %, rank, attempted vs. published, pending |
+| F6.4 | Freshness | "Updated {time}" from the response's `generatedAt` |
+| F6.5 | Tests | Ties; zero-total subject; a professor can't pick unmapped subjects; students have no ranking route |
 
-**Done when:** a user of each role asks a question and sees a cited answer whose library links open the right section or case law; an 11th question that day shows the quota banner; stopping the AI service shows the unavailable state without using up a question; SUPERADMIN re-indexes and watches the run finish; the spend graph shows that day's questions and cost; and all of this works against the backend once `feature/phase5a` is merged.
+The old F6.3 "C_ADMIN overview" is replaced by F6a.
 
 ---
 
-### F6a — Rankings & statistics
+### F5d — Other laws (pending)
 
-| # | Task | Details |
-|---|---|---|
-| F6.1 | Ranking table | `GET /analytics/subjects/{id}/ranking`: rank, name, roll no, obtained / max, score %. Ties share a rank (1, 1, 3), sorted by name within a rank, as returned. Every student appears, including 0%. Client-side name search. No export (out of scope) |
-| F6.2 | Subject picker | C_ADMIN: all subjects. C_PROFESSOR: mapped subjects only. SUPERADMIN: college, then subject (`?collegeId=`) |
-| F6.3 | C_ADMIN overview | `/college`: per subject, the assessments (published / closed / removed), questions, submitted, pending, published and average %. Stat tiles + table; an optional plain-SVG bar chart of average % |
-| F6.4 | Per student | `/college/students/:id`: per subject %, rank, attempted vs. published, pending |
-| F6.5 | Freshness | "Updated {time}" under the rankings, from the response's `generatedAt` (cached up to 5 minutes) |
-| F6.6 | Tests | Ties; zero-total subject; a professor can't pick unmapped subjects; students have no ranking route |
-
-**Done when:** the screens match the backend's hand-calculated fixture.
+Waiting for the backend data model (Phase 5d). Expect another Library area gated for S_STUDENTs like Vocab and Maxims (§7.13).
 
 ---
 
 ### F7 — Solo AI practice (S_STUDENT)
 
+After F8a. Solo uses billing's entitlement instead of `solo_plans`, so the plan gate is `PlanGate` from F8a. The contract's §13 will be revised before Phase 7; re-check every shape below then.
+
 | # | Task | Details |
 |---|---|---|
-| F7.1 | Plan gate | `/practice` checks `GET /solo/usage` (or any 402). With no active plan: what the plan includes, and "Contact us to activate" (no checkout until F8). The Library stays available |
-| F7.2 | Usage meter | "X of 60 generations used this month · resets on {resetsAt}" on every solo screen (`GET /solo/usage`). At 60, generate buttons are disabled; `QUOTA_EXCEEDED` shows the same banner |
-| F7.3 | Generate question | `/practice/new`: subject (`GET /solo/subjects`), difficulty (`EASY / MEDIUM / HARD`), word limit (50–2000), and max marks as a segmented control (`5 / 10 / 15 / 20 / 25`). Pending state while the AI runs, then the question page |
-| F7.4 | Attempts | `/practice/questions/:id`: the question, its parameters and expiry (30 days). Up to 3 attempts: upload PDF → `EVALUATING` (polling) → marks, feedback, flags (shared `AiSuggestion` chips). "Attempt 2 of 3". A failed evaluation offers Retry and is explained as not using up an attempt |
-| F7.5 | Generate answer | `/practice/answers`: question text → AI answer, rendered as **plain text** with paragraphs (reuse the study panel's `RichText` only if it stays plain-text-safe). Copy button; a note that it may use general legal knowledge |
+| F7.1 | Plan gate | `/practice` uses `PlanGate` on `402` (F8a.4). The Library stays available |
+| F7.2 | Usage meter | "X of 60 generations used this month · resets on {resetsAt}" on every solo screen. At 60, generate buttons are disabled; `QUOTA_EXCEEDED` shows the same banner |
+| F7.3 | Generate question | `/practice/new`: subject, difficulty (`EASY / MEDIUM / HARD`), word limit (50–2000), max marks (`5 / 10 / 15 / 20 / 25`). Pending state while the AI runs |
+| F7.4 | Attempts | `/practice/questions/:id`: up to 3 attempts: upload PDF → `EVALUATING` (polling) → marks, feedback, flags. A failed evaluation offers Retry and doesn't use up an attempt |
+| F7.5 | Generate answer | `/practice/answers`: plain-text AI answer with paragraphs, Copy button, a general-knowledge note |
 | F7.6 | History | Questions, attempts and answers from the last 30 days, each with its expiry |
-| F7.7 | SUPERADMIN | `/admin/solo/subjects` (CRUD, active toggle) and `/admin/solo/plans` (find a user by email; set the period; see status and source) |
-| F7.8 | Home | The S_STUDENT dashboard gets a Practice card (usage, latest result, "Generate a question") where Practice Progress used to be |
+| F7.7 | SUPERADMIN | `/admin/solo/subjects` (CRUD, active toggle). Plans are managed in `/admin/billing` (F8a.7) |
+| F7.8 | Home | A Practice card on the Study hub |
 | F7.9 | Tests | Plan gate; quota 59 → 60 → blocked; attempt limit; polling stops |
 
-**Done when:** a solo student with a manually activated plan completes generate → upload → feedback, and the 61st generation shows the quota banner.
-
 ---
 
-### F8 — Payments & hardening
+### F8b — Gateway checkout & hardening
+
+Waits for the gateway decision (Deferred B8 / D8).
 
 | # | Task | Details |
 |---|---|---|
-| F8.1 | Checkout | Per the payment addendum (D8): plans, the gateway's hosted checkout, then "Payment received, confirming…" polling the plan status (the webhook is the source of truth) |
-| F8.2 | Accessibility | WCAG 2.2 AA pass on every screen. Manual keyboard and screen-reader checks on the review screen, the answer cards and the grids |
-| F8.3 | Performance | Per-role chunks verified; a budget of ≤ 200 KB gzip for the initial S_STUDENT chunk (the serif font subset included); Lighthouse on a mid-range phone profile |
-| F8.4 | Dark theme | If D4 says yes: a token-level dark palette |
-| F8.5 | Security | CSP (`default-src 'self'`, `connect-src` the API origin, `frame-src blob:` for `PdfViewer`); dependency audit; confirm no token, blob URL or personal data reaches logs; production CORS origin |
-| F8.6 | Error monitoring | Optional, after approval (D9), with request bodies and id-bearing URLs redacted |
-| F8.7 | E2E matrix | One Playwright journey per role, plus "wrong role opens URL → redirected" per area |
-
----
-
-### UR — UI refresh
-
-Decided by the user on 2026-10-20 from a reference dashboard and the approved design mock ("Lexly UI refresh" canvas): a pale-blue page, a black collapsible sidebar, a white content panel, pastel placards that open screens, tables, and one dark call-to-action card per role. Frontend only: **every backend endpoint and DTO stays as it is**, and a home tile that would need a new endpoint is dropped rather than added. Manrope (self-hosted, `@fontsource-variable/manrope`, approved) for the interface; the serif stays for legal reading text (statutes, case laws, tutor answers). UI spec section UR has the details.
-
-| # | Task | Details |
-|---|---|---|
-| UR.1 | Foundations | New palette in the `--lx-*` tokens (`src/index.css`), new tokens for the page, sidebar and the four pastel placard pairs, radius and type scale; Manrope; headings move to sans, reading text keeps the serif; shared components restyled (`ui.module.css`, badges, buttons, tables, tabs, forms, dialogs, toasts, query states) |
-| UR.2 | Shell | `AppLayout`: from 768 px a black sidebar (collapsed icon rail by default, expandable to labels; the choice remembered in `localStorage`, a UI preference only), logo tile, role nav, collapse toggle and Log out; a top bar in the panel (context line, Library search, notifications, profile pill). Below 768 px a top bar and a floating black bottom tab bar (≤ 5 items, as today) |
-| UR.3 | Role homes | SUPERADMIN and C_ADMIN **Overview** (`/admin`, `/college`); C_PROFESSOR **Teaching desk** (`/professor`); C_STUDENT **My studies** (`/student`); S_STUDENT **Study hub** (`/dashboard`). The professor and student lists move to `/professor/assessments` and `/student/assessments` (their detail routes already live there). Each home: a hero card, three placards, a table and a dark action card, all from existing endpoints |
-| UR.4 | Screens | Restyle in waves: lists and tables, detail pages, forms and editors, the Library (reader, case law, search), the tutor and tutor admin, sign-in and change password, NotFound |
-| UR.5 | Clean-up | Replace the hard-coded colours outside the tokens (≈ 270, mostly the Library CSS) |
-| UR.6 | Tests | Route and nav tests updated for the new homes and routes; e2e selectors updated; axe, phone and desktop screenshots per wave |
-
-**Done when:** every screen uses the new tokens and shell, the five role homes match the approved mock with real data, all tests and the e2e suites pass, and axe reports no violations.
+| F8b.1 | Checkout | `POST /billing/checkout` → open the gateway widget → "Payment received, confirming…" polling `GET /billing/me` until `access.status` is `PAID` → `/auth/refresh`. The webhook is the source of truth, never the widget callback. Auto-renew mandate setup if the gateway needs it |
+| F8b.2 | Accessibility | WCAG 2.2 AA pass on every screen; manual keyboard and screen-reader checks on the review screen, the answer cards, the grids and the analytics tables |
+| F8b.3 | Performance | Per-role chunks verified; ≤ 200 KB gzip for the initial S_STUDENT chunk (fonts included); Lighthouse on a mid-range phone profile |
+| F8b.4 | Dark theme | If D4 says yes: a token-level dark palette |
+| F8b.5 | Security | CSP (`default-src 'self'`, `connect-src` the API origin, `frame-src blob:` for `PdfViewer`, plus whatever the chosen gateway's widget needs, approved explicitly); dependency audit; no token, blob URL or personal data in logs; production CORS origin |
+| F8b.6 | Error monitoring | Optional, after approval (D9), with request bodies and id-bearing URLs redacted |
+| F8b.7 | E2E matrix | One Playwright journey per role, plus "wrong role opens URL → redirected" per area |
 
 ---
 
@@ -447,34 +413,40 @@ Decided by the user on 2026-10-20 from a reference dashboard and the approved de
 
 | Component | Status | First needed |
 |---|---|---|
-| `ConfirmDialog`, `Toast`, `Field`, `RepeatableList`, `useUnsavedChangesGuard` | ✅ exist in `pages/admin/`; move in F0.4 | — |
+| `ConfirmDialog`, `Toast`, `Field`, `RepeatableList`, `useUnsavedChangesGuard` | ✅ | — |
 | `StudyPanel` (`ReadingProgress`, `OnThisPage`, `Insights`, `DocPart`, `RichText`) | ✅ | Library |
-| `LoadingState`, `ErrorState` | ✅ | — |
-| `RequireRole`, role nav config, `NotFound` | new | F0 |
-| `DataTable` + `Pagination` (URL filters) | new | F1 |
-| `ImportResultTable` | new | F1 |
-| `FileDropzone` + upload progress | ✅ (F2, F3) | F2 |
-| `StatusBadge`, `DateTimeField`, `Deadline` countdown, `NumberField` (MarksInput), `PdfViewer` | ✅ (F1, F3) | F3 |
-| `AiSuggestion`, `AiFlagChips` | new | F5 |
-| `RankingTable`, `StatTile` | new | F6 |
-| `UsageMeter`, `PlanGate` | new | F7 |
+| `LoadingState`, `ErrorState`, `NotFound`, `RequireRole`, role nav config | ✅ | — |
+| `DataTable`, `Pagination`, `ImportResultTable` | ✅ | — |
+| `FileDropzone` + upload progress | ✅ PDF, CSV/XLSX; DOCX/PPTX in F5c | F5c |
+| `StatusBadge`, `DateTimeField`, `Deadline`, `NumberField`, `PdfViewer` | ✅ | — |
+| Stat tiles and the SVG bar chart + data table | ✅ in `pages/admin/tutor/` (`SpendTab`, `SpendChart`); move to `src/components/` when F6a reuses them | F6a |
+| `tabsFor()` in `roles.ts` (tab bar ≤ 5, separate from `sidebarFor()`) | new | F5c (D11) |
+| `LetterBar` (A–Z + `#`) | new | F5b |
+| `NoteCard`, `FileTypeIcon`, `saveDownload()` helper | new | F5c |
+| `AccessBanner`, `PlanGate`, `PlanCard`, `formatPaise()` | new | F8a |
+| `StackedBar` (submitted all / some / none) | new | F6a |
+| `RankingTable` | new | F6a-2 |
+| `AiSuggestion`, `AiFlagChips` | new | F5 / F7 |
+| `UsageMeter` | new | F7 |
 
 ---
 
 ## 6. Backend asks
 
-Status as of the contract after backend Phase 1 (2026-10-13). "In contract" means proposed there; it still needs sign-off at the start of its phase. "LIVE" means implemented.
+"LIVE" means implemented. B1–B8 are unchanged from the 2026-10-16 revision. These B-numbers are this plan's asks and are unrelated to the backend's `Lexly-Deferred-Items.md` B-items (whose B9 and B10 are plan prices and renewals); the latter are always written "Deferred B*n*". B10 was resolved on 2026-10-26: the backend dropped the SUPERADMIN snapshot trigger, and the C_ADMIN's Sync has its own status endpoint (contract §12a.5). B9 is deferred: payments come before go-live (2026-10-26).
 
 | # | Ask | Needed by | Status |
 |---|---|---|---|
-| B1 | `GET /users/me` adds the college and `mustChangePassword` (it already has `role`) | F1 | **LIVE (P1).** Nested `college: { id, code, name }` (or `null`), plus `mustChangePassword` and `loginId` (contract §2.1) |
-| B2 | `POST /auth/change-password` returns a new access token and sets the rotated refresh cookie | F1 | **LIVE (P1).** Returns `{ accessToken, refreshToken, mustChangePassword }` and revokes every other refresh token (contract §1.5) |
-| B3 | CORS `exposedHeaders: Content-Disposition, Location`; production origin | F3 / F8 | **`Content-Disposition` LIVE (P3)**, contract §0.6. `Location` isn't mentioned; ask only if a screen needs it. Production origin open (D6) |
-| B4 | Upload limits exposed so the client checks match the server | F3 | **LIVE (P3).** `uploadLimits` in the student assessment detail (contract §9.3): 5 MB and 10 pages (O4, decided 2026-10-15) |
-| B5 | Agreed response shapes for the student assessment detail, professor grid, answer review (with history) and solo usage (with period end) | F3–F7 | In contract §9.3, §9.5, §10.1, §13.2 |
-| B6 | Every list endpoint returns `PagedResponse` with server-side filters | F2 / F3 | In contract §0.4 and §9.5 |
-| B7 | Confirm the HTTP status of each new error code in §3.6 | each phase | Registry in contract §0.8; still check live per phase. P1 codes LIVE: `PASSWORD_CHANGE_REQUIRED` 403, `COLLEGE_INACTIVE` 403, `COLLEGE_CODE_ALREADY_EXISTS` 409. `BULK_IMPORT_REJECTED` removed (P0). `RATE_LIMITED` moved to P8 |
-| B8 | Sort `GET /acts/{id}/sections` by natural section order on the server | any | Contract §3.2 makes the server the source of truth; verify live |
+| B1 | `GET /users/me` adds the college and `mustChangePassword` | F1 | **LIVE (P1)** |
+| B2 | `POST /auth/change-password` returns a new access token and rotates the cookie | F1 | **LIVE (P1)** |
+| B3 | CORS exposes `Content-Disposition` | F3 / F8b | **LIVE (P3)**; production origin open (D6) |
+| B4 | Upload limits exposed | F3 | **LIVE (P3)** `uploadLimits` for answers. Notes (F5c) use the contract's fixed 20 MB instead |
+| B5 | Agreed response shapes per phase | each phase | In contract |
+| B6 | Every list endpoint is a `PagedResponse` with server-side filters | all | In contract §0.4 |
+| B7 | Confirm the HTTP status of each new error code in §3.6 | each phase | New in this revision: `PLAN_REQUIRED` 402, `PAYMENTS_UNAVAILABLE` 503, `PLAN_NOT_AVAILABLE` 409, `SYNC_IN_PROGRESS` 409, `SYNC_COOLDOWN` 429 |
+| B8 | Sort `GET /acts/{id}/sections` by natural order on the server | any | Contract §3.2; verify live |
+| B9 | SUPERADMIN needs a way to find an S_STUDENT **without** a subscription to grant them access. `GET /superadmin/billing/subscriptions` lists only users that already have one, and the grant takes a `userId` | F8a | **Deferred 2026-10-26:** not needed for launch, since Lexly goes live only with online payment (F8b). Revisit if support needs to grant access to a student who never had a subscription (e.g. a search by email under `/superadmin/billing/users?q=`) |
+| ~~B10~~ | ~~SUPERADMIN can start a snapshot but can't see whether it finished or failed~~ | F6a | **Resolved 2026-10-26:** the nightly run and the SUPERADMIN trigger are dropped; the C_ADMIN syncs and `GET /college/analytics/sync` gives the status (contract §12a.5) |
 
 ---
 
@@ -482,46 +454,47 @@ Status as of the contract after backend Phase 1 (2026-10-13). "In contract" mean
 
 | # | Decision | Recommendation |
 |---|---|---|
-| D1 | Data-fetching library for mutation-heavy screens | Add TanStack Query in F2 |
+| D1 | Data-fetching library | **Done:** TanStack Query (F2) |
 | D2 | Separate `lexly-webui` repo | Keep it. One SPA with per-role chunks |
-| D3 | Bare-Act Progress, Continue Learning and unified search (not in TDD v2) | Hide now; revisit after F8 |
-| D4 | Dark mode | Light-only until F8 |
-| D5 | Upload size and page limits | **Decided 2026-10-15 (backend P3):** 5 MB and 10 pages, read from `uploadLimits` |
+| D3 | Bare-Act Progress, Continue Learning and unified search | Hidden; revisit after F8b |
+| D4 | Dark mode | Light-only until F8b |
+| D5 | Upload limits | **Decided:** answers 5 MB / 10 pages (`uploadLimits`); notes 20 MB, PDF/DOCX/PPTX (2026-10-25) |
 | D6 | Production domains | SPA and API same-site (e.g. `app.` + `api.` subdomains) or one origin behind a reverse proxy, so the `SameSite=Lax` refresh cookie keeps working |
-| D7 | CSV/XLSX templates | Approved with backend Phase 2 |
-| D8 | Payment gateway UX | From backend Phase 8 |
+| D7 | CSV/XLSX templates | **Decided** with backend Phase 2 |
+| D8 | Payment gateway | **Still undecided** (backend Deferred B8). F8a ships without it; F8b waits |
 | D9 | Client error monitoring | Only with redaction and explicit approval |
+| D10 | Where S_STUDENTs reach Plan & billing on mobile, given the ≤ 5-item tab bar | From Profile and the access banner, with no new tab (recommended) |
+| D11 | How roles with more than 5 nav items fit the phone tab bar (G18) | **Decided 2026-10-26:** split the sidebar list (all items) from the tab bar (≤ 5, chosen per role, §3.2); the rest from the home placards. Done first in F5c (F5c.0). S_STUDENTs reach Vocab and Maxims from a Study hub placard plus a Vocab ⇄ Maxims switch, with the tab bar unchanged (G19) |
 
 ---
 
 ## 8. Immediate next steps
 
-Backend Phase 0 and Phase 1 are done, so F0 and F1 can be built against the real API (a local `lexly-backend` on `feature/phase1`), not mocks.
-
-1. **F0 first, urgently.** Against a P1 backend the current UI is broken for two groups: admins (the `ADMIN` checks never match `SUPERADMIN`) and any account with `mustChangePassword` (every call except `/users/me` returns `403 PASSWORD_CHANGE_REQUIRED`, including the seeded SUPERADMIN). F0.2 + F0.3 fix the first; F1.2 fixes the second, so pull F1.2 forward into the same branch.
-2. F0.1, F0.4, F0.5 on the same branch (`feature/f0-cleanup`).
-3. F0.6 test harness, seeded with the existing mappers and form parsers.
-4. F0.7: re-run the cookie checks against the live backend.
-5. F1 on `feature/f1-identity`: F1.1, F1.4, F1.5, F1.6, F1.10 (identity and SUPERADMIN), then F1.7, F1.8, F1.9 (content), then F1.11.
-6. Ship F1 only after `feature/phase1` is merged to backend `main` (§10 gate).
+1. ~~Refresh `docs/Lexly-API-Contract.md` (G14)~~ (done 2026-10-26). Write the UI-spec sections for F5b and F5c. ~~Agree D11~~ (decided 2026-10-26).
+2. Close F4 and F5a: re-run their e2e suites against backend `main` (F5a needs the AI service and a re-index).
+3. **F5b on `feature/f5b-vocab`** against backend `main` (Phase 5b is merged).
+4. **F5c on `feature/f5c-notes`** against backend `main` (Phase 5c merged 2026-10-26), starting with the nav split (F5c.0).
+5. B10 is resolved; B9 is deferred.
+6. **F8a**, then **F6a**, against MSW mocks of contract §14 and §12a while the backend builds them; verify live and ship after each backend phase merges.
 
 ---
 
 ## 9. Security rules (frontend)
 
-1. The access token is held in memory only; the refresh token exists only in the `HttpOnly` cookie. No auth data in Web Storage. The only `localStorage` uses are the cache-bypass timestamp and, from F1, the login tab name.
-2. Render all backend text as plain text. The only markup parsing is `HighlightedSnippet` (`<b>` → `<mark>`) and the study panel's `RichText` list/label formatting, both built from text nodes. Never use `dangerouslySetInnerHTML`, including for AI output.
-3. Student answers, feedback and marks are personal data. Keep them out of URLs, logs, analytics and error tracking. URLs carry ids, never names or roll numbers.
-4. Revoke PDF object URLs on unmount. Never cache answer files (`cache: 'no-store'`, no service worker).
+1. The access token is held in memory only; the refresh token exists only in the `HttpOnly` cookie. No auth data in Web Storage. `localStorage` holds only UI preferences: the cache-bypass timestamp, the login tab name, the sidebar state and (F8a) the access-banner dismissal date.
+2. Render all backend text as plain text, including vocab definitions, maxim explanations, note titles and descriptions, and AI output. The only markup parsing is `HighlightedSnippet` and the study panel's `RichText`, both built from text nodes. Never use `dangerouslySetInnerHTML`.
+3. Student answers, feedback, marks and the non-submitter lists are personal data. Keep them out of URLs, logs, analytics and error tracking. URLs carry ids, never names, roll numbers or emails. The non-submitters CSV is downloaded, never cached.
+4. Revoke object URLs (PDF views and saved downloads) as soon as they're no longer needed. Never cache answer or note files (`cache: 'no-store'`, no service worker).
 5. A 404 for another college's or professor's resource is shown as Not Found, never as "no access".
-6. Role checks in the UI are only for convenience; the server enforces access.
-7. No new third-party script or network origin without approval; audit each new dependency.
+6. Role checks, owner-only note actions and the plan gate in the UI are only for convenience; the server enforces access.
+7. No payment card data ever touches Lexly's UI; checkout (F8b) happens in the gateway's own widget.
+8. No new third-party script or network origin without approval; audit each new dependency. The gateway widget's origin is added only in F8b, once approved.
 
 ---
 
 ## 10. Working agreement
 
-- **Progress:** `docs/progress/frontend_progress.md` in `lexly-webui`, using this plan's task IDs (e.g. "F3.6 Student assessment"). Each entry has the date, status, what changed, verification (live backend or mocks, plus which checks), and notes.
+- **Progress:** `docs/progress/frontend_progress.md`, using this plan's task IDs (e.g. "F5c.3 Professor notes"). Each entry has the date, status, what changed, verification (live backend or mocks, plus which checks), and notes.
 - **Gate:** a task is Done only when its backend counterpart is merged and the task has been exercised against the live backend.
-- **Commits:** Conventional Commits (`feat(student): per-question answer upload`), one commit per task or small group of tasks, a branch per phase, never directly to `main`.
+- **Commits:** Conventional Commits (`feat(notes): professor note upload`), one commit per task or small group of tasks, a branch per phase cut from an up-to-date `master`, never directly to `master`.
 - **Session start:** read the progress file and this plan, check the backend phase status, then continue from the In Progress / Blocked notes.

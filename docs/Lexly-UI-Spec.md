@@ -1,6 +1,6 @@
 # Lexly — UI Spec (web)
 
-**Status:** Draft, revised 2026-10-20. F0–F4 written and synced with backend Phases 0–4 (contract §1, §2, §5–§10 LIVE); F5a written against backend Phase 5a (contract §11a PROPOSED); F5 on hold; F6a–F8 not yet written.
+**Status:** Draft, revised 2026-10-26. F0–F4 written and synced with backend Phases 0–4 (contract §1, §2, §5–§10 LIVE); F5a written against backend Phase 5a (contract §11a); F5b and F5c written against backend Phases 5b and 5c (contract §11b, §11c LIVE); F5 on hold; F8a, F6a and later not yet written.
 **Audience:** frontend developers on `lexly-webui`, plus backend and design reviewers.
 **Companion docs:**
 - [`Lexly-Frontend-Implementation-Plan.md`](Lexly-Frontend-Implementation-Plan.md) says **which** screens each phase builds. Task IDs (F1.6 …) come from there.
@@ -38,6 +38,8 @@ No Figma file or reference designs exist yet. When they do, link them here and f
 - [F4 — Manual grading & student results](#f4--manual-grading--student-results)
 - [F5a — AI legal tutor](#f5a--ai-legal-tutor)
 - [UR — UI refresh](#ur--ui-refresh)
+- [F5b — Vocab & Maxims](#f5b--vocab--maxims)
+- [F5c — Subject notes](#f5c--subject-notes)
 - [F5–F8 (not yet written)](#f5f8-not-yet-written)
 - [Open questions](#open-questions)
 - [Changelog](#changelog)
@@ -127,11 +129,12 @@ This expands the plan's §3.6 catalogue with copy. Clients switch on `error`, ne
 | `LOGIN_ID_ALREADY_EXISTS` | Field `loginId` | Another student or professor at your college already uses this ID. |
 | `SUBJECT_CODE_ALREADY_EXISTS` | Field `code` | Another subject at your college already uses this code. |
 | `IMPORT_FILE_INVALID` | Under the file input | This file can't be imported: {server message} |
-| `SUBJECT_IN_USE` | Delete dialog | See F2.7 |
+| `SUBJECT_IN_USE` | Delete dialog | See F2.7 (assessments) and F5c.7 (notes) |
 | `ASSESSMENT_NOT_EDITABLE` | Banner on the editor or detail, then reload | See F3.2, F3.4 |
 | `ASSESSMENT_CLOSED` | Answer card, after a refetch | The due date has passed, so this answer can't be changed. |
 | `ANSWER_LOCKED` | Answer card, after a refetch | This answer was already submitted. |
-| `INVALID_FILE` | Under the answer card's file input | This PDF can't be used: {server reason} |
+| `INVALID_FILE` | Under the answer card's file input; for notes under the note file field | Answers: This PDF can't be used: {server reason}. Notes: This file can't be used: {server reason} (F5c) |
+| `PLAN_REQUIRED` (from P8a) | S_STUDENT, on the gated screen | Until F8a: the generic error. From F8a: `PlanGate` |
 | `INVALID_MARKS` | Grade panel, field `finalMarks` | Enter marks from 0 to {maxMarks}, in whole or half marks. |
 | `GRADE_PUBLISHED` | Grade panel banner, after a refetch | This grade has already been published, so it can't be changed. |
 | `QUOTA_EXCEEDED` (tutor) | Quota banner above the composer; composer disabled; the question kept | You've used today's 10 questions. They reset at midnight India time ({local time of `resetsAt`}). |
@@ -173,9 +176,13 @@ These are the only roles. Backend P1 remapped the old `ADMIN` to `SUPERADMIN` an
 | F4 | Manual grading & student results | **Written** | Grading counts and grid (F4.5), Answer review (F4.1), Grade panel (F4.2), Grading flow (F4.3), Grade history (F4.4), Student results (F4.6) |
 | F5 | AI evaluation UI | On hold (backend Phase 5 on hold) | — |
 | F5a | AI legal tutor | **Written** | Tutor (F5a.3), Tutor admin: index and spend (F5a.4) |
-| F6a | Rankings & statistics | Not yet | — |
+| F5b | Vocab & Maxims | **Written** | Vocab and Maxims (F5b.3), Study hub placard and S_STUDENT switch (F5b.2) |
+| F5c | Subject notes | **Written** | Nav split (F5c.0), professor notes (F5c.3), student notes (F5c.4), college notes (F5c.5), subject delete and detail (F5c.7), audit summaries (F5c.8) |
+| F8a | Trial, plans & billing | Not yet | — |
+| F6a | C_ADMIN analytics (Sync) | Not yet | — |
+| F6a-2 | Rankings & statistics | Not yet | — |
 | F7 | Solo AI practice | Not yet | — |
-| F8 | Payments & hardening | Not yet | — |
+| F8b | Gateway checkout & hardening | Not yet | — |
 | UR | UI refresh | **Written** | Visual language (UR.1), Shell (UR.2), Role homes (UR.3), Screens (UR.4) |
 
 F0.2, F0.4–F0.7, F1.3, F1.11, F2.1, F2.9, F3.10 and F4.7 have no screens of their own.
@@ -1272,17 +1279,184 @@ Every other screen keeps its layout, data and copy, restyled with UR.1 inside th
 
 ---
 
+## F5b — Vocab & Maxims
+
+Contract: §11b (LIVE, P5b; TDD §7.11). Two read-only glossaries for **every role**: **Vocab** (key legal terms taken from sections) and **Maxims** (legal principles taken from case laws). There are no writes and nothing is audited. From P8a an S_STUDENT whose trial has ended gets `402 PLAN_REQUIRED` here (F8a); until F8a lands that falls through to the generic error.
+
+### F5b shell changes
+
+| Item | Behaviour |
+|---|---|
+| Routes | `/vocab` and `/maxims` for every role (shared like the Library, not in `AREAS`), wide, one lazy chunk |
+| Library sub-nav | Bare Acts · Case Laws · **Vocab** · **Maxims** · Search, for every role that has it (all but S_STUDENT, F0.3) |
+| S_STUDENT | No sub-nav and the tab bar is unchanged. The Study hub's "Your library" group gets a fourth placard (below), and both pages show a **Vocab ⇄ Maxims** switch under the H1, a two-link `nav` (`aria-label` "Glossary") with `aria-current="page"` on the open one. No tab is active on these pages |
+| Study hub (UR.3) | Fourth placard, tone sky: value = `totalElements` of `GET /vocab?size=1` ("1,240"), label "Legal terms and maxims", action "Glossary" → `/vocab`. With four placards the group is 2 × 2. On an error (including a `402` from P8a) the placard shows no number and still links to `/vocab` |
+| URL | `q`, `letter` and `page` (1-based). An invalid `letter` (not one letter A–Z or `#`) is dropped with a replace. `#` is written `%23` |
+
+### F5b.3 Vocab — `/vocab` · Maxims — `/maxims`
+
+One screen with two configurations. Data: `GET /vocab?q=&letter=&page=&size=20` or `GET /maxims?…`.
+
+| | Vocab | Maxims |
+|---|---|---|
+| Eyebrow · H1 | "Legal terms" · **Vocab** | "Legal principles" · **Maxims** |
+| Intro (muted) | "Key terms defined in the bare acts, A to Z." | "Principles the courts have laid down, A to Z." |
+| Entry | `term` (bold) → `definition` | `title` (bold) → `explanation` |
+| Source link | "{actShortCode} · s. {sectionNumber}" → `/sections/{sectionId}` | `caseTitle` → `/caselaws/{caseLawId}` |
+| Search label · placeholder | "Search terms" · "Search terms and definitions" | "Search maxims" · "Search maxims and explanations" |
+| Noun (count, empty) | term / terms | maxim / maxims |
+
+**Layout.** Title row (eyebrow, H1, intro), then the S_STUDENT switch, then a filter bar: the search box (`type="search"`, `maxLength` 100, debounced 300 ms like Case Laws; Enter commits at once; a clear button) and below it the **letter bar**. Then the count line, the entries and `Pagination`.
+
+**Letter bar** (`nav`-less group, `role="group"`, `aria-label` "Filter by first letter"): **All** · A … Z · **#**. Each is a toggle button with `aria-pressed`; **All** is pressed when no letter is set. `#` has the accessible name "Other: not starting with A to Z". Tab reaches the group; ←/→ move between buttons (roving tabindex), Home/End jump to the ends, Enter/Space choose. From 768 px it wraps onto as many lines as needed; below 768 px it is one line that scrolls sideways inside its row (the page never scrolls sideways), with the pressed letter scrolled into view. Choosing a letter or changing the search resets the page to 1 and keeps the other filter: letter and search combine.
+
+**Count line** (`aria-live="polite"`): "{n} terms" · "{n} terms under K" · "{n} terms under #" · "{n} terms matching '{q}'" · "{n} terms under K matching '{q}'" (singular when 1; "maxims" on Maxims).
+
+**Entries** as one `<dl>` in the server's order (A–Z): `<dt>` the term or title, `<dd>` the definition or explanation as plain text with line breaks kept, then the source link on its own line, muted, with a book (section) or scales (case law) icon. The server already removes duplicates, so the term is the React key. Each entry is a card on phones; from 768 px a two-column grid of cards.
+
+**States**
+- Loading: skeleton of 6 cards. A refetch (paging, filter change) keeps the previous results with `aria-busy` on the list.
+- Empty, no filter: "No terms yet." (Maxims: "No maxims yet.")
+- Empty with a letter: "No terms under K." + **Show all letters**.
+- Empty with a search: "No terms match '{q}'." + **Clear search** (and **Show all letters** when a letter is set too).
+- `400 VALIDATION_ERROR` (only from a hand-edited URL, since the client limits `q` and drops bad letters): "These filters can't be used." + **Clear filters**.
+- Other errors: `ErrorState` with **Try again** (§0.6). `402 PLAN_REQUIRED`: the generic error until F8a, then `PlanGate`.
+
+**Phone (390 px):** single column; the search box full width; the letter bar scrolls sideways; `Pagination` shows Previous / Next with "Page 2 of 14".
+
+---
+
+## F5c — Subject notes
+
+Contract: §11c (LIVE, P5c; TDD §7.12). Professors share study notes (PDF, Word or PowerPoint, up to 20 MB) for the subjects they teach. Every C_STUDENT of the college can open them, and the C_ADMIN lists and deletes them. S_STUDENT and SUPERADMIN never see notes. Every response is `no-store`; files are never cached (plan §9.4).
+
+### F5c shell changes
+
+| Item | Behaviour |
+|---|---|
+| Nav (D11) | The sidebar and the phone tab bar become separate lists (`sidebarFor`, `tabsFor`). Sidebar: C_ADMIN Overview · Users · Subjects · **Notes** · Audit · Tutor · Library; C_PROFESSOR Teaching desk · Assessments · **Notes** · Tutor · Library; C_STUDENT My studies · Assessments · **Notes** · Tutor · Library. Tab bars (≤ 5): C_ADMIN Users · Subjects · **Notes** · Tutor · Library (Audit moves off the tab bar; reached from the Overview's Recent activity → Audit log; in F6a Analytics takes Notes' tab and Notes is reached from the Overview and the subject screens); C_PROFESSOR Desk · Assessments · **Notes** · Tutor · Library; C_STUDENT Studies · Assessments · **Notes** · Tutor · Library. Icon: a document with lines. SUPERADMIN and S_STUDENT unchanged |
+| Routes | `/professor/notes`, `/student/notes`, `/college/notes`, in their role areas (wide for professor and college as today; `/student/notes` uses the standard width, mobile first) |
+| C_ADMIN Overview | A "Study notes →" link under the placard group, → `/college/notes` |
+| URL | Filters (`subjectId`, `professorId`, `q`) and `page` only. Never note titles or file names |
+| Data refresh | Every upload, edit, replace or delete invalidates all note lists (`['notes']`). The list of the role's subjects is loaded once per screen (`GET /college/subjects`) |
+
+### Shared F5c parts
+
+**`NoteCard`** (an `article`, heading level 2 = the title):
+- Top line: a `FileTypeIcon` (PDF `--lx-lavender`, Word `--lx-sky`, PowerPoint `--lx-cream`, each with its `-ink`) with its text label "PDF" / "Word" / "PowerPoint" (from `file.contentType`), then the subject as a code chip + name.
+- `title` (heading), then `description` as plain text (line breaks kept; clamped to 3 lines with **Show more** / **Show less** when longer).
+- Facts line (muted): "{size} · Shared by {uploadedBy.fullName} · Updated {updatedAt}" (size via `formatBytes`, e.g. "2.4 MB"; "Shared by a former professor" when `uploadedBy` is `null`; date "21 Oct 2026", full date-time as `title`).
+- Actions on the right from 768 px, below on phones, passed in per role.
+
+**Open a note** (professor and student): one button whose label depends on the type. PDF: **View** opens the full-screen `PdfViewer` (as F3.6) titled with the note title. Word / PowerPoint: **Download** saves the file (`saveDownload`, the server's file name). While loading the button reads "Opening…" / "Downloading…" and is disabled; a failure shows an inline error under the card: "This file couldn't be opened. Try again." (`NOT_FOUND`: "This note no longer exists. The list has been refreshed." and the list is refetched).
+
+**List**: newest first as returned, 20 per page, `Pagination`. Loading: 4 skeleton cards. Refetch: previous cards stay with `aria-busy`. The result count is in a polite live region ("12 notes").
+
+**File field** (upload and replace): `FileDropzone` with `accept=".pdf,.docx,.pptx"`, prompt "Choose a file or drop it here", hint "PDF, Word (.docx) or PowerPoint (.pptx), up to 20 MB." Checked on choosing, before any request:
+
+| Problem | Message under the field |
+|---|---|
+| Extension not `.pdf`, `.docx` or `.pptx` (also `.doc`, `.ppt`, `.docm`, `.pptm`) | Choose a PDF, Word (.docx) or PowerPoint (.pptx) file. |
+| Larger than 20 MB | This file is {size}. Files can be at most 20 MB. |
+| Empty file | This file is empty. |
+| First bytes don't match the extension (`%PDF-` for PDF, `PK\x03\x04` for Word/PowerPoint) | This doesn't look like a real {PDF / Word / PowerPoint} file. |
+| Server `INVALID_FILE` | This file can't be used: {server reason, without the `file:` prefix} (e.g. "must not contain macros", "must not be password-protected", "is not a readable DOCX") |
+| Server `VALIDATION_ERROR` `file: is larger than the upload limit` | This file is too large. Files can be at most 20 MB. |
+
+### F5c.3 Professor notes — `/professor/notes`
+
+**Purpose:** share and manage study notes for the subjects you teach. Data: `GET /college/subjects` (the caller's mapped subjects), `GET /professor/notes?subjectId=&page=`, the writes in §11c.1. Template: List, wide. Eyebrow "Teaching"; H1 **Study notes**; intro (muted) "Notes you share here are visible to every student at your college."
+
+**Header actions:** **Upload note** (primary). Disabled with the hint "You aren't assigned to any subjects yet." when the subjects list is empty.
+
+**Filter:** Subject select, "All my subjects" + each subject as "{code} · {name}". A `subjectId` in the URL that isn't in the list, or a `404` from the list call: in place of the list, "You no longer teach this subject, or it was removed." + **Show all subjects**.
+
+**Cards:** all notes of the caller's subjects, any uploader. On notes where `uploadedBy?.id` is the caller: **View/Download** · **Edit** · **Replace file** · **Delete** (the last three in a `RowMenu` "More actions for {title}" below 768 px). On colleagues' notes only **View/Download**, and the facts line reads "Shared by {name}".
+
+**Empty states**
+- No subjects: "You aren't assigned to any subjects yet. Your college admin assigns subjects to professors."
+- No notes at all: "No notes yet. Share lecture slides, handouts or reading lists with your students." + **Upload note**.
+- No notes for the chosen subject: "No notes for {code} yet." + **Upload note** (subject pre-filled).
+
+**Upload note** (`DialogForm`, title "Upload a note"):
+- Subject (select, required; pre-filled from the filter; "Choose a subject."), Title (required, 1–200 after trimming; "Enter a title." / "Titles can be at most 200 characters."), Description (optional textarea, ≤ 2,000 with a counter; "Descriptions can be at most 2,000 characters."), File (the file field above; "Choose a file.").
+- **Cancel** · **Upload** ("Uploading… {n}%" with a progress bar, `aria-valuenow`). While uploading, **Cancel** becomes **Stop upload**, which aborts the request; the dialog stays open with "Upload stopped." and the fields kept.
+- Closing with anything entered asks "Discard this note?" ("Your title, description and file will be lost." **Keep editing** · **Discard**).
+- `201`: the dialog closes, toast "'{title}' shared with students.", the list refetches (the new note is first).
+- Errors: field errors from `VALIDATION_ERROR` paths (`subjectId`, `title`, `description`); `INVALID_FILE` under the file; `404` (the subject was unmapped or deleted meanwhile): form banner "You can't share notes for this subject any more." and the subjects list refetches.
+
+**Edit** (`DialogForm`, title "Edit note"): Title and Description as above, pre-filled. **Cancel** · **Save changes** ("Saving…"). `200`: toast "Note updated." A `404`: banner "This note no longer exists, or you no longer teach its subject. The list has been refreshed." and the list refetches. Unsaved-changes prompt as above.
+
+**Replace file** (`DialogForm`, title "Replace the file of '{title}'"): body "Students get the new file straight away. The current file ({originalFilename}, {size}) is deleted." The file field; **Cancel** · **Replace file** (progress as for upload). `200`: toast "File replaced." Errors as for upload.
+
+**Delete** (`ConfirmDialog`): title "Delete '{title}'?"; body "Students lose access to this file. This can't be undone."; **Cancel** · **Delete note** (danger, "Deleting…"). `204` or `404`: toast "Note deleted.", the list refetches.
+
+### F5c.4 Student notes — `/student/notes`
+
+**Purpose:** open the notes your professors have shared. Data: `GET /college/subjects` (all the college's), `GET /student/notes?subjectId=&q=&page=`, `GET /student/notes/{id}/file`. Template: List, standard width, mobile first. Eyebrow "My studies"; H1 **Study notes**.
+
+**Filters:** Subject select ("All subjects" + "{code} · {name}") and a search box ("Search notes", placeholder "Search titles and descriptions", `maxLength` 100, debounced 300 ms). Both reset the page. **Clear filters** when either is set.
+
+**Cards:** the shared `NoteCard` with **View** (PDF) or **Download** (Word, PowerPoint) only.
+
+**Empty states:** none at all: "Your professors haven't shared any notes yet."; filtered: "No notes match these filters." + **Clear filters**. A `subjectId` of another college returns an empty page, so it shows the filtered empty state.
+
+**Phone (390 px):** filters stacked full width; cards full width with the open button full width under the facts line.
+
+### F5c.5 College notes — `/college/notes` (C_ADMIN)
+
+**Purpose:** see what's shared at your college and remove what shouldn't be there. Data: `GET /college/subjects`, `GET /college/users?role=C_PROFESSOR&size=100&sort=fullName,asc`, `GET /college/notes?subjectId=&professorId=&page=`, `DELETE /college/notes/{id}`. Template: List, wide. Breadcrumb "College / Study notes"; eyebrow "College"; H1 **Study notes**; intro (muted) "Notes professors have shared with your students. You can remove a note, but only professors and students can open the files."
+
+**Filters:** Subject ("All subjects" + "{code} · {name}") and Professor ("All professors" + names). A filter id that answers `404` (removed subject or professor): "This subject or professor no longer exists." + **Clear filters**.
+
+**List:** a table from 768 px, caption "Study notes": Title (with the description's first line, muted) · Subject (code chip) · Shared by ("Former professor" when `null`) · Type ("PDF" / "Word" / "PowerPoint") · Size · Updated · actions (**Delete**). Cards below 768 px with the same facts. No View or Download.
+
+**Delete** (`ConfirmDialog`): title "Delete '{title}'?"; body "Shared by {name} for {subject code}. Students lose access to this file. This can't be undone." ("Shared by a former professor …" when `null`); **Cancel** · **Delete note**. `204` or `404`: toast "Note deleted.", refetch.
+
+**Empty states:** none: "No professor has shared notes yet."; filtered: "No notes match these filters." + **Clear filters**.
+
+### F5c.7 Subject delete and detail (change to F2.7)
+
+- Subject detail: a **Study notes** link next to the facts ("Study notes →", → `/college/notes?subjectId={id}`).
+- Delete: when `assessmentCount` > 0 the F2.7 dialog stays as written. When `assessmentCount` is 0 and the delete answers `409 SUBJECT_IN_USE`, the subject has notes: title "{name} can't be deleted"; body "Professors have shared study notes for it. Delete the notes first, or rename the subject instead."; buttons **Close** · **View notes** (→ `/college/notes?subjectId={id}`) · **Rename**.
+
+### F5c audit summaries
+
+| Action | Summary |
+|---|---|
+| `NOTE_UPLOADED` | Note {fileName} shared |
+| `NOTE_REPLACED` | Note file replaced with {fileName} |
+| `NOTE_DELETED` | Note {fileName} deleted |
+
+`details` hold only `subjectId` and `fileName` (never content); entity `SUBJECT_NOTE`. Metadata edits aren't audited.
+
+### F5c errors (beyond §0.6)
+
+| Error | Where | Copy |
+|---|---|---|
+| `INVALID_FILE` | Under the file field | This file can't be used: {server reason} |
+| `VALIDATION_ERROR` `file: is larger than the upload limit` | Under the file field | This file is too large. Files can be at most 20 MB. |
+| `NOT_FOUND` on upload | Form banner; subjects refetched | You can't share notes for this subject any more. |
+| `NOT_FOUND` on edit, replace or delete | Banner or toast; list refetched | This note no longer exists, or you no longer teach its subject. The list has been refreshed. |
+| `SUBJECT_IN_USE` with no assessments | Subject delete dialog | See F5c.7 |
+
+---
+
 ## F5–F8 (not yet written)
 
 Each stub lists what the section must cover. Task IDs are the plan's.
 
 **F5 — AI evaluation UI** (contract §11; on hold with backend Phase 5): F5.1 AI Evaluate gating · F5.2 polling · F5.3 AI suggestion and flag chips · F5.4 failure and retry · F5.5 grid statuses and the AI usage tab.
 
-**F6 — Rankings & statistics** (contract §12): F6.1 ranking table · F6.2 subject picker per role · F6.3 C_ADMIN overview · F6.4 per student · F6.5 freshness from `generatedAt`.
+**F8a — Trial, plans & billing** (contract §14): F8a.3 access banner · F8a.4 `PlanGate` · F8a.5 plans (Buy → `PAYMENTS_UNAVAILABLE`) · F8a.6 billing and cancel auto-renew · F8a.7 SUPERADMIN plans and subscriptions (grant, revoke).
 
-**F7 — Solo AI practice** (contract §13): F7.1 plan gate · F7.2 usage meter (`resetsAt`) · F7.3 generate question · F7.4 attempts · F7.5 generated answer · F7.6 history · F7.7 SUPERADMIN subjects and plans · F7.8 Home card.
+**F6a — C_ADMIN analytics** (contract §12a): F6a.2 overview with "Updated {asOf}" · F6a.3 assessments table · F6a.4 non-submitters and CSV · F6a.5 Sync button (running, failed, cooldown).
 
-**F8 — Payments & hardening** (contract §14): F8.1 checkout and the "confirming payment" state.
+**F6a-2 — Rankings & statistics** (contract §12): F6.1 ranking table · F6.2 subject picker per role · F6.3 per student · F6.4 freshness from `generatedAt`.
+
+**F7 — Solo AI practice** (contract §13, to be revised): F7.1 plan gate (`PlanGate`) · F7.2 usage meter (`resetsAt`) · F7.3 generate question · F7.4 attempts · F7.5 generated answer · F7.6 history · F7.7 SUPERADMIN subjects · F7.8 Home card.
+
+**F8b — Gateway checkout & hardening**: F8b.1 checkout and the "confirming payment" state.
 
 ---
 
@@ -1309,3 +1483,4 @@ Each stub lists what the section must cover. Task IDs are the plan's.
 | 2026-10-18 | F4 written against backend Phase 4 (contract §10 LIVE): grading counts and grade cells in the list, detail and grid (with the grade-status filter and grading order), answer review with the inline PDF, grade panel (draft, approve & publish, read-only once published), previous / next / next ungraded, grade history, student results per `outcome` and its entry points; `INVALID_MARKS` and `GRADE_PUBLISHED` copy in §0.6; F4 audit summaries |
 | 2026-10-20 | F5a written against backend Phase 5a (contract §11a): tutor nav item for every role and the `/admin` Tutor card; the tutor screen (chat list with expiry and delete, thread with pending / failed messages, `[n]` source markers, library and `FILE` sources, not-found answers, composer, quota line and banner, disclaimer, expired conversations); tutor admin Index (re-index, latest run, polling, previous runs) and Spend (URL filters, stat tiles, SVG daily cost chart with a table) tabs; `QUOTA_EXCEEDED` (tutor), `AI_UNAVAILABLE` and `INDEX_RUN_IN_PROGRESS` copy in §0.6. F5 marked on hold |
 | 2026-10-20 | UR (UI refresh) written from the approved design mock: new tokens and type (Manrope for the interface, the serif for legal text), the sidebar shell with a collapsed rail and a floating phone tab bar, the five role homes from existing endpoints (Overview, Overview, Teaching desk, My studies, Study hub), restyle rules for the other screens. Tutor failure copy split (AI_UNAVAILABLE vs maybe answered); spend tab server validation shown as bad filters |
+| 2026-10-26 | F5b written against backend Phase 5b (contract §11b LIVE): `/vocab` and `/maxims` for every role, the Library sub-nav, the S_STUDENT Study hub placard and Vocab ⇄ Maxims switch, the letter bar (`#` bucket, roving focus, sideways scroll on phones), combined search and letter filters, count line, empty and error states. F5c written against backend Phase 5c (contract §11c LIVE): the sidebar / tab-bar split (D11) with the Notes items, the shared `NoteCard`, view (PDF) vs download (Word, PowerPoint), client file checks and copy, professor notes (upload, edit, replace, delete, owner-only), student notes, college notes (metadata and delete only), the subject delete and detail changes, `NOTE_*` audit summaries. `INVALID_FILE` copy for notes and `PLAN_REQUIRED` in §0.6. The F6/F8 stubs replaced by F8a, F6a (Sync), F6a-2 and F8b |
