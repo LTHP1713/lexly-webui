@@ -24,8 +24,15 @@ export function LetterBar({
   const current = Math.max(0, options.indexOf(value));
   const buttons = useRef<(HTMLButtonElement | null)[]>([]);
 
+  // Scroll only the bar sideways; `scrollIntoView` would also move the page vertically.
   useEffect(() => {
-    buttons.current[current]?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+    const button = buttons.current[current];
+    const bar = button?.parentElement;
+    if (!button || !bar) return;
+    if (button.offsetLeft < bar.scrollLeft) bar.scrollLeft = button.offsetLeft;
+    else if (button.offsetLeft + button.offsetWidth > bar.scrollLeft + bar.clientWidth) {
+      bar.scrollLeft = button.offsetLeft + button.offsetWidth - bar.clientWidth;
+    }
   }, [current]);
 
   function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {

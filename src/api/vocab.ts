@@ -57,23 +57,25 @@ function text(value: string | null | undefined): string {
 }
 
 export function toVocabSummary(dto: VocabSummary): VocabSummary {
+  const source: Partial<VocabSummary['source']> = dto.source ?? {};
   return {
     term: text(dto.term),
     definition: text(dto.definition),
     source: {
-      sectionId: dto.source.sectionId,
-      sectionNumber: text(dto.source.sectionNumber),
-      actId: dto.source.actId,
-      actShortCode: text(dto.source.actShortCode),
+      sectionId: text(source.sectionId),
+      sectionNumber: text(source.sectionNumber),
+      actId: text(source.actId),
+      actShortCode: text(source.actShortCode),
     },
   };
 }
 
 export function toMaximSummary(dto: MaximSummary): MaximSummary {
+  const source: Partial<MaximSummary['source']> = dto.source ?? {};
   return {
     title: text(dto.title),
     explanation: text(dto.explanation),
-    source: { caseLawId: dto.source.caseLawId, caseTitle: text(dto.source.caseTitle) },
+    source: { caseLawId: text(source.caseLawId), caseTitle: text(source.caseTitle) },
   };
 }
 

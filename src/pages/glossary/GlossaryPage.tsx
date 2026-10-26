@@ -122,7 +122,8 @@ function GlossaryPage({ config }: { config: GlossaryConfig }) {
   const query = params.get('q') ?? '';
   const rawLetter = params.get('letter');
   const letter = parseGlossaryLetter(rawLetter);
-  const page = Math.max(0, (Number(params.get('page')) || 1) - 1);
+  const rawPage = Number(params.get('page'));
+  const page = Number.isInteger(rawPage) && rawPage > 1 ? rawPage - 1 : 0;
 
   useEffect(() => {
     if (rawLetter !== null && rawLetter !== letter) {
@@ -166,10 +167,17 @@ function GlossaryPage({ config }: { config: GlossaryConfig }) {
     if (next !== query) update({ q: next }, true);
   }
 
+  // The timer fires after later renders, so it must call the latest `commitQuery`: a stale one
+  // would merge `q` into old params and undo a letter or page chosen in the meantime.
+  const latestCommit = useRef(commitQuery);
+  useEffect(() => {
+    latestCommit.current = commitQuery;
+  });
+
   function handleChange(value: string) {
     setInput(value);
     window.clearTimeout(debounceTimer.current);
-    debounceTimer.current = window.setTimeout(() => commitQuery(value), DEBOUNCE_MS);
+    debounceTimer.current = window.setTimeout(() => latestCommit.current(value), DEBOUNCE_MS);
   }
 
   function handleSubmit(event: FormEvent) {
