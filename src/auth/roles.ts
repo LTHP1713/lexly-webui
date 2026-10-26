@@ -89,7 +89,7 @@ const LIBRARY: NavItem = {
   to: LIBRARY_HOME,
   label: 'Library',
   icon: BookIcon,
-  matches: ['/acts', '/sections', '/search', '/caselaws'],
+  matches: ['/acts', '/sections', '/search', '/caselaws', '/vocab', '/maxims'],
 };
 
 /** A nav item is only listed once its screens exist (UI spec F0.3). At most 5 per role. */

@@ -16,6 +16,8 @@ function isWidePath(pathname: string): boolean {
     pathname === '/dashboard' ||
     pathname === '/acts' ||
     pathname === '/caselaws' ||
+    pathname === '/vocab' ||
+    pathname === '/maxims' ||
     pathname.startsWith('/sections/') ||
     pathname.startsWith('/caselaws/') ||
     pathname === '/admin' ||

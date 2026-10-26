@@ -75,6 +75,8 @@ const StudentResultsPage = lazy(() =>
 );
 const TutorPage = lazy(() => import('@/pages/tutor/TutorPage').then((m) => ({ default: m.TutorPage })));
 const TutorAdminPage = lazy(() => import('@/pages/admin/tutor/TutorAdminPage').then((m) => ({ default: m.TutorAdminPage })));
+const VocabPage = lazy(() => import('@/pages/glossary/GlossaryPage').then((m) => ({ default: m.VocabPage })));
+const MaximsPage = lazy(() => import('@/pages/glossary/GlossaryPage').then((m) => ({ default: m.MaximsPage })));
 const StudentAssessmentPage = lazy(() =>
   import('@/pages/student/StudentAssessmentPage').then((m) => ({ default: m.StudentAssessmentPage })),
 );
@@ -121,6 +123,8 @@ function App() {
             <Route path="/search" element={<SearchPage />} />
             <Route path="/caselaws" element={<CaseLawsPage />} />
             <Route path="/caselaws/:caseLawId" element={<CaseLawDetailPage />} />
+            <Route path="/vocab" element={<VocabPage />} />
+            <Route path="/maxims" element={<MaximsPage />} />
             <Route path="/profile" element={<ProfilePage />} />
 
             {/* AI tutor: every role (F5a) */}

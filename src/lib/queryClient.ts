@@ -105,6 +105,7 @@ export const queryKeys = {
   library: {
     acts: ['library', 'acts'] as const,
     caseLawCount: ['library', 'caselaws', 'count'] as const,
+    vocabCount: ['library', 'vocab', 'count'] as const,
   },
   tutor: {
     quota: ['tutor', 'quota'] as const,
