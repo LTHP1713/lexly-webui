@@ -7,11 +7,12 @@ import { API, http, json, server } from './server';
 const emptyPage = { content: [], page: 0, size: 1, totalElements: 0, totalPages: 0 };
 const quota = { limit: 10, used: 0, remaining: 10, resetsAt: '2026-10-20T18:30:00Z' };
 
-export function mockStudyHub(overrides: { acts?: unknown[]; caseLawTotal?: number } = {}) {
+export function mockStudyHub(overrides: { acts?: unknown[]; caseLawTotal?: number; vocabTotal?: number } = {}) {
   server.use(
     http.get(`${API}/acts`, () => json((overrides.acts ?? []) as never)),
     http.get(`${API}/caselaws`, () => json({ ...emptyPage, totalElements: overrides.caseLawTotal ?? 0 })),
     http.get(`${API}/tutor/quota`, () => json(quota)),
+    http.get(`${API}/vocab`, () => json({ ...emptyPage, totalElements: overrides.vocabTotal ?? 0 })),
   );
 }
 
