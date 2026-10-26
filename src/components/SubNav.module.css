@@ -4,6 +4,13 @@
   overflow-x: auto;
 }
 
+/* Only phones need the sideways scroll; from tablet width the tabs fit. */
+@media (min-width: 768px) {
+  .subNav {
+    overflow-x: visible;
+  }
+}
+
 .list {
   display: flex;
   gap: 0.25rem;
