@@ -34,6 +34,11 @@ export const ErrorCode = {
   AI_UNAVAILABLE: 'AI_UNAVAILABLE',
   /** 409; a tutor index run is already running. */
   INDEX_RUN_IN_PROGRESS: 'INDEX_RUN_IN_PROGRESS',
+  /**
+   * 402, from P8a: an S_STUDENT without a trial or plan called a gated endpoint (tutor, Vocab,
+   * Maxims; contract §14.1). Shown as a plain error until F8a's `PlanGate` handles it.
+   */
+  PLAN_REQUIRED: 'PLAN_REQUIRED',
   /** Client-side: the request never reached the server. */
   NETWORK_ERROR: 'NETWORK_ERROR',
   /** Client-side: an upload or download was cancelled through its `AbortSignal`. */
@@ -65,6 +70,7 @@ const MESSAGES: Partial<Record<string, string>> = {
   QUOTA_EXCEEDED: "You've used today's 10 questions. They reset at midnight India time.",
   AI_UNAVAILABLE: "The tutor couldn't answer just now. Your question wasn't counted.",
   INDEX_RUN_IN_PROGRESS: 'A re-index is already running.',
+  PLAN_REQUIRED: 'Your trial has ended. Choose a plan to continue.',
 };
 
 const SERVER_TROUBLE = 'Lexly is having trouble right now. Please try again in a moment.';
