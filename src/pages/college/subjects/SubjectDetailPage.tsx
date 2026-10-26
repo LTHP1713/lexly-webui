@@ -59,6 +59,7 @@ function SubjectDetail({ subject }: { subject: Subject }) {
                 {formatCount(subject.assessmentCount)} {subject.assessmentCount === 1 ? 'assessment' : 'assessments'}
               </span>
               <span>Updated {formatDate(subject.updatedAt)}</span>
+              <Link to={`/college/notes?subjectId=${encodeURIComponent(subject.id)}`}>Study notes →</Link>
             </p>
           </div>
           <div className={styles.headerLinks}>

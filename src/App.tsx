@@ -73,6 +73,9 @@ const StudentAssessmentsPage = lazy(() =>
 const StudentResultsPage = lazy(() =>
   import('@/pages/student/StudentResultsPage').then((m) => ({ default: m.StudentResultsPage })),
 );
+const ProfessorNotesPage = lazy(() => import('@/pages/notes/ProfessorNotesPage').then((m) => ({ default: m.ProfessorNotesPage })));
+const StudentNotesPage = lazy(() => import('@/pages/notes/StudentNotesPage').then((m) => ({ default: m.StudentNotesPage })));
+const CollegeNotesPage = lazy(() => import('@/pages/notes/CollegeNotesPage').then((m) => ({ default: m.CollegeNotesPage })));
 const TutorPage = lazy(() => import('@/pages/tutor/TutorPage').then((m) => ({ default: m.TutorPage })));
 const TutorAdminPage = lazy(() => import('@/pages/admin/tutor/TutorAdminPage').then((m) => ({ default: m.TutorAdminPage })));
 const VocabPage = lazy(() => import('@/pages/glossary/GlossaryPage').then((m) => ({ default: m.VocabPage })));
@@ -180,6 +183,7 @@ function App() {
               <Route path="/college/users/:userId" element={<UserDetailPage />} />
               <Route path="/college/subjects" element={<SubjectsPage />} />
               <Route path="/college/subjects/:subjectId" element={<SubjectDetailPage />} />
+              <Route path="/college/notes" element={<CollegeNotesPage />} />
               <Route path="/college/audit" element={<AuditLogPage scope="college" />} />
             </Route>
 
@@ -197,6 +201,7 @@ function App() {
               <Route path="/professor/assessments/:assessmentId" element={<ProfessorAssessmentDetailPage />} />
               <Route path="/professor/assessments/:assessmentId/edit" element={<AssessmentEditorPage />} />
               <Route path="/professor/answers/:answerId" element={<AnswerReviewPage />} />
+              <Route path="/professor/notes" element={<ProfessorNotesPage />} />
             </Route>
 
             {/* C_STUDENT */}
@@ -211,6 +216,7 @@ function App() {
               <Route path="/student/assessments" element={<StudentAssessmentsPage />} />
               <Route path="/student/assessments/:assessmentId" element={<StudentAssessmentPage />} />
               <Route path="/student/assessments/:assessmentId/results" element={<StudentResultsPage />} />
+              <Route path="/student/notes" element={<StudentNotesPage />} />
             </Route>
           </Route>
           <Route element={<NotFoundFrame />}>

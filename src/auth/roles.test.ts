@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canOpen, hasLibrarySubNav, homeFor, isNavItemActive, LIBRARY_HOME, navFor, ROLES, sidebarFor, toRole } from '@/auth/roles';
+import { canOpen, hasLibrarySubNav, homeFor, isNavItemActive, LIBRARY_HOME, navFor, ROLES, sidebarFor, tabsFor, toRole } from '@/auth/roles';
 
 describe('toRole', () => {
   it('accepts the five P1 roles only', () => {
@@ -54,12 +54,34 @@ describe('navFor', () => {
     expect(navFor(null).map((i) => i.label)).toEqual(['Library']);
   });
 
-  it('never lists more than 5 items or an item the role may not open', () => {
+  it('never lists an item the role may not open', () => {
     for (const role of ROLES) {
-      const items = navFor(role);
-      expect(items.length).toBeLessThanOrEqual(5);
-      for (const item of items) expect(canOpen(role, item.to)).toBe(true);
+      for (const item of navFor(role)) expect(canOpen(role, item.to)).toBe(true);
     }
+  });
+
+  it('gives Notes to the three college roles only', () => {
+    for (const role of ROLES) {
+      const hasNotes = navFor(role).some((i) => i.label === 'Notes');
+      expect(hasNotes).toBe(role === 'C_ADMIN' || role === 'C_PROFESSOR' || role === 'C_STUDENT');
+    }
+  });
+});
+
+describe('tabsFor', () => {
+  it('never lists more than 5 tabs', () => {
+    for (const role of ROLES) expect(tabsFor(role).length).toBeLessThanOrEqual(5);
+  });
+
+  it('moves the C_ADMIN’s Audit off the tab bar and keeps Notes on it', () => {
+    expect(tabsFor('C_ADMIN').map((i) => i.label)).toEqual(['Users', 'Subjects', 'Notes', 'Tutor', 'Library']);
+    expect(tabsFor('C_PROFESSOR').map((i) => i.label)).toEqual(['Desk', 'Assessments', 'Notes', 'Tutor', 'Library']);
+    expect(tabsFor('C_STUDENT').map((i) => i.label)).toEqual(['Studies', 'Assessments', 'Notes', 'Tutor', 'Library']);
+  });
+
+  it('leaves the other roles’ tabs as they were', () => {
+    for (const role of ['SUPERADMIN', 'S_STUDENT'] as const) expect(tabsFor(role)).toEqual(navFor(role));
+    expect(tabsFor(null).map((i) => i.label)).toEqual(['Library']);
   });
 
   it('shows the Library sub-nav to every role but S_STUDENT', () => {
@@ -70,7 +92,15 @@ describe('navFor', () => {
 
 describe('sidebarFor', () => {
   it('puts the role home first and keeps every nav item', () => {
-    expect(sidebarFor('C_ADMIN').map((i) => i.label)).toEqual(['Overview', 'Users', 'Subjects', 'Audit', 'Tutor', 'Library']);
+    expect(sidebarFor('C_ADMIN').map((i) => i.label)).toEqual([
+      'Overview',
+      'Users',
+      'Subjects',
+      'Notes',
+      'Audit',
+      'Tutor',
+      'Library',
+    ]);
     expect(sidebarFor('S_STUDENT').map((i) => i.label)).toEqual(['Study hub', 'Bare Acts', 'Practice', 'Tutor', 'Profile']);
     expect(sidebarFor(null).map((i) => i.label)).toEqual(['Library']);
     for (const role of ROLES) for (const item of sidebarFor(role)) expect(canOpen(role, item.to)).toBe(true);
