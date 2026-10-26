@@ -163,6 +163,9 @@ export function CollegeHomePage() {
         />
       </DashboardRow>
       <p className={styles.hint}>
+        <Link to="/college/notes">Study notes →</Link> shared by your professors.
+      </p>
+      <p className={styles.hint}>
         Need a single account? <Link to="/college/users">Add a user</Link> from the Users page.
       </p>
     </div>

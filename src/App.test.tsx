@@ -129,18 +129,19 @@ describe('role areas', () => {
     await waitFor(() => expect(router.state.location.pathname).toBe(home));
   });
 
-  it('gives the college admin Users, Subjects, Audit, Tutor and Library, and an Overview under the college name', async () => {
+  it('gives the college admin Users, Subjects, Notes, Tutor and Library tabs (Audit in the sidebar), and an Overview under the college name', async () => {
     signedInAs({ role: 'C_ADMIN', college: { id: 'c', code: 'NLSIU', name: 'National Law School' } });
     mockCollegeOverview();
     await renderAt('/');
     expect(await screen.findByRole('heading', { level: 1, name: 'Overview' })).toBeInTheDocument();
     expect(screen.getByText('National Law School')).toBeInTheDocument();
     const [sidebar, tabs] = screen.getAllByRole('navigation', { name: 'Primary' });
-    expect(within(tabs).getAllByRole('link').map((l) => l.textContent)).toEqual(['Users', 'Subjects', 'Audit', 'Tutor', 'Library']);
+    expect(within(tabs).getAllByRole('link').map((l) => l.textContent)).toEqual(['Users', 'Subjects', 'Notes', 'Tutor', 'Library']);
     expect(within(sidebar).getAllByRole('listitem').map((l) => l.textContent)).toEqual([
       'Overview',
       'Users',
       'Subjects',
+      'Notes',
       'Audit',
       'Tutor',
       'Library',

@@ -179,7 +179,7 @@ export function tooLargeMessage(limits: UploadLimits): string {
   return `This file is larger than ${limits.maxFileMb} MB. Scan fewer pages or at a lower resolution.`;
 }
 
-async function readHead(file: Blob, length: number): Promise<string> {
+export async function readHead(file: Blob, length: number): Promise<string> {
   const head = file.slice(0, length);
   const buffer =
     typeof head.arrayBuffer === 'function'
