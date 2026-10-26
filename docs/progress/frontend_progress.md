@@ -2,6 +2,46 @@
 
 ## Completed
 
+### 2026-10-26 — Docs: synced with backend Phases 5b and 5c and the 2026-10-25 roadmap
+
+**Status:** Done (docs only). No app behaviour changed.
+
+**Source:** `lexly-backend` `main` at `fbe14dd`: Phase 5b Vocab & Maxims (PR #7, `ce0b250`),
+Phase 5c subject notes (PR #8, merged 2026-10-26), and the 2026-10-25 roadmap commit
+(`51240b1`: phases 5b, 5c, 8a, the 6a rescope, contract §11b, §11c, §12a, §14).
+
+- **Contract:** `docs/Lexly-API-Contract.md` re-copied from the backend at `fbe14dd`, then again
+  with the backend's (not yet committed) 2026-10-26 change: analytics Sync replaces the nightly
+  snapshot (§12a.5–12a.6, `SYNC_IN_PROGRESS` 409, `SYNC_COOLDOWN` 429), which resolves B10.
+- **Decisions (user, 2026-10-26):** D11 split the sidebar and tab-bar lists; S_STUDENTs reach
+  Vocab and Maxims from a Study hub placard plus a Vocab ⇄ Maxims switch; F4 and F5a e2e
+  re-runs postponed; `CLAUDE.md` current state updated; `docs/Lexly-F5a-Tutor-Brief.md` removed
+  (its content is in the plan, the UI spec and this file).
+- **Plan:** replaced with the backend's synced copy (`0ed1e80`, which folds the F0–F5a and UR
+  task tables into a summary; they stay in git history and in this file), then detailed against
+  the backend code and this repo:
+  - the header now records 5c as merged;
+  - new G18 / D11: `navFor` feeds both the sidebar and the ≤ 5 tab bar, and SUPERADMIN and
+    C_ADMIN would reach 6 and 7 items, so split out `tabsFor()` first (F5c.0), with
+    recommended tab bars;
+  - new G19: S_STUDENT has no Library sub-nav and a full tab bar, so F5b adds Study hub entry
+    points and a Vocab ⇄ Maxims switch;
+  - F5b: DTO names, `letter=#` encoded as `%23`, keys from the term (entries have no id), and
+    page reset on a filter change;
+  - F5c: the call list, subject filters from `GET /college/subjects` (already role-scoped),
+    view vs. save decided from `file.contentType` (`download()` exposes no disposition),
+    `saveDownload()`, `404` on a write, the 21 MB multipart error, and audit summaries
+    (details hold only `subjectId` and `fileName`);
+  - F8a: `access` missing → `NONE`, so F8a can ship before 8a; the IST end-of-day grant; Grant
+    only from list rows until B9;
+  - F6a: filter pickers and stale-filter `404`s, CSV via `saveDownload()`;
+  - §6 says the plan's B-asks aren't the backend's Deferred B-items. B10 was re-checked and is
+    still open. B9 is deferred: the user decided (2026-10-26) that Lexly goes live only once
+    online payment (F8b) is built, so manual grants are a support tool, not a launch path.
+- **Not done:** the UI-spec sections for F5b, F5c, F8a and F6a are still to be written (plan §8.1),
+  and D11 needs the user's agreement.
+- **Not verified live:** docs only; no calls against the backend.
+
 ### 2026-10-16 — F3 Assessments & answering (F3.1–F3.8, F3.10; F3.9 dropped)
 
 **Status:** Done 2026-10-16. Backend Phase 3 is merged to `main` (`75a7c08`, PR #4); the
@@ -1188,5 +1228,7 @@ on `feature/phase1`.
 5. **F4 on `feature/f4-grading`** — built and verified against backend `feature/phase4` 2026-10-18 (In Progress above). Done after backend Phase 4 merges to `main` and the e2e suite is re-run.
 6. ~~F5 (AI evaluation UI)~~: on hold with backend Phase 5 (2026-10-19).
 7. **F5a on `feature/f5a-tutor`**: built 2026-10-20 (In Progress above). Verify against backend `feature/phase5a` with the AI service, then Done once Phase 5a is merged.
-8. F6a (rankings & statistics) once backend Phase 6a is agreed; F6b to be planned.
-9. Later (D4): choose an app-wide dark-mode approach.
+8. **F5b on `feature/f5b-vocab`** (Vocab & Maxims) against backend `main`, after its UI-spec section.
+9. **F5c on `feature/f5c-notes`** (subject notes) against backend `main`, starting with the nav split (D11).
+10. F8a (trial & billing), then F6a (C_ADMIN analytics), against MSW mocks of contract §14 / §12a until backend 8a / 6a merge. F6a-2 (rankings) later; F6b to be planned.
+11. Later (D4): choose an app-wide dark-mode approach.

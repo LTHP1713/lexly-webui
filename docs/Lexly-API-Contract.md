@@ -71,7 +71,8 @@ List endpoints that can grow return `PagedResponse<T>`:
 - Searches (`/sections/search`, `/caselaws?q=`) and **every user-, college- or file-specific endpoint**: `Cache-Control: no-store`.
 
 ### 0.6 Files
-- **Uploads:** `multipart/form-data` with one part named `file`. PDFs are checked server-side: content-type `application/pdf`, `%PDF-` magic bytes, size ≤ `lexly.storage.max-file-mb` (**5 MB**), pages ≤ `lexly.storage.max-pages` (**10**), readable by PDFBox and not password-protected (decided 2026-10-15). Any failure → `400 INVALID_FILE` with a message naming the problem or limit (`file: must be at most 5 MB`, `file: must have at most 10 pages`, `file: must be a PDF`, `file: is required`). A request over the 10 MB multipart ceiling never reaches the endpoint and gets `400 VALIDATION_ERROR` (`file: is larger than the upload limit`).
+- **Uploads:** `multipart/form-data` with one part named `file`. PDFs are checked server-side: content-type `application/pdf`, `%PDF-` magic bytes, size ≤ `lexly.storage.max-file-mb` (**5 MB**), pages ≤ `lexly.storage.max-pages` (**10**), readable by PDFBox and not password-protected (decided 2026-10-15). Any failure → `400 INVALID_FILE` with a message naming the problem or limit (`file: must be at most 5 MB`, `file: must have at most 10 pages`, `file: must be a PDF`, `file: is required`). A request over the multipart ceiling never reaches the endpoint and gets `400 VALIDATION_ERROR` (`file: is larger than the upload limit`). The ceiling is **21 MB** since P5c (10 MB before), for subject notes (§11c); every upload endpoint keeps its own smaller limit and error code.
+- **Subject notes (P5c, LIVE)** also accept DOCX and PPTX, up to 20 MB (§11c). Those downloads are `Content-Disposition: attachment`.
 - **Downloads:** `200` with `Content-Type: application/pdf`, `Content-Disposition: inline; filename="<safe name>"` (the uploaded name reduced to `A-Z a-z 0-9 . _ -` and space, ending in `.pdf`), `Cache-Control: no-store`. CORS exposes `Content-Disposition` (LIVE, P3).
 - File names are never taken from user input for storage. `originalFilename` is kept only for display.
 
@@ -105,7 +106,7 @@ Each endpoint below lists the roles that may call it. Other roles get `403 FORBI
 | `LOGIN_ID_ALREADY_EXISTS` | 409 | ADDED, LIVE (P2) | Roll no / employee ID already used in the college |
 | `SUBJECT_CODE_ALREADY_EXISTS` | 409 | ADDED, LIVE (P2) | Subject code already used in the college |
 | `IMPORT_FILE_INVALID` | 400 | LIVE (P2) | Unreadable file, wrong headers, > 2,000 rows, wrong format |
-| `SUBJECT_IN_USE` | 409 | LIVE (P2) | Deleting a subject that has assessments in any status (P3) |
+| `SUBJECT_IN_USE` | 409 | LIVE (P2) | Deleting a subject that has assessments in any status (P3) or notes (P5c) |
 | `ASSESSMENT_NOT_EDITABLE` | 409 | LIVE (P3) | Edit/delete/publish on a non-`DRAFT` assessment, or remove on a `DRAFT` or `REMOVED` one; from P4 also grading an answer of a `REMOVED` assessment |
 | `ASSESSMENT_CLOSED` | 409 | LIVE (P3) | Upload/submit at or after `dueAt`, or on a closed assessment (a removed one is `404`) |
 | `ANSWER_LOCKED` | 409 | LIVE (P3) | Upload/submit on an already `SUBMITTED` answer |
@@ -113,7 +114,11 @@ Each endpoint below lists the roles that may call it. Other roles get `403 FORBI
 | `INVALID_MARKS` | 400 | LIVE (P4) | Marks < 0, > max, or not a multiple of 0.5 |
 | `GRADE_PUBLISHED` | 409 | LIVE (P4) | Changing a published grade |
 | `AI_EVALUATION_NOT_ALLOWED` | 409 | PROPOSED (P5) | AI evaluate before the PDF was downloaded, on a published grade, or while one is running (also used for a solo attempt while another is evaluating) |
-| `PLAN_REQUIRED` | 402 | PROPOSED (P7) | Solo feature without an `ACTIVE` plan |
+| `PLAN_REQUIRED` | 402 | PROPOSED (P8a) | S_STUDENT without trial or plan calling a gated endpoint (§14.1): tutor, Vocab & Maxims, later solo |
+| `PAYMENTS_UNAVAILABLE` | 503 | PROPOSED (P8a) | Checkout while no gateway adapter is configured (§14.2) |
+| `PLAN_NOT_AVAILABLE` | 409 | PROPOSED (P8a) | Checkout on an inactive or unpriced plan, or auto-renew where the plan doesn't offer it |
+| `SYNC_IN_PROGRESS` | 409 | PROPOSED (P6a) | Starting an analytics sync while the college's last one is still running (§12a.6) |
+| `SYNC_COOLDOWN` | 429 | PROPOSED (P6a) | Starting an analytics sync within 15 minutes of the last one that didn't fail (§12a.6) |
 | `QUOTA_EXCEEDED` | 429 | PROPOSED (P5a, P7) | P5a: today's 10 tutor questions are used (§11a.2). P7: 60 solo generations already used this month |
 | `AI_UNAVAILABLE` | 503 | PROPOSED (P5a) | The AI service or model failed or timed out; nothing was stored or counted |
 | `INDEX_RUN_IN_PROGRESS` | 409 | PROPOSED (P5a) | Starting a tutor index run while one is running |
@@ -742,10 +747,10 @@ Sample templates live in the backend repo under `docs/templates/` (`students.csv
 
 - `code` is required, ≤ 30, trimmed and stored upper-case, unique within the college (`409 SUBJECT_CODE_ALREADY_EXISTS`). It can be changed on update. `name` is required, ≤ 255. `description` is optional, ≤ 2,000.
 - `professorIds` **replaces** the mapping; `[]` clears it and repeated ids count once. An id that isn't a C_PROFESSOR of this college → `400 VALIDATION_ERROR` naming every bad position (`"professorIds[2]: not a professor of this college"`).
-- `professors` is sorted by `fullName`. `assessmentCount` counts the subject's assessments in every status, drafts and removed ones included (P3), so it is `0` exactly when the subject can be deleted.
+- `professors` is sorted by `fullName`. `assessmentCount` counts the subject's assessments in every status, drafts and removed ones included (P3). The subject can be deleted when it is `0` and the subject has no notes (P5c).
 - `q` matches code or name, case-insensitively. Sorted by `name`.
 - Out of scope → `404`: another college's subject, or a subject not mapped to the calling professor. SUPERADMIN and S_STUDENT get `403`.
-- Delete: `409 SUBJECT_IN_USE` while the subject has any assessment (`assessmentCount > 0`); otherwise its professor mappings go with it.
+- Delete: `409 SUBJECT_IN_USE` while the subject has any assessment (`assessmentCount > 0`) or any note (§11c); otherwise its professor mappings go with it.
 - Audit: `SUBJECT_CREATED`, `SUBJECT_UPDATED`, `SUBJECT_DELETED`, `SUBJECT_PROFESSORS_CHANGED` (with the new `professorIds`).
 
 ---
@@ -1229,7 +1234,169 @@ Not callable from the browser. Base URL `lexly.tutor.base-url`; every call sends
 
 ---
 
-## 12. Rankings & statistics — PROPOSED (P6)
+## 11b. Vocab & Maxims — LIVE (P5b)
+
+Design: TDD §7.11. Read-only views derived from section key terms and case-law principles. Roles: all. S_STUDENTs need a trial or plan from P8a (`402 PLAN_REQUIRED`). Without `q` the responses use the content cache (§0.5); with `q` they're `no-store`.
+
+### 11b.1 `GET /vocab?q=&letter=&page=&size=`
+`200` `PagedResponse<VocabEntry>`, sorted by term A–Z (case-insensitive):
+```json
+{ "term": "Consideration",
+  "definition": "Something in return for a promise …",
+  "source": { "sectionId": "…", "sectionNumber": "2(d)", "actId": "…", "actShortCode": "ICA" } }
+```
+
+### 11b.2 `GET /maxims?q=&letter=&page=&size=`
+`200` `PagedResponse<MaximEntry>`, sorted by title A–Z:
+```json
+{ "title": "Proportionality",
+  "explanation": "Electoral verification measures must pursue a legitimate objective …",
+  "source": { "caseLawId": "…", "caseTitle": "ADR v. Election Commission of India" } }
+```
+
+| Param | Rules |
+|---|---|
+| `q` | Optional, ≤ 100 chars; matches the term/title or the definition/explanation of **any** copy of an entry (contains, case-insensitive), and the response still shows the first copy |
+| `letter` | Optional; empty means all. One letter `A`–`Z` (case-insensitive), or `#` for anything that doesn't start with `A`–`Z` (digits, symbols and accented letters such as `É`) |
+| `page`, `size` | §0.4 |
+
+- Duplicates appear once. Two entries count as duplicates when their terms or titles match after whitespace is collapsed (tabs, newlines and non-breaking spaces included), trimmed and case is ignored. `term`/`title` is returned in that collapsed, trimmed form. The entry shown is the first by act title → section order → term order (maxims: case title → principle order).
+- Errors: `400 VALIDATION_ERROR`.
+
+---
+
+## 11c. Subject notes — LIVE (P5c)
+
+Design: TDD §7.12. Every response is `Cache-Control: no-store`.
+
+**`SubjectNote`**
+```json
+{ "id": "…", "subject": { "id": "…", "code": "CON-101", "name": "Constitutional Law I" },
+  "title": "Basic structure — lecture 4", "description": "Kesavananda and after",
+  "file": { "originalFilename": "lecture-4.pptx", "contentType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            "sizeBytes": 2483019 },
+  "uploadedBy": { "id": "…", "fullName": "Dr. Meera Iyer" },
+  "createdAt": "…", "updatedAt": "…" }
+```
+`uploadedBy` is `null` once that professor was removed ("Former professor"). `description` may be `null`.
+
+**Files.** One part named `file`, which can be:
+- **PDF** (`application/pdf`, `%PDF-`, readable by PDFBox, not password-protected)
+- **DOCX** (`application/vnd.openxmlformats-officedocument.wordprocessingml.document`)
+- **PPTX** (`application/vnd.openxmlformats-officedocument.presentationml.presentation`)
+
+Rules:
+- A DOCX or PPTX must be a valid OOXML package containing its main part. Macro-enabled packages are rejected.
+- Size ≤ `lexly.notes.max-file-mb` (**20 MB**).
+- The part's declared content type picks the kind, and the bytes must be that kind. `file.contentType` in responses is the canonical type of the checked file.
+- Any failure → `400 INVALID_FILE` (`file: is required`, `file: must be a PDF, DOCX or PPTX`, `file: must be at most 20 MB`, `file: is not a readable PDF|DOCX|PPTX`, `file: must not be password-protected`, `file: must not contain macros`). There is no page limit for notes.
+- Downloads: a PDF is `inline` and DOCX/PPTX are `attachment`, with the §0.6 safe file name.
+
+### 11c.1 Professor (C_PROFESSOR; subjects mapped to them, otherwise `404`)
+
+| Method & path | Body | Success |
+|---|---|---|
+| `GET /professor/notes?subjectId=&page=&size=` | — | `200 PagedResponse<SubjectNote>`, newest first; every note of the caller's mapped subjects (any uploader) |
+| `POST /professor/notes` | multipart: `file`, `subjectId`, `title` (1–200), `description` (≤ 2,000, optional) | `201 SubjectNote` |
+| `PUT /professor/notes/{id}` | `{ "title", "description" }` | `200 SubjectNote` |
+| `PUT /professor/notes/{id}/file` | multipart `file` | `200 SubjectNote` (old file deleted after commit) |
+| `DELETE /professor/notes/{id}` | — | `204` |
+| `GET /professor/notes/{id}/file` | — | the file |
+
+Writes are allowed only for the uploader while they are mapped to the subject. Another professor's note returns `404` on a write.
+
+- A `subjectId` filter, upload or download for a subject not mapped to the caller → `404`.
+- Missing or invalid upload fields → `400 VALIDATION_ERROR` (`subjectId: must not be null`, `title: must not be blank`); a missing `file` part → `400 INVALID_FILE`. A blank `description` is stored as `null`; titles are trimmed.
+- Editing the metadata isn't audited; upload, replace and delete are.
+
+### 11c.2 Student (C_STUDENT; own college)
+
+| Method & path | Success |
+|---|---|
+| `GET /student/notes?subjectId=&q=&page=&size=` | `200 PagedResponse<SubjectNote>`, newest first; `q` matches title/description |
+| `GET /student/notes/{id}/file` | the file |
+
+Another college's note → `404`; a `subjectId` of another college gives an empty page.
+
+### 11c.3 C_ADMIN (own college; metadata only, no download)
+
+| Method & path | Success |
+|---|---|
+| `GET /college/notes?subjectId=&professorId=&page=&size=` | `200 PagedResponse<SubjectNote>` |
+| `DELETE /college/notes/{id}` | `204` |
+
+Audit: `NOTE_UPLOADED`, `NOTE_REPLACED`, `NOTE_DELETED` (entity `SUBJECT_NOTE`; details hold the subject id and file name, never content). A subject with notes can't be deleted: `409 SUBJECT_IN_USE` (§8.4).
+
+---
+
+## 12a. C_ADMIN analytics — PROPOSED (P6a)
+
+Design: TDD §7.15. Role: **C_ADMIN** (own college). Every other role, SUPERADMIN and C_PROFESSOR included, gets `403`, and another college's assessment ids get `404`. Every number comes from the college's current snapshot, which the C_ADMIN refreshes with Sync (§12a.5–12a.6). `asOf` is the instant that snapshot was taken (ISO-8601 UTC). Nothing is computed live. All responses are `no-store`.
+
+Common filters on every list and overview:
+
+| Param | Rules |
+|---|---|
+| `subjectId` | Optional; a subject of the caller's college, else `404` |
+| `professorId` | Optional; a C_PROFESSOR of the caller's college, else `404` |
+| `from`, `to` | Optional `yyyy-MM-dd`, inclusive, on the assessment's publish date (IST). `to` before `from` → `400` |
+
+### 12a.1 `GET /college/analytics/overview`
+```json
+{ "asOf": "2026-10-26T09:02:11Z",
+  "totals": { "assessments": 18, "questions": 140, "attemptedQuestions": 9120,
+              "students": 420, "gradesPublished": 8700, "averageScorePct": 63.18 },
+  "bySubject": [ { "subject": { "id": "…", "code": "CON-101", "name": "…" }, "assessments": 6,
+                   "attemptedQuestions": 3010, "averageScorePct": 61.4 } ],
+  "byProfessor": [ { "professor": { "id": "…", "fullName": "…" }, "assessments": 4, "attemptedQuestions": 2200 } ],
+  "submission": { "studentsSubmittedAll": 6100, "studentsPartial": 820, "studentsNone": 640 } }
+```
+- `asOf` is `null` and every count is `0` before the first successful sync. The assessment lists are empty then too.
+- `attemptedQuestions` counts submitted answers.
+- `submission` sums student × assessment pairs.
+- `averageScorePct` = Σ published final marks / Σ max marks of those questions × 100, or `null` when nothing is published yet.
+- `byProfessor` includes a `"professor": null` row for "Former professor" assessments.
+
+### 12a.2 `GET /college/analytics/assessments?…&page=&size=`
+`200 PagedResponse<AssessmentStats>`, newest `publishedAt` first:
+```json
+{ "assessment": { "id": "…", "title": "…", "status": "CLOSED", "publishedAt": "…", "dueAt": "…" },
+  "subject": { … }, "professor": { "id": "…", "fullName": "…" },
+  "questions": 10, "students": 120, "submittedAll": 96, "partial": 14, "none": 10,
+  "attemptedQuestions": 1040, "gradesPublished": 990, "averageScorePct": 64.02 }
+```
+
+### 12a.3 `GET /college/analytics/assessments/{id}/non-submitters?include=NONE|PARTIAL|ALL&page=&size=`
+`include` defaults to `ALL` (both). `200 PagedResponse`, sorted by name:
+```json
+{ "student": { "id": "…", "fullName": "…", "loginId": "21BAL042", "email": "…" },
+  "submittedQuestions": 0, "totalQuestions": 10 }
+```
+
+### 12a.4 `GET /college/analytics/assessments/{id}/non-submitters.csv?include=`
+`200 text/csv; charset=UTF-8` (with a BOM, `Content-Disposition: attachment`). The header is `full_name,roll_no,email,submitted_questions,total_questions`.
+
+### 12a.5 `GET /college/analytics/sync`
+The college's sync state. `200 AnalyticsSync`:
+```json
+{ "status": "SUCCEEDED", "startedAt": "2026-10-26T09:02:11Z", "finishedAt": "2026-10-26T09:02:19Z",
+  "startedBy": { "id": "…", "fullName": "…" }, "asOf": "2026-10-26T09:02:11Z",
+  "nextSyncAt": "2026-10-26T09:17:11Z", "error": null }
+```
+- `status` is `RUNNING`, `SUCCEEDED` or `FAILED`, or `null` (with every other field `null`) if the college has never synced. Poll while it is `RUNNING`.
+- `asOf` is when the snapshot the dashboard shows was taken. After a `FAILED` sync it still points at the last successful one (or is `null`).
+- `nextSyncAt` is the earliest time a new sync is accepted, or `null` if one can start now. While `RUNNING` it is `null`; the button is disabled by the status.
+- `error` is a short safe message for `FAILED`. `startedBy` is `null` if that user was removed.
+
+### 12a.6 `POST /college/analytics/sync`
+No body. Starts a background sync of the caller's college as of now. `202 AnalyticsSync` with `status: "RUNNING"`. A successful sync replaces the whole snapshot at once; a failed one leaves the previous snapshot in place.
+- `409 SYNC_IN_PROGRESS` while the college's sync is running.
+- `429 SYNC_COOLDOWN` within 15 minutes of the start of the last sync that didn't fail; the `message` gives the time, and `GET` gives `nextSyncAt`.
+- Audited as `ANALYTICS_SYNC_STARTED` on `COLLEGE`.
+
+---
+
+## 12. Rankings & statistics — PROPOSED, moved to P6a-2 (2026-10-25)
 
 Every response here carries `generatedAt` (results are cached for up to 5 minutes).
 
@@ -1295,7 +1462,7 @@ Roles: C_ADMIN (own college) and SUPERADMIN.
 
 ## 13. Solo practice — PROPOSED (P7)
 
-Role: `S_STUDENT`. Every endpoint except `GET /solo/usage` and `GET /solo/subjects` needs an `ACTIVE` plan, else `402 PLAN_REQUIRED`.
+Role: `S_STUDENT`. Every endpoint except `GET /solo/usage` and `GET /solo/subjects` needs entitlement (trial or plan, §14.1), else `402 PLAN_REQUIRED`. **2026-10-25:** `solo_plans` and the manual-plan endpoints in §13.7 are superseded by billing (§14). `plan` in `GET /solo/usage` will become the §14.1 `access` object when Phase 7 is built.
 
 ### 13.1 Async model
 AI work runs as `ai_jobs`. Generate and evaluate calls return `202` with a resource in a pending status, and clients poll that resource's GET until it reaches a terminal status. This needs a `status` column on `solo_questions` and `solo_answer_generations` (ADDED to TDD §5.4).
@@ -1414,9 +1581,69 @@ Errors: `402 PLAN_REQUIRED`, `429 QUOTA_EXCEEDED` (the message includes the rese
 
 ---
 
-## 14. Payments — P8 (to be designed)
+## 14. Trial & billing — PROPOSED (P8a; gateway adapter P8b)
 
-Placeholder. Designed in the Phase 8 payment addendum. The client contract will be: list plans → create checkout → hosted gateway widget → poll `GET /solo/usage` until `plan.status` becomes `ACTIVE` (the webhook is the source of truth, never the client callback).
+Design: TDD §7.13–7.14. All responses are `no-store`. Amounts are integer **paise** with `currency: "INR"`.
+
+### 14.1 Entitlement and the `PLAN_REQUIRED` gate
+- **S_STUDENT** entitlement: `accessUntil = max(trialEndsAt, paidUntil)`. It travels in the access token, and `/auth/refresh` rebuilds it from the DB. After a payment or a grant, the client calls refresh.
+- **Gated** while `accessUntil` ≤ now (`402 PLAN_REQUIRED`, `"Your trial has ended. Choose a plan to continue."`): `/tutor/**`, `/vocab`, `/maxims`, and later `/solo/**` and the other-laws endpoints. **Never gated:** acts, sections, case laws, `/auth/**`, `/users/me`, `/billing/**`. Other roles are never gated.
+- A revoke takes effect within the access-token TTL (15 min).
+
+`GET /users/me` gains (P8a):
+```json
+"access": { "status": "TRIAL", "trialEndsAt": "…", "paidUntil": null, "accessUntil": "…" }
+```
+`status` is `TRIAL` | `PAID` | `EXPIRED` for S_STUDENT, and `NONE` (other fields `null`) for every other role.
+
+### 14.2 S_STUDENT endpoints
+
+| Method & path | Body | Success |
+|---|---|---|
+| `GET /billing/plans` | — | `200 [BillingPlan]`, active plans only, by period |
+| `GET /billing/me` | — | `200 { access, subscription: Subscription \| null }` |
+| `GET /billing/payments?page=&size=` | — | `200 PagedResponse<Payment>`, newest first |
+| `POST /billing/checkout` | `{ "planCode": "QUARTERLY", "autoRenew": false }` | P8b: `201 { paymentId, gateway, checkout: { … gateway-specific … } }`. **P8a: always `503 PAYMENTS_UNAVAILABLE`** |
+| `POST /billing/subscriptions/{id}/cancel` | — | `200 Subscription` (`cancelAtPeriodEnd: true`); own `AUTO_RENEW` only, else `404` |
+
+```json
+// BillingPlan
+{ "code": "MONTHLY", "name": "Lexly Pro — Monthly", "periodMonths": 1, "pricePaise": 49900,
+  "currency": "INR", "autoRenewAvailable": true }
+// Subscription
+{ "id": "…", "plan": { "code": "MONTHLY", "name": "…" }, "kind": "PASS", "source": "PAYMENT",
+  "status": "ACTIVE", "startsAt": "…", "endsAt": "…", "cancelAtPeriodEnd": false }
+// Payment
+{ "id": "…", "plan": { "code": "…", "name": "…" }, "amountPaise": 49900, "currency": "INR",
+  "status": "PAID", "createdAt": "…", "paidAt": "…" }
+```
+- `plan` is `null` for a `MANUAL` grant.
+- Buying a pass while one is active extends from the current `paidUntil`.
+- Errors: `409 PLAN_NOT_AVAILABLE` (inactive or unpriced plan, or `autoRenew` where it isn't available), `503 PAYMENTS_UNAVAILABLE`, `400`.
+
+**Client flow (P8b):**
+1. List the plans.
+2. Call `POST /billing/checkout`.
+3. Open the gateway widget.
+4. Poll `GET /billing/me` until `access.status` is `PAID`.
+5. Call `/auth/refresh`.
+
+The webhook is the source of truth, never the client callback.
+
+### 14.3 `POST /billing/webhooks/{gateway}` — public, signed
+Called only by the gateway. The adapter verifies the signature (`401` if it fails). If there's no adapter for `{gateway}` → `404`. Each event is processed once per `(gateway, eventId)`, and a duplicate gets `200` with no effect. No payment details are logged or stored beyond ids, amounts and statuses.
+
+### 14.4 SUPERADMIN
+
+| Method & path | Body | Success |
+|---|---|---|
+| `GET /superadmin/billing/plans` | — | `200 [BillingPlan + active]`, all plans |
+| `PUT /superadmin/billing/plans/{code}` | `{ "name", "pricePaise", "active", "autoRenewAvailable" }` | `200`; activating needs `pricePaise > 0` (`400`) |
+| `GET /superadmin/billing/subscriptions?q=&status=&page=&size=` | — | `200 PagedResponse<{ user: { id, fullName, email }, subscription }>` |
+| `POST /superadmin/billing/users/{userId}/grants` | `{ "endsAt": "2027-01-31T18:29:59Z" }` | `201 Subscription` (`source: MANUAL`); the user must be an S_STUDENT, else `404`; `endsAt` must be in the future |
+| `POST /superadmin/billing/subscriptions/{id}/revoke` | — | `200 Subscription` (`CANCELLED`, access recalculated; for `AUTO_RENEW` it's also cancelled at the gateway) |
+
+Audit: `BILLING_PLAN_UPDATED`, `BILLING_GRANTED`, `BILLING_REVOKED`, `PAYMENT_SUCCEEDED`, `SUBSCRIPTION_CANCELLED`.
 
 ---
 
@@ -1426,7 +1653,7 @@ Placeholder. Designed in the Phase 8 payment addendum. The client contract will 
 |---|---|
 | `/practice/**` (question banks, attempts, responses, submit, result) | Phase 0, V15 (done) |
 | `/admin/practice/**` | Phase 0 (done) |
-| `/subscriptions/**` (plans, me, checkout, verify, cancel, webhook) | V13 (done) |
+| `/subscriptions/**` (plans, me, checkout, verify, cancel, webhook) | V13 (done); replaced by `/billing/**` in P8a (§14) |
 | `PUT /admin/caselaws/{id}/free-flag`, `PUT /admin/sections/{id}/free-flag` | V13 (done) |
 | `/admin/caselaws/{id}/summary` | V11 (done) |
 | `/users/me/practice-stats`, `/users/me/bare-act-progress`, `/users/me/continue-learning`, `/users/me/learning-activity`, `/users/me/sections/{id}/progress`, `GET /search` (old Home contract) | Not in TDD v2. Never built; the frontend flags stay off |
@@ -1460,3 +1687,7 @@ The `isFree` field and the `PRO_REQUIRED` error no longer exist anywhere.
 | 2026-10-15 | P3 implemented: §9 is LIVE. Upload limits decided (5 MB, 10 pages; O4) and the §0.6 checks written down; downloads expose `Content-Disposition`. `ASSESSMENT_NOT_EDITABLE`, `ASSESSMENT_CLOSED`, `ANSWER_LOCKED`, `INVALID_FILE` are live. SUPERADMIN read-only views (§9.6) dropped: A9 changed, SUPERADMIN has no access to college assessments or answers. `assessmentCount` (§8.4) is live and counts every status. Clarified: the grid's `status` accepts `CellStatus` only until P4, removing an assessment discards its unsubmitted answers, uploads and submits on a removed assessment are `404`, and the multipart ceiling is 10 MB |
 | 2026-10-18 | P4 implemented: §10 is LIVE; `INVALID_MARKS` and `GRADE_PUBLISHED` are live. The §9 grading placeholders are filled in (counts, grid `gradeStatus`/`finalMarks`, the grid's `GradeStatus` filter, `RESULTS_AVAILABLE`, `resultPublished`, `progress.resultsPublished`). Clarified: grading answers of a removed assessment is `409 ASSESSMENT_NOT_EDITABLE` (reading still works); an approve body replaces both fields; navigation doesn't wrap; `publishedMaxMarks` counts only published questions; the `history[].actor` and `gradedBy` shapes |
 | 2026-10-19 | P5a proposed: AI legal tutor (§11a) with conversations, quota, citations, SUPERADMIN index runs and daily spend, and the internal AI service API; error codes `AI_UNAVAILABLE`, `INDEX_RUN_IN_PROGRESS`; `QUOTA_EXCEEDED` also used by the tutor. P5 (§11) is on hold. Backend implemented on `feature/phase5a` against a mocked AI service; the AI service and webui follow |
+| 2026-10-25 | Proposed (TDD §7.11–7.15): Vocab & Maxims §11b (P5b), subject notes §11c (P5c, multipart ceiling 21 MB, DOCX/PPTX), C_ADMIN analytics §12a (P6a; §12 rankings move to P6a-2), trial & billing §14 (P8a; `/users/me.access`, `PLAN_REQUIRED` re-scoped, `PAYMENTS_UNAVAILABLE`, `PLAN_NOT_AVAILABLE`), `SNAPSHOT_RUNNING`. §13 solo plans superseded by billing |
+| 2026-10-25 | P5b implemented: §11b is LIVE as proposed |
+| 2026-10-25 | P5c implemented: §11c is LIVE; the multipart ceiling is 21 MB. Clarified: the declared content type must match the file, the full list of `INVALID_FILE` messages, no page limit for notes, upload field errors, `404` for an unmapped `subjectId` filter (professor) and an empty page for another college's (student), metadata edits aren't audited; `SUBJECT_IN_USE` and §8.4 count notes |
+| 2026-10-26 | P6a proposal changed (TDD §15): no nightly snapshot and no `POST /superadmin/analytics/snapshots`; the C_ADMIN syncs their college with `GET/POST /college/analytics/sync` (§12a.5–12a.6, 15-minute cooldown). `asOf` is now a timestamp. `SNAPSHOT_RUNNING` replaced by `SYNC_IN_PROGRESS` (409) and `SYNC_COOLDOWN` (429). SUPERADMIN and C_PROFESSOR have no analytics access |
