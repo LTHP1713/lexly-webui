@@ -2,6 +2,40 @@
 
 ## Completed
 
+### 2026-10-26 — F5b Vocab & Maxims (F5b.1–F5b.5)
+
+**Status:** Done. Branch `feature/f5b-vocab`, cut from `docs/roadmap-2026-10-26` (PR #8, which
+holds the UI spec this builds on). Lint (one pre-existing warning), `tsc -b`, the build and 277
+unit tests pass.
+
+**Verified against the live backend** (`lexly-backend` `main` at `fbe14dd`; Flyway applied V22 on
+start). `e2e/f5b-glossary.spec.ts` passes at phone and desktop sizes (6 tests). It makes its own
+act (two sections sharing one key term) and a case law with a principle, then checks: SUPERADMIN
+opens Vocab from the Library sub-nav, the shared term appears once with the first section's
+meaning, the letter filter works, and the source opens section 1. A fresh S_STUDENT reaches Vocab
+from the Study hub placard, switches to Maxims and opens the case law. Axe passes on both screens,
+and the run deletes what it made. Statuses confirmed live: `q` over 100 chars and `letter=AB` are
+`400 VALIDATION_ERROR`; `letter=%23` is accepted.
+
+What changed:
+- **API:** `src/api/vocab.ts` (`VocabSummary`, `MaximSummary`, `listVocab`, `listMaxims`,
+  `parseGlossaryLetter`; `#` sent as `%23`); `PLAN_REQUIRED` in `errors.ts` for F8a.
+- **Screens:** `pages/glossary/` (one `GlossaryPage` with Vocab and Maxims configs, URL state
+  `q` / `letter` / `page`, debounced search, `<dl>` entry cards with source links, count line,
+  empty / bad-filter / error states) and `components/LetterBar` (roving focus, `aria-pressed`,
+  scrolls sideways on phones).
+- **Nav:** lazy `/vocab` and `/maxims` routes, wide; the Library sub-nav gains Vocab and Maxims, and
+  the Library nav item matches them; `GlossarySubNav` (Vocab ⇄ Maxims) for S_STUDENT only; the Study
+  hub gets a fourth placard, "Legal terms" (sky tone; the group goes 2 × 2).
+- **Spec:** the placard row corrected to what was built (label "Legal terms", the standard placard
+  error state).
+
+Notes:
+- `ErrorState` shows the server's `message`, which for `PLAN_REQUIRED` is the contract's sentence.
+  F8a replaces it with `PlanGate`.
+- In one full-suite run, `tutor.test.tsx` and `subjects.test.tsx` each had one test time out at 5 s;
+  both passed alone and in a second full run. They look load-sensitive and are worth watching.
+
 ### 2026-10-26 — Docs: synced with backend Phases 5b and 5c and the 2026-10-25 roadmap
 
 **Status:** Done (docs only). No app behaviour changed.
@@ -1228,7 +1262,7 @@ on `feature/phase1`.
 5. **F4 on `feature/f4-grading`** — built and verified against backend `feature/phase4` 2026-10-18 (In Progress above). Done after backend Phase 4 merges to `main` and the e2e suite is re-run.
 6. ~~F5 (AI evaluation UI)~~: on hold with backend Phase 5 (2026-10-19).
 7. **F5a on `feature/f5a-tutor`**: built 2026-10-20 (In Progress above). Verify against backend `feature/phase5a` with the AI service, then Done once Phase 5a is merged.
-8. **F5b on `feature/f5b-vocab`** (Vocab & Maxims) against backend `main`, after its UI-spec section.
+8. ~~**F5b on `feature/f5b-vocab`**~~: done 2026-10-26 (entry above).
 9. **F5c on `feature/f5c-notes`** (subject notes) against backend `main`, starting with the nav split (D11).
 10. F8a (trial & billing), then F6a (C_ADMIN analytics), against MSW mocks of contract §14 / §12a until backend 8a / 6a merge. F6a-2 (rankings) later; F6b to be planned.
 11. Later (D4): choose an app-wide dark-mode approach.

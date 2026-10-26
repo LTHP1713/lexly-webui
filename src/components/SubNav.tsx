@@ -63,17 +63,35 @@ export function ContentSubNav() {
 const LIBRARY_ITEMS: SubNavItem[] = [
   { to: '/acts', label: 'Bare Acts', end: true },
   { to: '/caselaws', label: 'Case Laws', end: true },
+  { to: '/vocab', label: 'Vocab', end: true },
+  { to: '/maxims', label: 'Maxims', end: true },
   { to: '/search', label: 'Search', end: true },
 ];
 
 /**
- * Bare Acts · Case Laws · Search on the Library list pages, for roles whose nav has a single
- * Library item (UI spec F0.3). S_STUDENT reaches these pages through Home and its tab bar instead.
+ * Bare Acts · Case Laws · Vocab · Maxims · Search on the Library list pages, for roles whose nav
+ * has a single Library item (UI spec F0.3, F5b). S_STUDENT reaches these pages through Home and
+ * its tab bar instead.
  */
 export function LibrarySubNav() {
   const { user } = useAuth();
   if (!hasLibrarySubNav(user?.role ?? null)) return null;
   return <SubNav label="Library" items={LIBRARY_ITEMS} />;
+}
+
+const GLOSSARY_ITEMS: SubNavItem[] = [
+  { to: '/vocab', label: 'Vocab', end: true },
+  { to: '/maxims', label: 'Maxims', end: true },
+];
+
+/**
+ * Vocab ⇄ Maxims on the glossary pages for S_STUDENT (UI spec F5b), who has no Library sub-nav
+ * and a full tab bar; every other role switches through `LibrarySubNav`.
+ */
+export function GlossarySubNav() {
+  const { user } = useAuth();
+  if (hasLibrarySubNav(user?.role ?? null)) return null;
+  return <SubNav label="Glossary" items={GLOSSARY_ITEMS} />;
 }
 
 const USERS_ITEMS: SubNavItem[] = [
