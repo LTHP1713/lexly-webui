@@ -104,6 +104,17 @@ export function DocumentIcon(props: IconProps) {
   );
 }
 
+/** Study notes: a page with lines and a folded corner, distinct from the legal `DocumentIcon`. */
+export function NotesIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M5.5 4.5h10l3 3v12h-13Z" />
+      <path d="M8.5 9h7M8.5 12h7M8.5 15h4" />
+      <path d="M15.5 4.5v3h3" />
+    </Icon>
+  );
+}
+
 export function BellIcon(props: IconProps) {
   return (
     <Icon {...props}>

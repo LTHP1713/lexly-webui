@@ -27,6 +27,9 @@ export const ACTION_LABELS: Record<AuditAction, string> = {
   AI_EVALUATION_REQUESTED: 'AI evaluation requested',
   GRADE_EDITED: 'Grade edited',
   GRADE_PUBLISHED: 'Grade published',
+  NOTE_UPLOADED: 'Note shared',
+  NOTE_REPLACED: 'Note file replaced',
+  NOTE_DELETED: 'Note deleted',
   SOLO_PLAN_CHANGED: 'Solo plan changed',
   SOLO_QUOTA_RESET: 'Solo quota reset',
 };
@@ -132,6 +135,14 @@ export function auditSummary(event: AuditEvent): string {
         .filter(Boolean)
         .join(', ');
       return [head, tail].filter(Boolean).join(' · ') || DASH;
+    }
+    case 'NOTE_UPLOADED':
+    case 'NOTE_REPLACED':
+    case 'NOTE_DELETED': {
+      // Only the file name is recorded (UI spec F5c audit summaries); there is no subject name.
+      const name = text(d.fileName) ?? DASH;
+      if (event.action === 'NOTE_REPLACED') return `Note file replaced with ${name}`;
+      return `Note ${name} ${event.action === 'NOTE_UPLOADED' ? 'shared' : 'deleted'}`;
     }
     case 'GRADE_EDITED':
     case 'GRADE_PUBLISHED': {

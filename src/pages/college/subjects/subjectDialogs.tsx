@@ -391,6 +391,26 @@ export function DeleteSubjectDialog({
     }
   }
 
+  // No assessments, yet the delete answered `SUBJECT_IN_USE`: the subject has notes (UI spec F5c.7).
+  if (inUse && subject.assessmentCount === 0) {
+    return (
+      <Dialog open={open} title={`${subject.name} can't be deleted`} onClose={close}>
+        <p>Professors have shared study notes for it. Delete the notes first, or rename the subject instead.</p>
+        <div className={styles.dialogActions}>
+          <button type="button" className={styles.secondaryButton} onClick={close}>
+            Close
+          </button>
+          <Link to={`/college/notes?subjectId=${encodeURIComponent(subject.id)}`} className={styles.secondaryButton}>
+            View notes
+          </Link>
+          <button type="button" className={styles.primaryButton} onClick={() => void confirm()}>
+            Rename
+          </button>
+        </div>
+      </Dialog>
+    );
+  }
+
   return blocked ? (
     <ConfirmDialog
       open={open}

@@ -2,6 +2,25 @@
 
 ## Completed
 
+### 2026-10-26 — F5c Subject notes (F5c.0–F5c.9 except the e2e spec)
+
+**Status:** In Progress. Built and unit/component-tested against MSW; **not yet exercised against the
+live backend** and `e2e/f5c-notes.spec.ts` is not written, so F5c is not Done.
+
+- **F5c.0:** `tabsFor(role)` (≤ 5, C_ADMIN's Audit left off) next to `navFor` (every item, the sidebar's
+  list); `AppLayout` uses `tabsFor` for the tab bar. Notes items for C_ADMIN, C_PROFESSOR, C_STUDENT.
+- **F5c.1/6:** `src/api/notes.ts` (calls, `checkNoteFile`, `withNoteType` for an empty `File.type`,
+  `saveDownload`), `queryKeys.notes`, `INVALID_FILE` and the 21 MB multipart error under the file field.
+- **F5c.2–5:** `pages/notes/` (`NoteCard`, `NoteResults`, `NoteDialogs`, `useOpenNote`) and the routes
+  `/professor/notes`, `/student/notes`, `/college/notes`. PDFs open in `PdfViewer`, others are saved.
+- **F5c.7/8:** subject detail "Study notes →" link and the notes variant of the in-use dialog; audit
+  labels and summaries for `NOTE_*`; "Study notes →" link on the C_ADMIN Overview.
+- **Tests:** `api/notes.test.ts`, `pages/notes/notes.test.tsx`, nav tests; fixtures in `src/test/notes.ts`.
+  `npm test` 304 passed, `npm run build` and `npm run lint` clean.
+- **Notes:** `readHead` is now exported from `api/student.ts` for the note file check. The upload
+  progress/Stop upload path is not covered by a test (MSW can't drive XHR progress).
+- **Next:** run against backend `main`, then write the e2e spec.
+
 ### 2026-10-26 — F5b Vocab & Maxims (F5b.1–F5b.5)
 
 **Status:** Done. Branch `feature/f5b-vocab`, cut from `docs/roadmap-2026-10-26` (PR #8, which

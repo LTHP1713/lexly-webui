@@ -12,6 +12,7 @@ import {
   DocumentIcon,
   GridIcon,
   HomeIcon,
+  NotesIcon,
   SparkIcon,
   UserIcon,
   UsersIcon,
@@ -92,7 +93,15 @@ const LIBRARY: NavItem = {
   matches: ['/acts', '/sections', '/search', '/caselaws', '/vocab', '/maxims'],
 };
 
-/** A nav item is only listed once its screens exist (UI spec F0.3). At most 5 per role. */
+/** Study notes (F5c): the three college roles, each on its own route. */
+const notesItem = (area: string): NavItem => ({
+  to: `${area}/notes`,
+  label: 'Notes',
+  icon: NotesIcon,
+  matches: [`${area}/notes`],
+});
+
+/** A nav item is only listed once its screens exist (UI spec F0.3). The sidebar shows all of them; see `tabsFor`. */
 const NAV: Record<Role, NavItem[]> = {
   SUPERADMIN: [
     { to: '/admin/colleges', label: 'Colleges', icon: CourthouseIcon, matches: ['/admin/colleges'] },
@@ -109,6 +118,7 @@ const NAV: Record<Role, NavItem[]> = {
   C_ADMIN: [
     { to: '/college/users', label: 'Users', icon: UsersIcon, matches: ['/college/users'] },
     { to: '/college/subjects', label: 'Subjects', icon: DocumentIcon, matches: ['/college/subjects'] },
+    notesItem('/college'),
     { to: '/college/audit', label: 'Audit', icon: ClockIcon, matches: ['/college/audit'] },
     TUTOR,
     LIBRARY,
@@ -121,12 +131,14 @@ const NAV: Record<Role, NavItem[]> = {
       icon: ChecklistIcon,
       matches: ['/professor/assessments', '/professor/answers'],
     },
+    notesItem('/professor'),
     TUTOR,
     LIBRARY,
   ],
   C_STUDENT: [
     { to: '/student', label: 'Studies', icon: GridIcon, matches: ['/student'], exact: true },
     { to: '/student/assessments', label: 'Assessments', icon: ChecklistIcon, matches: ['/student/assessments'] },
+    notesItem('/student'),
     TUTOR,
     LIBRARY,
   ],
@@ -139,8 +151,20 @@ const NAV: Record<Role, NavItem[]> = {
   ],
 };
 
+/** Every nav item of a role: the sidebar's list. The phone tab bar uses `tabsFor` (D11). */
 export function navFor(role: Role | null): NavItem[] {
   return role ? NAV[role] : [LIBRARY];
+}
+
+/** Left off the phone tab bar because it holds at most 5; they stay in the sidebar and are linked from the role's home. */
+const OFF_TAB_BAR: Partial<Record<Role, string[]>> = {
+  C_ADMIN: ['/college/audit'],
+};
+
+/** The phone tab bar: `navFor` minus what doesn't fit, so at most 5 items (plan §3.2, D11). */
+export function tabsFor(role: Role | null): NavItem[] {
+  const skipped = (role && OFF_TAB_BAR[role]) || [];
+  return navFor(role).filter((item) => !skipped.includes(item.to));
 }
 
 export function isNavItemActive(item: NavItem, pathname: string): boolean {
