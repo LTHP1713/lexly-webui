@@ -1,15 +1,206 @@
 # Lexly — Frontend Implementation Plan (lexly-webui)
 
-**Status:** Draft for review, revised 2026-10-26 (synced with backend Phases 0–5c and the 2026-10-25 roadmap; F5b–F6a detailed against the backend code at `fbe14dd`)
+**Status:** Draft for review, revised 2026-11-02 (build order set by the feature backlog; Solo practice deferred; no grant screen)
 **Frontend repo:** https://github.com/LTHP1713/lexly-webui (last reviewed at `d5d52aa`, PR #7 UI refresh merged)
-**Backend state (2026-10-26):** Phases 0–4, 5a, 5b (PR #7, `ce0b250`) and 5c (PR #8, `fbe14dd`) are merged to `lexly-backend` `main`. Phase 5 (AI grading) is on hold. Next on the backend: 8a (trial & billing core), then 6a (C_ADMIN analytics).
-**Frontend state:** F0–F3 Done. F4, F5a and UR are merged to `master`; F4 and F5a become Done once their e2e suites are re-run against backend `main`. F5b, F5c, F8a and F6a are new in this revision (§4).
+**Backend state (2026-11-02):** Phases 0-4, 5a, 5b, 5c, 5d, 8a and the 8b PhonePe adapter (gateway off, not yet tested against PhonePe) are merged to `lexly-backend` `main`. Phase 5 (AI grading) is on hold. Solo practice (Phase 7) is deferred. 6a (C_ADMIN analytics) isn't built.
+**Frontend state:** F0-F3, F5b Done. F4, F5a and UR are merged to `master`; F4 and F5a become Done once their e2e suites are re-run against backend `main`. F5c is built on `feature/f5c-subject-notes`, not merged. F5d, F8a, F8b and F6a aren't started.
 **Based on:** `Lexly-TDD.md` v2 (frozen 2026-10-12, with addenda up to 2026-10-25) and `Lexly-Implementation-Plan.md`. Request/response shapes: `Lexly-API-Contract.md`. Section references like §7.3 point to the TDD; "Phase 3" points to the backend plan.
-**Contract copy:** this repo's `Lexly-API-Contract.md` was refreshed from the backend's `docs/Lexly-API-Contract_backend.md` on 2026-10-26 (at `fbe14dd`). The new sections are §11b Vocab & Maxims (LIVE), §11c Subject notes (LIVE), §12a C_ADMIN analytics (PROPOSED) and §14 Trial & billing (PROPOSED). §12 rankings moved to P6a-2, and §13 solo plans are superseded by §14.
+**Contract copy:** this repo's `Lexly-API-Contract.md` was last refreshed from the backend's `docs/Lexly-API-Contract_backend.md` on 2026-10-26 (at `fbe14dd`), so it predates 5d, 8a and 8b. Refresh it before Feature 4 (§0). §12 rankings moved to P6a-2, §13 solo practice is deferred, and solo plans are superseded by §14.
 **Companion docs:** `Lexly-UI-Spec.md` (layout, states and copy per screen, written per phase; sections for F5b, F5c, F8a and F6a still need writing) and `Lexly-Frontend-Status-Report.md` (what is built).
 **Supersedes:** `Lexly-Frontend-Development-Master-Doc.md` §3. Its prompts target the old subscription / MCQ-practice design. Its §4 (security) and §5 (progress SOP) still apply and are summarised in §9 and §10 below.
 
 **Rule for every frontend phase:** a phase isn't done until `npm run build` (type-check + build), `npm run lint` and `npm test` pass, and its golden path has been exercised against a running `lexly-backend` with the matching backend phase applied. A frontend phase never ships before its backend phase; until then it can be built against MSW mocks of the contract.
+
+---
+
+## 0. Final go-live list
+
+**Revised 2026-11-02, checked against the code:** backend `main` at `c83aebb`, webui `master` at `4882ebd` and F5c at `5f02340`. Numbering and order follow the feature backlog in the backend's `Lexly-Implementation-Plan.md`. Lexly goes live when groups A and B are done and the checklist in §0.9 passes on staging. Days are that backlog's estimates: one developer, tests included, review and third-party waiting not included. Each item's state is **done**, **built but unmerged** or **not started**.
+
+### 0.1 State check (2026-11-02)
+
+| Area | Finding |
+|---|---|
+| F5c (PR #12) | Open and mergeable, CI green at `5f02340`. Run locally: lint clean (one older warning), build passes, 304 unit tests pass. **Not ready to merge:** no review or review comment yet, never run against a live backend, and `e2e/f5c-notes.spec.ts` (F5c.9) isn't written |
+| F4 e2e | `e2e/f4-grading.spec.ts` **passed 6 of 6** on 2026-11-02: F5c build `5f02340` against backend code identical to `c83aebb` (using the backend's Supabase database, see below; that test data was removed the same day, and V23-V25 stay applied). Re-run on `master` after F5c merges to mark F4 Done |
+| F5a e2e | `e2e/f5a-tutor.spec.ts` **not passed: 3 skipped**, because the AI service wasn't running. Needs the AI service on OpenAI, the backend's `LEXLY_AI_SERVICE_API_KEY`, a real re-index and paid model calls. Runs in Feature 2 |
+| AI service | **OpenAI goes live (decided 2026-11-02).** The OpenAI code (`gpt-5-mini`, `text-embedding-3-small`) with the legal PDF pipeline and hybrid retrieval was reviewed and merged on 2026-11-20 (lexly-ai-service PR #3, `daf1edd`). TDD §10a, the backlog and the backend's cost rates still say Gemini |
+| Running the backend | The backend's gitignored `config/application.yml` points it at **hosted Supabase** and turns on the **PhonePe sandbox**. Running it from its root, even with `docker compose up`, doesn't use local Postgres, and checkout doesn't answer `503`. Override both before any e2e run |
+| Practice leftovers | `src/pages/PracticePage.tsx`; `src/App.tsx:21,146`; `src/auth/roles.ts:63,148`; `src/auth/roles.test.ts:43,104`; `src/pages/home/HomePage.tsx:157`; `src/pages/college/users/UsersImportPage.tsx:26` (says solo practice data was deleted, which is untrue); `e2e/f0-session.spec.ts:60,67-68`; UI spec lines 196-236 and the F7 stub |
+| Grant leftovers | No grant code in `src/` or `e2e/`. Docs only: the F8a stub in the UI spec and the contract copy (F8a.1 in this plan is corrected). The live endpoint answers `404` |
+| Billing and library notes | Not built. Only `PLAN_REQUIRED` and `RATE_LIMITED` exist in `src/api/errors.ts`, and the audit screen has no billing actions. No `access` on the session user, no `/plans`, `/billing`, `/billing/return`, `/admin/billing` or library notes screens |
+| Pre-launch gaps | No analytics code anywhere. No CSP. No forgot-password or email verification endpoint or screen. No terms, privacy or refund pages. No backend Dockerfile or CI workflow. No plan has a price: `GET /billing/plans` is empty until a SUPERADMIN sets prices |
+
+**Contract copy drift.** `docs/Lexly-API-Contract.md` is at `fbe14dd`, and the diff against the master is 126 lines. §12a is the same in both copies. Re-copy before Feature 4. These gaps affect a screen:
+
+| Gap in the copy | Screen | Feature |
+|---|---|---|
+| §11d Library notes is missing | S_STUDENT list and SUPERADMIN management | 4 |
+| `/library-notes/**` isn't in the gated list; the three billing codes aren't marked LIVE | `PlanGate`, Plans | 4, 5 |
+| §14 is PROPOSED and says checkout is always `503` | Plans | 5 |
+| The grant endpoint is still listed, and `plan: null` is described as a grant | SUPERADMIN Subscriptions, Billing | 5 |
+| `GET /superadmin/billing/payments`, `resolve` and `reviewReason` are missing | SUPERADMIN Payments | 5 |
+| A pass "extends from `paidUntil`" instead of starting at `max(now, trial end, paid_until)`; `/billing/me` returning a queued pass isn't described | Plans copy, Billing ("Starts…", "access until") | 5 |
+| `autoRenewAvailable` is `false` with PhonePe; cancel can answer `503` | Plans, Billing | 5 |
+| Minimum price 100 paise, activation rule, subscription `status` values | SUPERADMIN Plans, Subscriptions | 5 |
+| Audit actions: `PAYMENT_REVIEW_*` are missing | Audit log | 5 |
+| `GET /billing/payments/{id}`, `{ redirectUrl }`, `/billing/return?paymentId=` and polling the payment are missing | Checkout and return page | 6 |
+| Checkout's `429`, its `403` for a converted account, and the order of its checks | Plans, Buy errors | 5, 6 |
+| §13 Solo isn't marked deferred | None once Feature 3 is done | 3 |
+
+### 0.2 Group A: must ship, buildable now, in build order
+
+| # | Feature | Screens or work | State | Backend dependency | Days | Done when |
+|---|---|---|---|---|---|---|
+| 1 | Merge 8b with the gateway off | Backend only | **Done** (PR #11) | Merged | 0.25 | With `lexly.billing.gateway` blank, checkout is `503` and the reconcile job does nothing |
+| 2 | Close out notes, grading and tutor | F5c: write `e2e/f5c-notes.spec.ts`, first live run, review, merge. Re-run the F4 spec on `master`. F5a: re-index and run its spec | **Built but unmerged** (F5c). F4 and F5a merged; F4 e2e passed, F5a e2e not run | 5c, 4 and 5a merged. The AI service's OpenAI code is merged (PR #3); the F5a run needs a re-index with an OpenAI key | 1-1.5 | PR #12 is reviewed and merged, and the F5c, F4 and F5a specs all pass against backend `main` |
+| 3 | Remove Solo practice | Everything in the Practice row of §0.1, plus backend comments that say "Phase 7" | **Not started** | None | 0.5 | `/practice` is Not Found, no nav item or copy mentions practice, and nav tests and the F0 e2e are updated |
+| 4 | Library notes (F5d) | Refresh the contract copy; write the UI spec. S_STUDENT: list, category filter, search, view and download. SUPERADMIN: upload, edit, replace, delete. Reuses F5c parts, so it follows Feature 2 | **Not started** | 5d merged | 1.5-2 | A SUPERADMIN uploads a PDF under "Torts", an S_STUDENT finds it by category and opens it, and a C_STUDENT is refused |
+| 5 | Trial, plans and billing (F8a) | Write the UI spec. `src/api/billing.ts`, `access` in the session, access banner, `PlanGate` on tutor, Vocab, Maxims and library notes. `/plans`, `/billing`. `/admin/billing`: Plans, Subscriptions (revoke only), Payments review. Audit labels. Payments review marks flagged payments as refund due; the refund itself is done in PhonePe's dashboard. **No grant screen or student search** | **Not started** | 8a, 8b and grant removal merged | 3.5-4.5 | A trial shows its countdown; after it ends, gated screens show `PlanGate` while acts and case laws work; a pass bought in the trial shows "Starts {trial end}" and loses no trial days; a SUPERADMIN sets prices, revokes and resolves a flagged payment; a failed payment tells the student how a deducted amount is refunded |
+| 6 | Checkout and return page (F8b.1) | Write the UI spec. Redirect to `redirectUrl`; `/billing/return` polls `GET /billing/payments/{id}`, then `/auth/refresh`. Built against mocks | **Not started** | Merged; gateway off in the default config | 1-2 | With mocks, `PAID`, `FAILED` and long `PENDING` each show the right state, the session survives the redirect, and `503`, `409` and `429` show friendly text. E2 proves it for real |
+| 7 | C_ADMIN analytics (6a, F6a) | Agree contract §12a. Backend: V26, Sync, overview, assessments, non-submitters, CSV. Webui (3-4 of these days): dashboard, Sync states, filters, non-submitters, export | **Not started** | 6a not built; delivered in this item | 7-9 | After a Sync, the dashboard and CSV match the backend's hand-calculated fixture |
+| 8 | Rate limits (8.3) | Backend only: register and login, uploads, AI endpoints, `Retry-After`, proxy header. The webui already maps `RATE_LIMITED` | **Not started** (checkout limit exists) | In this item | 1.5-2 | Over-limit calls answer `429` with `Retry-After`, per client behind the proxy, and the screens show friendly text |
+| 9 | AI cost controls | Backend and AI service: daily spend cap with a configurable ceiling, token limits, backend cost rates changed from Gemini to the OpenAI models | **Not started** | In this item; the AI service commit is merged (PR #3) | 2-2.5 | At the ceiling, new questions are refused cleanly, and recorded cost uses the deployed model's rates |
+| 10 | Paid time starts after the trial | Backend only; grants removed in the same PR | **Done** (PR #12) | Merged | 0.25 | A pass starts at `max(now, trial end, paid_until)` |
+| 11 | Turn off `open-in-view` | Backend only: set it false, fix what depended on it, regression-test | **Not started** (still on by default) | In this item | 1-2 | The setting is off and the backend suite and every e2e spec pass |
+| 12 | Security checks (8.4, F8b.5) | Backend: complete `AccessMatrixIntegrationTest`, dependency audit. Webui (0.5-1 of these days): CSP with the API origin as a setting, dependency audit | **Not started** (a partial matrix test exists) | In this item | 1.5-2 | Every role and endpoint is covered, no high-severity audit finding is open, and the CSP blocks nothing in the e2e runs |
+| 13 | S_STUDENT account deletion | Backend: endpoint and data removal, payments kept without the user. Webui (0.5 of these days): Delete my account on Profile, with a confirm | **Not started** | In this item | 1.5-2 | The account and its data are gone, the student can't sign in, and payment rows remain with a null user |
+| 14 | Object storage | Backend only: S3-API `StorageService` tested against MinIO, chosen by config, for answers and notes | **Not started** (local disk only) | In this item | 2-3 | Answer and note uploads and downloads pass against MinIO and against local disk |
+| 15 | Production config and container | Backend only: CORS property, proxy headers, graceful shutdown, Dockerfile, JVM settings, storage and AI health, Redis out of liveness | **Not started** | In this item | 1.5-2.5 | The container starts on production config and its health checks report correctly with Redis down |
+| 16 | CI and metrics | Backend only: build-and-test workflow, metrics endpoint | **Not started** | In this item | 1-1.5 | A backend PR runs the suite in CI, and metrics are scrapeable but not public |
+
+### 0.3 Group B: must ship, blocked on an outside value
+
+| # | Feature | Screens or work | State | Backend dependency | Days | Needed, and from whom | Done when |
+|---|---|---|---|---|---|---|---|
+| E1 | Hosting and HTTPS staging | Deploy all three services, backups and a practice restore (B5), alerts, production CORS and CSP origin | **Not started** | Features 14 and 15 | 3.5-5 | **Owner:** hosting provider and account, domain, the D6 layout (`app.` + `api.` or one origin), a Mumbai Postgres 16 database (Supabase today is Singapore, Postgres 17), a rotated Supabase password and production secrets | Staging serves the SPA and API over HTTPS, the refresh cookie works, the AI service is private, and a restore has been practised |
+| E2 | Finish PhonePe (8b) | Run the sandbox checklist, including Feature 6's return page, then switch on | **Not started** (the adapter is merged with the gateway off) | 8b merged; needs E1 | 1.5-2.5 | **E1:** the HTTPS address. **Owner:** webhook set in PhonePe's dashboard. **PhonePe:** merchant onboarding and production credentials. Sandbox credentials are already in the local config | A sandbox success, failure and lost webhook each end correctly, then one real low-value payment on production credentials activates access |
+| E3 | Email: verification and forgot password | Backend endpoints and contract (none exist). Webui: verify notice, forgot-password and reset screens | **Not started** | Not built; in this item | 3-4 | **Owner:** email provider, account and sending domain | A new S_STUDENT verifies their email before the trial, and a forgotten password can be reset by email |
+| E4 | Legal and accounting | Three public pages, linked from Register, Plans and the footer; set the audit retention | **Not started** | None | 1.5 | **Owner or their lawyer:** terms, privacy and refund text, and a support contact. **PhonePe:** onboarding requirements. **Accountant:** how long to keep billing audit rows (30 days today). The refund text says no refunds, except that a payment deducted but failed is refunded. B10 stands: the gateway's receipt is the invoice | The approved text is live on the public URLs PhonePe checks, and retention is set |
+| E5 | AI cost figures | Config only | **Not started** | Feature 9 | 0.25 | **Owner:** actual rates from OpenAI's billing (B13) and the budget figure for the ceiling (B7) | Rates and ceiling are set in production config |
+
+### 0.4 Group C: optional after launch
+
+| # | Feature | Screens or work | State | Backend dependency | Days | Done when |
+|---|---|---|---|---|---|---|
+| 17 | Rankings and per-student statistics (6a-2, F6a-2) | Ranking and per-student screens; A3 and A4 stand | **Not started** | Not built | 4-5 | Numbers match a hand-calculated fixture, ties included |
+| 18 | Reassign a removed professor's assessments (A1) | C_ADMIN action | **Not started** | Not built | 1-1.5 | A C_ADMIN reassigns, and the new professor can grade |
+| 19 | Month-on-month trends (B15) | Own design and storage | **Not started** | Not built | 3-4 | Trends survive a new Sync |
+| 20 | AI analysis and admin chatbot (6b, F6b) | Design first; needs Feature 7 | **Not started** | Not built | 8-12 | Set when designed |
+| 21 | Quality pass (F8b.2, F8b.3, F8b.7) | WCAG 2.2 AA, mobile performance, one e2e journey per role | **Not started** | None | 5-6 | AA pass recorded, performance budget met, one e2e journey passing per role |
+| 22 | Dark mode (D4, F8b.4) | Token-level palette | **Not started** | None | 2-3 | Every screen passes contrast in both themes |
+| 23 | More than one server instance | Jobs run on one node | **Not started** | Not built | 1-2 | Two instances run with each job firing once |
+| E6 | Auto-renew | PhonePe Autopay, mandates, renewal charges, auto-renew UI | **Not started** | Not built; needs Autopay access from PhonePe | 6-10 | A mandate renews and can be cancelled |
+| E8 | Frontend error monitoring (D9, F8b.6) | Redacted client error reports | **Not started** | None. Owner decided: after launch (D9). Choose the service then | 0.5 | Errors arrive with bodies and id-bearing URLs redacted |
+
+### 0.5 Group D: deferred or out of scope
+
+| # | Feature | Screens or work | State | Backend dependency | Days | Reason, and what would bring it back |
+|---|---|---|---|---|---|---|
+| E7 | AI grading (Phase 5, F5) | AI evaluate, suggestion and flags | **Not started** | On hold | 8-12 | On hold since 2026-10-19. Needs its own provider and model (B6; OpenAI is decided for the tutor), budget (B7) and 20-30 real handwritten answers |
+| Phase 7 | Solo practice (F7) | None; removed by Feature 3 | **Not started**, won't be built | Not built | n/a | Deferred 2026-11-02 and depended on Phase 5. A new decision would bring it back |
+| n/a | SUPERADMIN grants | None | Removed | Endpoint removed | n/a | Removed 2026-11-02: students buy their plans |
+| n/a | Statutory "other laws" | None | **Not started**, not planned | Not built | n/a | Replaced by library notes (B14) |
+| n/a | Notifications, including expiry reminders | None | **Not started**, not planned | Not built | n/a | TDD §1 excludes notifications. Reminders are 1 more day on E3 if that changes |
+| n/a | Bare-act progress, Continue Learning, unified search | Cards stay hidden | Hidden | Not in TDD v2 | n/a | D3: flags stay off |
+
+### 0.6 Proposed changes (nothing has been moved)
+
+**Do E3, E4 and E8 block go-live?**
+
+| Item | Blocks? | Why |
+|---|---|---|
+| E3 | **Yes.** Keep in B | No endpoint lets anyone recover an S_STUDENT password: the only resets are for college users and C_ADMINs. A paying student who forgets it is locked out for good. Without verification, any invented address gets a new trial |
+| E4 | **Yes.** Keep in B | The backlog ties it to PhonePe onboarding, and Lexly shouldn't charge under a no-refund rule that isn't published |
+| E8 | **No.** Keep in C | The backend decides payments and reconciles them, so a browser error can't lose one. It adds a third party. Owner decided 2026-11-02: after launch |
+
+**Other proposals:**
+
+1. **Move one e2e journey per role (F8b.7, part of Feature 21) into group A, and add a staging rehearsal.** Nothing in A or B currently owns the §0.9 checklist. About 2-3 days. The rest of Feature 21 stays optional.
+2. ~~**Add the AI service to the backlog.**~~ **Done 2026-11-20:** the provider change was reviewed, fixed and merged (lexly-ai-service PR #3). What remains for Feature 2's F5a run is a re-index with an OpenAI key.
+3. **Raise Feature 2 to about 2-3 days.** 1-1.5 doesn't cover writing the F5c e2e spec, the first live run and any fixes.
+4. **Count the UI specs and contract re-copy.** The working agreement requires a spec before each phase. F5d has none, and F8a, F8b.1 and F6a are stubs. Allow about 0.25-0.5 day each for Features 4, 5, 6 and 7.
+5. **Leave auto-renew out of Feature 5.** `autoRenewAvailable` is `false` with PhonePe and no `AUTO_RENEW` row can exist, so the option and Cancel auto-renew can't be reached. Move them to E6, and keep the mapper tolerant.
+6. **Do E4 before E2's production step.** PhonePe onboarding needs the legal pages live. The sandbox part of E2 can stay first. E3 should also finish before production is switched on.
+7. **Give the free S_STUDENT tab to Library notes.** Feature 3 frees a slot and Feature 4 needs an entry point. Billing stays on Profile and the banner (D10).
+8. **Correct these docs in a follow-up, after this list is approved** (only §0 changed here):
+   - This plan: header state lines, F8a.5-F8a.6 if proposal 5 is accepted, and F8b.5 and §9.7-§9.8, which mention a gateway widget (PhonePe is a redirect).
+   - Backend contract master, before it is re-copied: §11d.2 says library notes aren't gated, against §14.1; §14.1 still says "or a grant"; §2.1 doesn't show `access`.
+   - `CLAUDE.md`: current state, Gemini, and a warning about the backend's local config. `Lexly-Frontend-Status-Report.md` stops at 2026-10-18.
+   - Backend repo: a TDD addendum and the backlog (Features 2 and 9, E4, E5) for OpenAI; Deferred Items B10 (the refund exception), B13 and D9.
+9. **Flag payments that time out for refund review.** This is a gap in the owner's refund rule. An amount mismatch or an ineligible payer is flagged, but `PaymentReconcileJob` turns a payment still `PENDING` after 72 hours into `FAILED` with no flag, so a deducted amount could go unnoticed. Add a `reviewReason` for it in the backend, with the contract and the Payments review label. About 0.25 day, before Feature 5.
+
+### 0.7 Totals
+
+| Group | Days |
+|---|---|
+| **A** (all 16 items) | **27-37.5** (the backlog rounds this to 27-38) |
+| A still to do (without done items 1 and 10) | 26.5-37 |
+| **B** (E1-E5) | **9.75-13.25** (the backlog says about 10-13) |
+| Launch total, still to do | 36.25-50.25 |
+
+These are the backlog's figures. Proposals 1-4 and 9 would add days and aren't counted, and proposal 2's size is unknown.
+
+### 0.8 Owner decisions and open question
+
+**Decided 2026-11-02:**
+
+| Topic | Decision |
+|---|---|
+| AI provider | OpenAI goes live for the tutor |
+| Plan prices | The SUPERADMIN sets them on the Plans screen, before launch |
+| Invoices (B10) | Final: the gateway's receipt is the invoice, so no GST answer is needed from the accountant |
+| Refunds | A payment deducted but failed must be refunded. Otherwise no refunds. A SUPERADMIN works from the Payments review list and refunds in PhonePe's dashboard |
+| Error monitoring (D9) | After launch |
+
+**Still open:** which support address do students contact about a deducted payment? It goes on the refund page and the failed-payment message.
+
+### 0.9 Go-live checklist per role
+
+Run these on staging with PhonePe on, at phone and desktop widths. Every journey must work end to end.
+
+**SUPERADMIN**
+- [ ] Sign in, complete the forced password change, create a college and its C_ADMIN.
+- [ ] Edit an act, a section and a case law; run a bulk import and read the per-row results.
+- [ ] Upload, edit, replace and delete a library note.
+- [ ] Set prices and activate plans; see them on a student's Plans page.
+- [ ] Find a subscription and revoke it; the student loses access within 15 minutes. No grant action exists anywhere.
+- [ ] Filter the Payments review list to Needs review, refund a flagged payment in PhonePe's dashboard, then mark it resolved.
+- [ ] Re-index the tutor and see AI spend; see billing and note actions in the audit log.
+
+**C_ADMIN**
+- [ ] First sign-in with the temporary password and forced change.
+- [ ] Add a user, import a CSV or XLSX and read its results, including an S_STUDENT converted to C_STUDENT whose plan ends. Reset a password.
+- [ ] Create subjects and map professors; deleting a subject in use explains why it can't be deleted.
+- [ ] Filter notes by subject and professor, and delete one.
+- [ ] Press Sync; see the running, succeeded and cooldown states. Filter the figures, open non-submitters and export the CSV, and check them against known data.
+- [ ] Read the audit log, the Library and the tutor. Another college's id shows Not Found.
+
+**C_PROFESSOR**
+- [ ] Sign in with college code and employee ID.
+- [ ] Draft, publish and if needed remove an assessment.
+- [ ] Follow the submissions grid; review an answer PDF, draft and approve grades question by question.
+- [ ] Upload a PDF and a DOCX note, replace one and edit the other; other professors' notes offer no edit.
+- [ ] Use the tutor and Library. An unmapped subject shows Not Found.
+
+**C_STUDENT**
+- [ ] Sign in with college code and roll number, and complete the forced change.
+- [ ] Upload, replace and submit answers within the 5 MB and 10-page limits.
+- [ ] See each mark once approved, with the others still awaiting evaluation.
+- [ ] View a PDF note, download a DOCX note, search and filter.
+- [ ] Use the tutor, Vocab and Maxims. No trial banner or `PlanGate` ever appears. Another college's id shows Not Found.
+
+**S_STUDENT**
+- [ ] Register, accept the terms, verify the email and see the trial countdown.
+- [ ] Reset a forgotten password by email.
+- [ ] Use the tutor, Vocab, Maxims and library notes during the trial.
+- [ ] Buy a pass during the trial: PhonePe, return page, access shows paid, the pass shows "Starts {trial end}", access lasts until trial end plus the period, and no trial days are lost.
+- [ ] Buy again while paid: the new pass starts at the current `paidUntil`.
+- [ ] A failed or abandoned payment gives no access, says so and explains how a deducted amount is refunded; a slow `PENDING` lets the student leave and shows the result later in payment history.
+- [ ] When the trial ends unpaid: `PlanGate` on gated screens with the typed tutor question kept, while acts, sections and case laws still work.
+- [ ] Read terms, privacy and refunds from Register and Plans.
+- [ ] Delete the account: sign-in fails, and the payment record is kept without the user.
+- [ ] No Practice item anywhere.
 
 ---
 
@@ -143,12 +334,12 @@ C_PROFESSOR   /professor ✅  /professor/assessments ✅ …  /professor/answers
               /professor/rankings/:subjectId                                (F6a-2)
 C_STUDENT     /student ✅  /student/assessments ✅ …  /student/assessments/:id/results ✅
               /student/notes                                                (F5c)
-S_STUDENT     /dashboard ✅  /practice ✅(placeholder)
+S_STUDENT     /dashboard ✅  /practice ✅(placeholder, removed by Feature 3)
               /plans  /billing                                              (F8a)
               /practice/new  /practice/questions/:id  /practice/answers     (F7)
 ```
 
-`/admin/solo/plans` is dropped: billing grants (F8a) replace solo plans.
+`/admin/solo/plans` is dropped: billing (F8a) replaces solo plans. Routes marked (F7) are deferred; don't build them.
 
 ### 3.3 Data fetching
 
@@ -192,8 +383,8 @@ Domain inputs: `NumberField` (marks, `step="0.5"`), `DateTimeField` (ISO-8601 UT
 | `GRADE_PUBLISHED` | Refetch; the grade form becomes read-only |
 | `AI_EVALUATION_NOT_ALLOWED` | Inline: "Open the answer PDF first" or "Already published" (F5, on hold) |
 | `INVALID_MARKS` | Inline on the marks field |
-| ● `PLAN_REQUIRED` (402) | S_STUDENT only, from P8a: the gated screen (tutor, Vocab, Maxims, later solo) is replaced by `PlanGate` ("Your trial has ended…", plans link, "Check again" = `/auth/refresh` then refetch). Never a toast |
-| ● `PAYMENTS_UNAVAILABLE` (503) | Plans page (F8a): "Online payment isn't available yet. Contact us to activate a plan." The Buy buttons stay, so this shows on click |
+| ● `PLAN_REQUIRED` (402) | S_STUDENT only, from P8a: the gated screen (tutor, Vocab, Maxims, library notes) is replaced by `PlanGate` ("Your trial has ended…", plans link, "Check again" = `/auth/refresh` then refetch). Never a toast |
+| ● `PAYMENTS_UNAVAILABLE` (503) | Plans page (F8a): "Online payment isn't available yet. Please try again later." No "contact us", because access can't be granted by hand. The Buy buttons stay, so this shows on click |
 | ● `PLAN_NOT_AVAILABLE` (409) | Plans page: refetch the plans; "This plan is no longer available" |
 | ● `SYNC_IN_PROGRESS` (409) | Analytics Sync (F6a): "A sync is already running"; start polling; not an error toast |
 | ● `SYNC_COOLDOWN` (429) | Analytics Sync (F6a): refetch the sync state; "You can sync again at {nextSyncAt}"; not an error toast |
@@ -253,16 +444,16 @@ Frontend phases mirror the backend phases. **F*n* starts once backend Phase *n*'
 | F5a | AI legal tutor | Phase 5a (merged) | M | Merged (PR #6); Done after a re-index and `e2e/f5a-tutor.spec.ts` pass |
 | UR | UI refresh | none | L | **Merged** (PR #7, 2026-10-22) |
 | F5b | Vocab & Maxims | Phase 5b (merged) | S | **Done** 2026-10-26 (e2e against backend `main`) |
-| F5c | Subject notes | Phase 5c (merged) | M | Contract §11c LIVE; build against backend `main` |
-| F8a | Trial, plans & billing (no gateway) | Phase 8a | M | Contract §14 PROPOSED; build against MSW |
-| F6a | C_ADMIN analytics (Sync) | Phase 6a | M | Contract §12a PROPOSED; build against MSW |
-| F6a-2 | Rankings & statistics | Phase 6a-2 | M | Later (contract §12) |
-| F6b | AI analysis & admin chatbot | Phase 6b | — | To be planned |
-| F5d | Other laws | Phase 5d | ? | Waiting for the data model |
-| F7 | Solo AI practice | Phase 7 | M | After F8a; uses billing entitlement |
-| F8b | Gateway checkout & hardening | Phase 8b | M | Waiting for the gateway decision (D8) |
+| F5c | Subject notes | Phase 5c (merged) | M | Built on `feature/f5c-subject-notes`; merge in Feature 2 |
+| F8a | Trial, plans & billing | Phase 8a (merged) | M | Feature 5. Contract §14 LIVE |
+| F6a | C_ADMIN analytics (Sync) | Phase 6a | M | Feature 7. Contract §12a PROPOSED; ship after the backend merges |
+| F6a-2 | Rankings & statistics | Phase 6a-2 | M | Feature 17, optional (contract §12) |
+| F6b | AI analysis & admin chatbot | Phase 6b | — | Feature 20, optional; to be designed |
+| F5d | Library notes | Phase 5d (merged) | S | Feature 4. Contract §11d LIVE |
+| F7 | Solo AI practice | Phase 7 | M | **Deferred 2026-11-02:** out of scope; don't build |
+| F8b | Gateway checkout & hardening | Phase 8b (merged, gateway off) | M | Split across Features 6, 12, 21, 22 and E2 (see F8b below) |
 
-Don't reopen the roadmap: Phase 5 is on hold, the tutor came first, Phase 6 is split, and billing was brought forward as 8a.
+Don't reopen the roadmap: Phase 5 is on hold, the tutor came first, Phase 6 is split, billing was brought forward as 8a, Solo practice is deferred, and §0 sets the build order.
 
 ---
 
@@ -315,22 +506,22 @@ Backend Phase 5c (TDD §7.12, contract §11c). Professors share study notes (PDF
 
 ### F8a — Trial, plans & billing (no gateway yet)
 
-Backend Phase 8a (TDD §7.13–7.14, contract §14, PROPOSED). Each new S_STUDENT gets a 3-day trial. After it ends, the tutor, Vocab and Maxims (later solo and other laws) need a plan; bare acts, sections and case laws stay free. College roles are never gated. **The gateway is undecided**, so checkout always returns `503 PAYMENTS_UNAVAILABLE` and SUPERADMIN grants access by hand.
+Backend Phase 8a (TDD §7.13-7.14, contract §14, LIVE since 2026-10-28). Each new S_STUDENT gets a 3-day trial. After it ends, the tutor, Vocab, Maxims and library notes need a plan; bare acts, sections and case laws stay free. College roles are never gated. **The gateway is PhonePe (backend 8b).** Until it's configured, checkout returns `503 PAYMENTS_UNAVAILABLE`. **SUPERADMINs can't grant access (decided 2026-11-02):** a plan is only ever bought.
 
 | # | Task | Details |
 |---|---|---|
-| F8a.1 | API module | `src/api/billing.ts`: `access { status: TRIAL \| PAID \| EXPIRED \| NONE, trialEndsAt, paidUntil, accessUntil }` (also on `/users/me`), `BillingPlan`, `Subscription { kind: PASS \| AUTO_RENEW, source: PAYMENT \| MANUAL, status, startsAt, endsAt, cancelAtPeriodEnd, plan \| null }`, `Payment`; paise kept as integers. S_STUDENT: `getPlans`, `getBillingMe`, `getPayments(page)`, `checkout({ planCode, autoRenew })`, `cancelSubscription(id)`. SUPERADMIN: `getAdminPlans`, `updatePlan(code, …)`, `listSubscriptions({ q, status, page })`, `grantAccess(userId, endsAt)`, `revokeSubscription(id)`. All `no-store` |
+| F8a.1 | API module | `src/api/billing.ts`: `access { status: TRIAL \| PAID \| EXPIRED \| NONE, trialEndsAt, paidUntil, accessUntil }` (also on `/users/me`), `BillingPlan`, `Subscription { kind: PASS \| AUTO_RENEW, source: PAYMENT \| MANUAL, status, startsAt, endsAt, cancelAtPeriodEnd, plan \| null }`, `Payment`; paise kept as integers. S_STUDENT: `getPlans`, `getBillingMe`, `getPayments(page)`, `checkout({ planCode, autoRenew })`, `cancelSubscription(id)`. SUPERADMIN: `getAdminPlans`, `updatePlan(code, …)`, `listSubscriptions({ q, status, page })`, `revokeSubscription(id)`, `listPayments({ q, status, needsReview, page })`, `resolvePayment(id)`. No grant call: the endpoint is deleted. All `no-store` |
 | F8a.2 | Access in the session | Read `access` from `/users/me` into the session user. The mapper turns a missing `access` (any backend before P8a) into `NONE`, so the gate and banner stay off and F8a can ship before 8a without breaking. After any billing change, call `/auth/refresh` and refetch `/users/me` (the token carries `accessUntil`); the existing refresh lock (`lexly-auth-refresh`) covers this call too. Revokes reach a signed-in student within the 15-minute token TTL, at the next refresh |
 | F8a.3 | Access banner | S_STUDENT only, on the Study hub and gated screens: "Trial ends in 2 days" (`TRIAL`), nothing for `PAID` (except within 3 days of `paidUntil` with no auto-renew), "Your trial has ended" (`EXPIRED`) with a link to plans. Dismissible per day (a `localStorage` UI preference) |
-| F8a.4 | `PlanGate` | Shown in place of a gated screen on `402 PLAN_REQUIRED`, or straight away when `access.status === 'EXPIRED'`: what the plan unlocks, a link to `/plans`, and **Check again** (refresh + refetch) for a user who was just granted access. Wired into `/tutor` (both the quota and the ask: `/tutor/**` is gated, so a 402 can arrive mid-chat and the typed question is kept), `/vocab`, `/maxims`. Routes `/plans` and `/billing` join the S_STUDENT area in `AREAS` |
-| F8a.5 | Plans | `/plans`: active plans (`GET /billing/plans`) as cards with period and price, pass vs. auto-renew where `autoRenewAvailable`. **Buy** calls `POST /billing/checkout`, which in P8a is always `503`, so it shows the "contact us" message (§3.6). Copy: no refunds, access ends exactly at the period end |
-| F8a.6 | Billing | `/billing`: current access and its end, the subscription (kind, source, `cancelAtPeriodEnd`), **Cancel auto-renew** with a confirm ("access continues until {endsAt}"), and payment history (paged). A `MANUAL` grant shows "Granted by Lexly" with no plan |
-| F8a.7 | SUPERADMIN billing | `/admin/billing` (nav **Billing**). **Plans** tab: edit name, price (₹ → paise), active and auto-renew available; activation needs a price. **Subscriptions** tab: search and status filter; **Grant access** (end date in the future, picked as an India date and sent as that day's 23:59:59 IST in UTC, e.g. `2027-01-31T18:29:59Z`) and **Revoke** with confirms; revoke text notes it takes effect within 15 minutes. Grant is offered only on rows of the subscriptions list (a support tool, not a launch path: B9 deferred) |
-| F8a.8 | Tests | Each access status and banner; `PlanGate` on a 402 and "Check again" flow; `503` on Buy; cancel auto-renew; paise formatting; grant date validation; college roles never see banner or gate; e2e against the 8a backend: expire a trial (backend test clock or a seeded user), see the gate, SUPERADMIN grants, "Check again" unlocks the tutor |
+| F8a.4 | `PlanGate` | Shown in place of a gated screen on `402 PLAN_REQUIRED`, or straight away when `access.status === 'EXPIRED'`: what the plan unlocks, a link to `/plans`, and **Check again** (refresh + refetch) for a student who has just paid. Wired into `/tutor` (both the quota and the ask: `/tutor/**` is gated, so a 402 can arrive mid-chat and the typed question is kept), `/vocab`, `/maxims` and library notes (F5d). Routes `/plans` and `/billing` join the S_STUDENT area in `AREAS` |
+| F8a.5 | Plans | `/plans`: active plans (`GET /billing/plans`) as cards with period and price, pass vs. auto-renew where `autoRenewAvailable`. **Buy** calls `POST /billing/checkout`, and with no gateway configured that is `503`, which shows the "not available yet" message (§3.6); checkout itself is Feature 6. Copy: no refunds, access ends exactly at the period end |
+| F8a.6 | Billing | `/billing`: current access and its end, the subscription (kind, source, `cancelAtPeriodEnd`), **Cancel auto-renew** with a confirm ("access continues until {endsAt}"), and payment history (paged). `plan` can be `null` on an older `MANUAL` row: show the dates only |
+| F8a.7 | SUPERADMIN billing | `/admin/billing` (nav **Billing**). **Plans** tab: edit name, price (₹ → paise, at least 100 paise), active and auto-renew available; activation needs a price. **Subscriptions** tab: search and status filter; **Revoke** with a confirm whose text notes it takes effect within 15 minutes. **Payments** tab: `GET /superadmin/billing/payments` with search, status and a **Needs review** filter; each row shows the reason and `gatewayOrderId`, with **Mark resolved** (contract §14.4). No grant action anywhere |
+| F8a.8 | Tests | Each access status and banner; `PlanGate` on a 402 and "Check again" flow; `503` on Buy; cancel auto-renew; paise formatting; review list filter and Mark resolved; college roles never see banner or gate; e2e against the 8a backend: expire a trial (backend test clock or a seeded user) and see the gate; a paid state seeded directly in the test database, then "Check again" unlocks the tutor |
 
-**Go-live (decided 2026-10-26):** Lexly goes live only once online payment (F8b) is built, so students buy their own plans and manual grants aren't a launch path. Grants stay a SUPERADMIN support tool. B9 is deferred (§6).
+**Go-live (decided 2026-10-26, confirmed 2026-11-02):** Lexly goes live only once online payment works, so students buy their own plans. The backend's grant endpoint is deleted, so there is no grant screen or student search (B9 closed). A pass bought during the trial starts when the trial ends, so `access.status` is `PAID` from the moment of payment, while `subscription.startsAt` is in the future until then: show "Starts {startsAt}".
 
-**Done when:** an S_STUDENT on a trial sees the countdown; after it ends the tutor, Vocab and Maxims show the plan gate while bare acts and case laws still work; Buy explains that payments aren't available yet; a grant (made through the API in the e2e setup, `e2e/api.ts`) lets the student in after "Check again".
+**Done when:** an S_STUDENT on a trial sees the countdown; after it ends the tutor, Vocab, Maxims and library notes show the plan gate while bare acts and case laws still work; Buy explains that payments aren't available yet; a paid state set up in the e2e lets the student in after "Check again"; a SUPERADMIN sets prices, revokes a subscription and resolves a flagged payment.
 
 ---
 
@@ -369,15 +560,15 @@ The old F6.3 "C_ADMIN overview" is replaced by F6a.
 
 ---
 
-### F5d — Other laws (pending)
+### F5d — Library notes
 
-Waiting for the backend data model (Phase 5d). Expect another Library area gated for S_STUDENTs like Vocab and Maxims (§7.13).
+Backend Phase 5d (TDD §7.12a, contract §11d). S_STUDENTs get a Library notes screen: category filter (from `GET /library-notes/categories`), search, PDF inline view and DOCX/PPTX download. The SUPERADMIN gets an upload/edit/replace/delete screen. Gated by `PlanGate` like Vocab and Maxims (F8a). Reuses `NoteCard`, `NoteDialogs` and `checkNoteFile()` from F5c.
 
 ---
 
-### F7 — Solo AI practice (S_STUDENT)
+### F7 — Solo AI practice (DEFERRED 2026-11-02)
 
-After F8a. Solo uses billing's entitlement instead of `solo_plans`, so the plan gate is `PlanGate` from F8a. The contract's §13 will be revised before Phase 7; re-check every shape below then.
+**Out of scope: don't build this.** The tasks are kept for if it returns. Solo would use billing's entitlement instead of `solo_plans`, and contract §13 would need revising first.
 
 | # | Task | Details |
 |---|---|---|
@@ -395,11 +586,11 @@ After F8a. Solo uses billing's entitlement instead of `solo_plans`, so the plan 
 
 ### F8b — Gateway checkout & hardening
 
-Waits for the gateway decision (Deferred B8 / D8).
+The gateway is PhonePe, one-time passes only. This phase is split across the backlog: F8b.1 is Feature 6 (mocks) and E2 (real test), F8b.5 is Feature 12 with the production origin in E1, F8b.2, F8b.3 and F8b.7 are Feature 21, F8b.4 is Feature 22, and F8b.6 is E8.
 
 | # | Task | Details |
 |---|---|---|
-| F8b.1 | Checkout | `POST /billing/checkout` → open the gateway widget → "Payment received, confirming…" polling `GET /billing/me` until `access.status` is `PAID` → `/auth/refresh`. The webhook is the source of truth, never the widget callback. Auto-renew mandate setup if the gateway needs it |
+| F8b.1 | Checkout | `POST /billing/checkout` → redirect to `checkout.redirectUrl` → PhonePe returns to `/billing/return?paymentId=…`. The return page polls `GET /billing/payments/{id}` until `PAID` or `FAILED`, then calls `/auth/refresh` on `PAID`. Don't poll `access.status`: a student renewing early is already `PAID`. It can stay `PENDING` for several minutes if a webhook is lost, so say so and let the student leave. Only the gateway decides a payment, never the return URL. `429 RATE_LIMITED` on too many checkouts |
 | F8b.2 | Accessibility | WCAG 2.2 AA pass on every screen; manual keyboard and screen-reader checks on the review screen, the answer cards, the grids and the analytics tables |
 | F8b.3 | Performance | Per-role chunks verified; ≤ 200 KB gzip for the initial S_STUDENT chunk (fonts included); Lighthouse on a mid-range phone profile |
 | F8b.4 | Dark theme | If D4 says yes: a token-level dark palette |
@@ -445,7 +636,7 @@ Waits for the gateway decision (Deferred B8 / D8).
 | B6 | Every list endpoint is a `PagedResponse` with server-side filters | all | In contract §0.4 |
 | B7 | Confirm the HTTP status of each new error code in §3.6 | each phase | New in this revision: `PLAN_REQUIRED` 402, `PAYMENTS_UNAVAILABLE` 503, `PLAN_NOT_AVAILABLE` 409, `SYNC_IN_PROGRESS` 409, `SYNC_COOLDOWN` 429 |
 | B8 | Sort `GET /acts/{id}/sections` by natural order on the server | any | Contract §3.2; verify live |
-| B9 | SUPERADMIN needs a way to find an S_STUDENT **without** a subscription to grant them access. `GET /superadmin/billing/subscriptions` lists only users that already have one, and the grant takes a `userId` | F8a | **Deferred 2026-10-26:** not needed for launch, since Lexly goes live only with online payment (F8b). Revisit if support needs to grant access to a student who never had a subscription (e.g. a search by email under `/superadmin/billing/users?q=`) |
+| B9 | SUPERADMIN needs a way to find an S_STUDENT **without** a subscription to grant them access | F8a | **Closed 2026-11-02:** SUPERADMINs don't grant access to S_STUDENTs |
 | ~~B10~~ | ~~SUPERADMIN can start a snapshot but can't see whether it finished or failed~~ | F6a | **Resolved 2026-10-26:** the nightly run and the SUPERADMIN trigger are dropped; the C_ADMIN syncs and `GET /college/analytics/sync` gives the status (contract §12a.5) |
 
 ---
@@ -461,7 +652,7 @@ Waits for the gateway decision (Deferred B8 / D8).
 | D5 | Upload limits | **Decided:** answers 5 MB / 10 pages (`uploadLimits`); notes 20 MB, PDF/DOCX/PPTX (2026-10-25) |
 | D6 | Production domains | SPA and API same-site (e.g. `app.` + `api.` subdomains) or one origin behind a reverse proxy, so the `SameSite=Lax` refresh cookie keeps working |
 | D7 | CSV/XLSX templates | **Decided** with backend Phase 2 |
-| D8 | Payment gateway | **Still undecided** (backend Deferred B8). F8a ships without it; F8b waits |
+| D8 | Payment gateway | **Decided 2026-10-28: PhonePe** (backend Deferred B8). Testing needs a deployed HTTPS address (E2) |
 | D9 | Client error monitoring | Only with redaction and explicit approval |
 | D10 | Where S_STUDENTs reach Plan & billing on mobile, given the ≤ 5-item tab bar | From Profile and the access banner, with no new tab (recommended) |
 | D11 | How roles with more than 5 nav items fit the phone tab bar (G18) | **Decided 2026-10-26:** split the sidebar list (all items) from the tab bar (≤ 5, chosen per role, §3.2); the rest from the home placards. Done first in F5c (F5c.0). S_STUDENTs reach Vocab and Maxims from a Study hub placard plus a Vocab ⇄ Maxims switch, with the tab bar unchanged (G19) |
@@ -470,12 +661,7 @@ Waits for the gateway decision (Deferred B8 / D8).
 
 ## 8. Immediate next steps
 
-1. ~~Refresh `docs/Lexly-API-Contract.md` (G14)~~ (done 2026-10-26). Write the UI-spec sections for F5b and F5c. ~~Agree D11~~ (decided 2026-10-26).
-2. Close F4 and F5a: re-run their e2e suites against backend `main` (F5a needs the AI service and a re-index).
-3. **F5b on `feature/f5b-vocab`** against backend `main` (Phase 5b is merged).
-4. **F5c on `feature/f5c-notes`** against backend `main` (Phase 5c merged 2026-10-26), starting with the nav split (F5c.0).
-5. B10 is resolved; B9 is deferred.
-6. **F8a**, then **F6a**, against MSW mocks of contract §14 and §12a while the backend builds them; verify live and ship after each backend phase merges.
+Follow §0 from the top: merge F5c and re-run the F4 and F5a e2e suites, then remove Solo practice.
 
 ---
 

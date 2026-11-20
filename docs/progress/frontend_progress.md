@@ -960,6 +960,16 @@ while anonymous redirects back to `/login`. No console errors in any of it.
 
 ## In Progress
 
+### 2026-11-02 — Final go-live list (plan §0)
+
+**Status:** In Progress, awaiting the owner's review of the list itself. Planning only; no application code changed. Committed on `docs/go-live-list` on 2026-11-20 after a proofread: the AI service is now merged (lexly-ai-service PR #3), and the plan's F8b row, F8a.1 (no grant call; payment review calls added) and the gated-screen lists (library notes in, solo out) were corrected.
+
+- **Changed:** plan §0 rewritten as groups A-D, proposed changes, totals, owner questions and a per-role checklist, on top of the backend's committed copy of the plan.
+- **Verified on F5c `5f02340`:** lint, build and 304 unit tests pass. `e2e/f4-grading.spec.ts` 6 passed. `e2e/f5a-tutor.spec.ts` 3 skipped (AI service not running), so F5a isn't verified.
+- **Notes:** the backend ran from code identical to `c83aebb`, and its gitignored `config/application.yml` connected it to hosted Supabase, not local Postgres. That run applied V23-V25 there and left F4 test data. On the owner's instruction the test data was removed the same day (one college, five users and their rows, three local PDFs); V23-V25 stay.
+- **Owner decisions (plan §0.8):** OpenAI for the tutor, prices set by the SUPERADMIN, B10 final, refund for a payment deducted but failed, error monitoring after launch. The support address is still open.
+- **Next:** after approval, copy the plan to the backend repo, then start the first unfinished item in group A (Feature 2) when told to.
+
 ### 2026-10-22 — UR: code review fixes before merging to `master`
 
 **Status:** Done (`96e2f5e`). `tsc -b`, the build, lint (one pre-existing warning) and 262 unit
