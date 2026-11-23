@@ -57,6 +57,24 @@ describe('professor notes', () => {
     expect(screen.getByRole('button', { name: 'Upload note' })).toBeDisabled();
   });
 
+  it('goes back to the last page when the page asked for is past the end', async () => {
+    professor();
+    const pagesAsked: string[] = [];
+    server.use(
+      http.get(`${API}/college/subjects`, () => json([subjectDto()])),
+      http.get(`${API}/professor/notes`, ({ request }) => {
+        const page = new URL(request.url).searchParams.get('page') ?? '0';
+        pagesAsked.push(page);
+        return page === '0'
+          ? json(notesPage([pdfNote], { totalElements: 1, totalPages: 1 }))
+          : json(notesPage([], { page: Number(page), totalElements: 1, totalPages: 1 }));
+      }),
+    );
+    await renderApp('/professor/notes?page=3');
+    expect(await screen.findByRole('article', { name: pdfNote.title })).toBeInTheDocument();
+    expect(pagesAsked).toEqual(['2', '0']);
+  });
+
   it('shows the not-found state for a subject that is no longer mapped', async () => {
     professor();
     server.use(
