@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import type { Page } from '@/api/content';
 import type { SubjectNote } from '@/api/notes';
 import type { Subject } from '@/api/subjects';
@@ -59,6 +59,12 @@ export function NoteResults({
   children: (notes: SubjectNote[]) => ReactNode;
 }) {
   const data = results.status === 'success' ? results.data : results.status === 'loading' ? results.staleData : undefined;
+  // Past the last page (the last note of the final page was deleted, or a stale `?page=`): go to the last page.
+  const pastEnd = results.status === 'success' && page > 0 && results.data.content.length === 0 && results.data.totalElements > 0;
+  const lastPage = Math.max(0, (data?.totalPages ?? 1) - 1);
+  useEffect(() => {
+    if (pastEnd) onPage(lastPage);
+  }, [pastEnd, lastPage, onPage]);
   return (
     <>
       {results.status === 'loading' && !data && <LoadingState label="Loading notes" lines={4} />}

@@ -70,10 +70,6 @@ export function ProfessorNotesPage() {
           </button>
         </div>
       </div>
-      {subjects.status === 'success' && !canUpload && (
-        <p className={ui.hint}>You aren&rsquo;t assigned to any subjects yet.</p>
-      )}
-
       {subjects.status === 'loading' && !subjects.staleData && <LoadingState label="Loading notes" />}
       {subjects.status === 'error' && <ErrorState error={subjects.error} onRetry={subjects.retry} />}
 
