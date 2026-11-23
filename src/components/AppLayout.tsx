@@ -2,7 +2,7 @@ import { Suspense, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/auth/AuthContext';
 import { LexlyMark, LexlyWordmark } from '@/components/brand/Logo';
-import { CHANGE_PASSWORD_PATH, homeFor, isNavItemActive, navFor, sidebarFor, type NavItem } from '@/auth/roles';
+import { CHANGE_PASSWORD_PATH, homeFor, isNavItemActive, sidebarFor, tabsFor, type NavItem } from '@/auth/roles';
 import { ChevronLeftIcon, ChevronRightIcon, LogOutIcon, SearchIcon } from '@/components/icons/Icons';
 import { useFlash } from '@/components/flash';
 import { NotificationsButton } from '@/components/NotificationsButton';
@@ -73,7 +73,7 @@ export function AppLayout() {
   const forced = user?.mustChangePassword === true;
   const role = user?.role ?? null;
   const sideItems = forced ? [] : sidebarFor(role);
-  const tabItems = forced ? [] : navFor(role);
+  const tabItems = forced ? [] : tabsFor(role);
   const home = forced ? CHANGE_PASSWORD_PATH : homeFor(role);
   // College roles see their college; SUPERADMIN pages already say "Super admin" above the H1.
   const context = user?.college?.name ?? '';

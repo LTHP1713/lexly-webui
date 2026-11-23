@@ -102,6 +102,13 @@ export const queryKeys = {
     /** Under the detail, so refreshing an assessment refreshes its results too. */
     results: (id: string) => ['student', 'assessments', 'detail', id, 'results'] as const,
   },
+  /** Every note list of every role: a note write refreshes all of them (F5c). */
+  notes: {
+    all: ['notes'] as const,
+    professor: (filters: object) => ['notes', 'professor', filters] as const,
+    student: (filters: object) => ['notes', 'student', filters] as const,
+    college: (filters: object) => ['notes', 'college', filters] as const,
+  },
   library: {
     acts: ['library', 'acts'] as const,
     caseLawCount: ['library', 'caselaws', 'count'] as const,
